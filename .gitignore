@@ -1,6 +1,7 @@
 .docs-build/
 dist-docs/
 dist-site/
+dist-release/
 **/node_modules/
 **/__pycache__/
 *.pyc
