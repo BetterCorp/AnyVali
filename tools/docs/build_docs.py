@@ -39,6 +39,16 @@ def destination_for(source: Path) -> Path:
     return OUTPUT_DIR / source
 
 
+def copy_assets(destination: Path) -> None:
+    assets_dir = destination / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    logo_source = ROOT / "logo.png"
+    if logo_source.exists():
+        shutil.copy2(logo_source, assets_dir / "logo.png")
+        shutil.copy2(logo_source, assets_dir / "favicon.png")
+
+
 def main() -> None:
     shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -52,6 +62,8 @@ def main() -> None:
         destination_path = destination_for(relative_source)
         destination_path.parent.mkdir(parents=True, exist_ok=True)
         destination_path.write_text(content, encoding="utf-8")
+
+    copy_assets(OUTPUT_DIR)
 
 
 if __name__ == "__main__":

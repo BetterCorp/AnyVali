@@ -1,7 +1,7 @@
-module github.com/anyvali/anyvali/cli
+module github.com/BetterCorp/AnyVali/cli
 
 go 1.21
 
-require github.com/anyvali/anyvali/sdk/go v0.0.0
+require github.com/BetterCorp/AnyVali/sdk/go v0.0.0
 
-replace github.com/anyvali/anyvali/sdk/go => ../sdk/go
+replace github.com/BetterCorp/AnyVali/sdk/go => ../sdk/go

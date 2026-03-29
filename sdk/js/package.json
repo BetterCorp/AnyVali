@@ -5,7 +5,7 @@
   "homepage": "https://anyvali.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anyvali/anyvali",
+    "url": "https://github.com/BetterCorp/AnyVali",
     "directory": "sdk/js"
   },
   "type": "module",

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	anyvali "github.com/anyvali/anyvali/sdk/go"
+	anyvali "github.com/BetterCorp/AnyVali/sdk/go"
 )
 
 // Version is the server/CLI version. Set by the main package or cmd.

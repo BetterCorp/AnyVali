@@ -10,7 +10,7 @@
     <PackageId>AnyVali</PackageId>
     <Description>Native validation with portable schema interchange</Description>
     <PackageProjectUrl>https://anyvali.com</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/anyvali/anyvali</RepositoryUrl>
+    <RepositoryUrl>https://github.com/BetterCorp/AnyVali</RepositoryUrl>
   </PropertyGroup>
 
 </Project>

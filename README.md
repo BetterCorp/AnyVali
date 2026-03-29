@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/anyvali/anyvali/actions/workflows/ci.yml"><img src="https://github.com/anyvali/anyvali/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml"><img src="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://www.npmjs.com/package/anyvali"><img src="https://img.shields.io/npm/v/anyvali.svg?label=npm" alt="npm" /></a>
   <a href="https://pypi.org/project/anyvali/"><img src="https://img.shields.io/pypi/v/anyvali.svg?label=pypi" alt="PyPI" /></a>
   <a href="https://crates.io/crates/anyvali"><img src="https://img.shields.io/crates/v/anyvali.svg?label=crates.io" alt="crates.io" /></a>
-  <a href="https://pkg.go.dev/github.com/anyvali/anyvali/sdk/go"><img src="https://img.shields.io/badge/go-pkg.go.dev-blue.svg" alt="Go" /></a>
+  <a href="https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go"><img src="https://img.shields.io/badge/go-pkg.go.dev-blue.svg" alt="Go" /></a>
   <a href="https://www.nuget.org/packages/AnyVali"><img src="https://img.shields.io/nuget/v/AnyVali.svg?label=nuget" alt="NuGet" /></a>
   <a href="https://rubygems.org/gems/anyvali"><img src="https://img.shields.io/gem/v/anyvali.svg?label=gem" alt="Gem" /></a>
 </p>
@@ -22,7 +22,7 @@
 <p align="center">
   <a href="https://anyvali.com">Website</a> &middot;
   <a href="https://docs.anyvali.com">Docs</a> &middot;
-  <a href="https://github.com/anyvali/anyvali/issues">Issues</a> &middot;
+  <a href="https://github.com/BetterCorp/AnyVali/issues">Issues</a> &middot;
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -43,7 +43,7 @@ AnyVali lets you write validation schemas in your language, then share them acro
 ```bash
 npm install anyvali          # JavaScript / TypeScript
 pip install anyvali           # Python
-go get github.com/anyvali/anyvali/sdk/go  # Go
+go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali             # Rust
 dotnet add package AnyVali    # C#
 composer require anyvali/anyvali  # PHP
@@ -69,7 +69,7 @@ implementation("com.anyvali:anyvali:0.0.1")
 
 **C++ (CMake)**
 ```cmake
-FetchContent_Declare(anyvali GIT_REPOSITORY https://github.com/anyvali/anyvali)
+FetchContent_Declare(anyvali GIT_REPOSITORY https://github.com/BetterCorp/AnyVali)
 FetchContent_MakeAvailable(anyvali)
 target_link_libraries(your_target PRIVATE anyvali)
 ```
@@ -135,7 +135,7 @@ if not result.success:
 <summary>Go example</summary>
 
 ```go
-import av "github.com/anyvali/anyvali/sdk/go"
+import av "github.com/BetterCorp/AnyVali/sdk/go"
 
 User := av.Object(map[string]av.Schema{
     "name":  av.String().MinLength(1),
@@ -198,7 +198,7 @@ The portable JSON format:
 |----------|---------|--------|
 | JavaScript / TypeScript | [`anyvali`](https://www.npmjs.com/package/anyvali) | v0.0.1 |
 | Python | [`anyvali`](https://pypi.org/project/anyvali/) | v0.0.1 |
-| Go | [`github.com/anyvali/anyvali/sdk/go`](https://pkg.go.dev/github.com/anyvali/anyvali/sdk/go) | v0.0.1 |
+| Go | [`github.com/BetterCorp/AnyVali/sdk/go`](https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go) | v0.0.1 |
 | Java | `com.anyvali:anyvali` | v0.0.1 |
 | C# | [`AnyVali`](https://www.nuget.org/packages/AnyVali) | v0.0.1 |
 | Rust | [`anyvali`](https://crates.io/crates/anyvali) | v0.0.1 |
@@ -227,7 +227,7 @@ curl -X POST http://localhost:8080/validate/user \
   -d '{"name": "Alice", "email": "alice@test.com"}'
 ```
 
-Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/anyvali/anyvali/releases). Docker image: `docker pull anyvali/cli`.
+Pre-built binaries for Linux, macOS, and Windows are available on the [releases page](https://github.com/BetterCorp/AnyVali/releases). Docker image: `docker pull anyvali/cli`.
 
 See the [CLI Reference](https://docs.anyvali.com/docs/cli) and [HTTP API Reference](https://docs.anyvali.com/docs/api) for full documentation.
 
@@ -287,6 +287,7 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 ./runner.sh help       # See all commands
 ./runner.sh test js    # Test a specific SDK
 ./runner.sh ci         # Run the full CI pipeline locally
+pwsh -File tools/release/build_release.ps1  # Build release artifacts with Docker
 ```
 
 ## License

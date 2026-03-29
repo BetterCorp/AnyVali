@@ -10,6 +10,7 @@ COPY tools/docs/build_docs.py tools/docs/build_docs.py
 COPY README.md README.md
 COPY CONTRIBUTING.md CONTRIBUTING.md
 COPY LICENSE LICENSE
+COPY logo.png logo.png
 COPY docs docs
 COPY spec spec
 

@@ -120,7 +120,7 @@ Extension types: **informational** (safe to ignore) and **semantic** (required f
 |---|---|---|
 | JS/TS | `anyvali` (npm) | `string()`, `number()`, `object({...})` |
 | Python | `anyvali` (PyPI) | `v.string()`, `v.int_()`, `v.object_({...})` |
-| Go | `github.com/anyvali/anyvali/sdk/go` | `av.String()`, `av.Number()`, `av.Object(...)` |
+| Go | `github.com/BetterCorp/AnyVali/sdk/go` | `av.String()`, `av.Number()`, `av.Object(...)` |
 | Java | `com.anyvali:anyvali` (Maven) | `AnyVali.string()`, `AnyVali.int_()` |
 | C# | `AnyVali` (NuGet) | `V.String()`, `V.Number()`, `V.Object(...)` |
 | Rust | `anyvali` (crates.io) | `anyvali::string()`, `anyvali::int()` |
@@ -252,7 +252,7 @@ doc = v.export_schema(user_schema)
 ### Go
 
 ```go
-import av "github.com/anyvali/anyvali/sdk/go"
+import av "github.com/BetterCorp/AnyVali/sdk/go"
 
 userSchema := av.Object(map[string]av.Schema{
     "name":  av.String().MinLength(1).MaxLength(100),

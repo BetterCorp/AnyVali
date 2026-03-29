@@ -8,26 +8,26 @@ The AnyVali CLI validates data against AnyVali schemas from the command line. It
 
 ### Pre-built binary
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/anyvali/anyvali/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/BetterCorp/AnyVali/releases):
 
 ```bash
 # macOS (Apple Silicon)
-curl -Lo anyvali https://github.com/anyvali/anyvali/releases/latest/download/anyvali-darwin-arm64
+curl -Lo anyvali https://github.com/BetterCorp/AnyVali/releases/latest/download/anyvali-darwin-arm64
 chmod +x anyvali
 sudo mv anyvali /usr/local/bin/
 
 # macOS (Intel)
-curl -Lo anyvali https://github.com/anyvali/anyvali/releases/latest/download/anyvali-darwin-amd64
+curl -Lo anyvali https://github.com/BetterCorp/AnyVali/releases/latest/download/anyvali-darwin-amd64
 chmod +x anyvali
 sudo mv anyvali /usr/local/bin/
 
 # Linux (x86_64)
-curl -Lo anyvali https://github.com/anyvali/anyvali/releases/latest/download/anyvali-linux-amd64
+curl -Lo anyvali https://github.com/BetterCorp/AnyVali/releases/latest/download/anyvali-linux-amd64
 chmod +x anyvali
 sudo mv anyvali /usr/local/bin/
 
 # Windows (PowerShell)
-Invoke-WebRequest -Uri https://github.com/anyvali/anyvali/releases/latest/download/anyvali-windows-amd64.exe -OutFile anyvali.exe
+Invoke-WebRequest -Uri https://github.com/BetterCorp/AnyVali/releases/latest/download/anyvali-windows-amd64.exe -OutFile anyvali.exe
 ```
 
 ### Build from source
@@ -531,7 +531,7 @@ jobs:
 
       - name: Install anyvali
         run: |
-          curl -Lo anyvali https://github.com/anyvali/anyvali/releases/latest/download/anyvali-linux-amd64
+          curl -Lo anyvali https://github.com/BetterCorp/AnyVali/releases/latest/download/anyvali-linux-amd64
           chmod +x anyvali
           sudo mv anyvali /usr/local/bin/
 

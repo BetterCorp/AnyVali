@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/anyvali/anyvali/cli/server"
+	"github.com/BetterCorp/AnyVali/cli/server"
 )
 
 const serveUsage = `Usage: anyvali serve [options]

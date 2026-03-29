@@ -22,7 +22,7 @@
     "sdk/go": {
       "component": "go",
       "release-type": "go",
-      "package-name": "github.com/anyvali/anyvali/sdk/go",
+      "package-name": "github.com/BetterCorp/AnyVali/sdk/go",
       "changelog-path": "sdk/go/CHANGELOG.md"
     },
     "sdk/java": {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	anyvali "github.com/anyvali/anyvali/sdk/go"
+	anyvali "github.com/BetterCorp/AnyVali/sdk/go"
 )
 
 // helper to write a temp schema file and return its path

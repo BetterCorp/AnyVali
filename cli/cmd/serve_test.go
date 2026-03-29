@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/anyvali/anyvali/cli/server"
+	"github.com/BetterCorp/AnyVali/cli/server"
 )
 
 func setupTestServer(t *testing.T, cors bool) (*httptest.Server, *server.Server) {

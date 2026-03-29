@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/anyvali/anyvali/cli/cmd"
+	"github.com/BetterCorp/AnyVali/cli/cmd"
 )
 
 const usage = `Usage: anyvali <command> [options]

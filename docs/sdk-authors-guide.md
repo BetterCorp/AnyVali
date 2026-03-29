@@ -441,7 +441,7 @@ import (
     "path/filepath"
     "testing"
 
-    v "github.com/anyvali/anyvali-go"
+    v "github.com/BetterCorp/AnyVali-go"
 )
 
 type TestSuite struct {

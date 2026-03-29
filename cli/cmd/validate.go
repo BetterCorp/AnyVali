@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	anyvali "github.com/anyvali/anyvali/sdk/go"
+	anyvali "github.com/BetterCorp/AnyVali/sdk/go"
 )
 
 const validateUsage = `Usage: anyvali validate [options] <schema-file> [input]

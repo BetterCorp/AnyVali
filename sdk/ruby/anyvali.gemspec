@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors     = ["AnyVali Contributors"]
   s.email       = ["hello@anyvali.com"]
   s.homepage    = "https://anyvali.com"
-  s.metadata    = { "source_code_uri" => "https://github.com/anyvali/anyvali" }
+  s.metadata    = { "source_code_uri" => "https://github.com/BetterCorp/AnyVali" }
   s.license     = "MIT"
 
   s.required_ruby_version = ">= 3.0.0"

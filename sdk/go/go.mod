@@ -1,3 +1,3 @@
-module github.com/anyvali/anyvali/sdk/go
+module github.com/BetterCorp/AnyVali/sdk/go
 
 go 1.21

@@ -18,7 +18,7 @@ npm install anyvali
 pip install anyvali
 
 # Go
-go get github.com/anyvali/anyvali/sdk/go
+go get github.com/BetterCorp/AnyVali/sdk/go
 
 # Java (Maven)
 <dependency>
@@ -43,7 +43,7 @@ gem install anyvali
 implementation("com.anyvali:anyvali:0.0.1")
 
 # C++ (CMake)
-FetchContent_Declare(anyvali GIT_REPOSITORY https://github.com/anyvali/anyvali)
+FetchContent_Declare(anyvali GIT_REPOSITORY https://github.com/BetterCorp/AnyVali)
 ```
 
 ---
@@ -81,7 +81,7 @@ user_schema = v.object_({
 ### Go
 
 ```go
-import av "github.com/anyvali/anyvali/sdk/go"
+import av "github.com/BetterCorp/AnyVali/sdk/go"
 
 userSchema := av.Object(map[string]av.Schema{
     "name":  av.String().MinLength(1).MaxLength(100),

@@ -154,7 +154,7 @@ import (
     "fmt"
     "log"
 
-    v "github.com/anyvali/anyvali-go"
+    v "github.com/BetterCorp/AnyVali-go"
 )
 
 func main() {
