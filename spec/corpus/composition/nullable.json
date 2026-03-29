@@ -1,0 +1,77 @@
+{
+  "suite": "nullable",
+  "cases": [
+    {
+      "description": "accepts null for nullable schema",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "nullable", "schema": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    },
+    {
+      "description": "accepts valid non-null value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "nullable", "schema": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "rejects invalid non-null value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "nullable", "schema": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "nullable int accepts null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "nullable", "schema": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    },
+    {
+      "description": "nullable int accepts valid integer",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "nullable", "schema": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 99,
+      "valid": true,
+      "output": 99,
+      "issues": []
+    }
+  ]
+}

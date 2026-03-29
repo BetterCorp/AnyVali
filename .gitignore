@@ -1,0 +1,10 @@
+.docs-build/
+dist-docs/
+dist-site/
+**/node_modules/
+**/__pycache__/
+*.pyc
+*.pyo
+**/*.egg-info/
+**/coverage/
+**/build/

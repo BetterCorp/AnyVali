@@ -1,0 +1,113 @@
+{
+  "suite": "tuple",
+  "cases": [
+    {
+      "description": "accepts a valid tuple",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "tuple",
+          "elements": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["hello", 42],
+      "valid": true,
+      "output": ["hello", 42],
+      "issues": []
+    },
+    {
+      "description": "rejects tuple with too few elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "tuple",
+          "elements": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["hello"],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "2", "received": "1" }
+      ]
+    },
+    {
+      "description": "rejects tuple with too many elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "tuple",
+          "elements": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["hello", 42, true],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "2", "received": "3" }
+      ]
+    },
+    {
+      "description": "rejects tuple with wrong element type",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "tuple",
+          "elements": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [42, "hello"],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [0], "expected": "string", "received": "number" },
+        { "code": "invalid_type", "path": [1], "expected": "int", "received": "string" }
+      ]
+    },
+    {
+      "description": "rejects non-array input for tuple",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "tuple",
+          "elements": [
+            { "kind": "string" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not a tuple",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "tuple", "received": "string" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "suite": "array-constraints",
+  "cases": [
+    {
+      "description": "minItems passes when array has enough elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "int" }, "minItems": 2 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1, 2],
+      "valid": true,
+      "output": [1, 2],
+      "issues": []
+    },
+    {
+      "description": "minItems fails when array has too few elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "int" }, "minItems": 2 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "2", "received": "1" }
+      ]
+    },
+    {
+      "description": "maxItems passes when array has few enough elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "string" }, "maxItems": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["a", "b", "c"],
+      "valid": true,
+      "output": ["a", "b", "c"],
+      "issues": []
+    },
+    {
+      "description": "maxItems fails when array has too many elements",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "string" }, "maxItems": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["a", "b", "c", "d"],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "3", "received": "4" }
+      ]
+    },
+    {
+      "description": "empty array passes with minItems 0",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "string" }, "minItems": 0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [],
+      "valid": true,
+      "output": [],
+      "issues": []
+    },
+    {
+      "description": "array element type validation with path",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1, "two", 3],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [1], "expected": "int", "received": "string" }
+      ]
+    }
+  ]
+}

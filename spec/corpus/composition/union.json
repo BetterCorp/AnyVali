@@ -1,0 +1,107 @@
+{
+  "suite": "union",
+  "cases": [
+    {
+      "description": "accepts value matching first variant",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "union",
+          "variants": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "accepts value matching second variant",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "union",
+          "variants": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "rejects value matching no variant",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "union",
+          "variants": [
+            { "kind": "string" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_union", "path": [], "expected": "string | int", "received": "boolean" }
+      ]
+    },
+    {
+      "description": "first matching variant wins",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "union",
+          "variants": [
+            { "kind": "number" },
+            { "kind": "int" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": true,
+      "output": 5,
+      "issues": []
+    },
+    {
+      "description": "union with null variant accepts null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "union",
+          "variants": [
+            { "kind": "string" },
+            { "kind": "null" }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    }
+  ]
+}

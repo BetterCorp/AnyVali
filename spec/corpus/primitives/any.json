@@ -1,0 +1,75 @@
+{
+  "suite": "any",
+  "cases": [
+    {
+      "description": "accepts a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "any" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "accepts a number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "any" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "accepts null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "any" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    },
+    {
+      "description": "accepts an object",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "any" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "key": "value" },
+      "valid": true,
+      "output": { "key": "value" },
+      "issues": []
+    },
+    {
+      "description": "accepts an array",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "any" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1, "two", true],
+      "valid": true,
+      "output": [1, "two", true],
+      "issues": []
+    }
+  ]
+}

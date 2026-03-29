@@ -1,0 +1,9 @@
+.git
+.github
+.docs-build
+dist-docs
+dist-site
+sdk
+**/__pycache__
+**/node_modules
+**/coverage

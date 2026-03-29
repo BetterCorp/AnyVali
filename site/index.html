@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AnyVali | Native Validation APIs, Portable Schemas</title>
+    <meta
+      name="description"
+      content="AnyVali gives developers native validation APIs with a portable schema format that moves across languages."
+    />
+    <meta name="theme-color" content="#0d1220" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" href="favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="favicon-16x16.png" type="image/png" sizes="16x16" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="site.webmanifest" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">
+          <img src="assets/brand/logo.png" alt="AnyVali logo" />
+          <span>AnyVali</span>
+        </a>
+        <nav class="nav">
+          <a href="#why">Why</a>
+          <a href="#examples">Examples</a>
+          <a href="#languages">SDKs</a>
+          <a href="examples/index.html">More Examples</a>
+          <a class="nav-cta" href="https://docs.anyvali.com">Read Docs</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Portable validation without the extra layer</p>
+            <h1>Native schemas. Cross-language contracts.</h1>
+            <p class="lede">
+              Author with a native SDK, export a canonical schema document, and
+              validate consistently across runtimes.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="https://docs.anyvali.com">Open docs</a>
+              <a class="button secondary" href="examples/index.html">See examples</a>
+            </div>
+            <ul class="signal-list">
+              <li>Native builder APIs in each SDK</li>
+              <li>Portable JSON interchange with strict semantics</li>
+              <li>Shared conformance corpus across languages</li>
+            </ul>
+          </div>
+
+          <div class="hero-panel">
+            <div class="migration-card lang-python" data-migration-demo>
+              <div class="migration-header">
+                <div>
+                  <p class="eyebrow">Migration demo</p>
+                  <h3>One schema, different SDKs</h3>
+                </div>
+                <div class="migration-tab-rail">
+                  <button class="migration-arrow" type="button" data-scroll-dir="left" aria-label="Scroll languages left">
+                    <span aria-hidden="true">‹</span>
+                  </button>
+                  <div class="migration-tabs" role="tablist" aria-label="Target language">
+                    <button class="migration-tab" type="button" data-lang-tab="typescript">TS</button>
+                    <button class="migration-tab is-active" type="button" data-lang-tab="python">Python</button>
+                    <button class="migration-tab" type="button" data-lang-tab="go">Go</button>
+                    <button class="migration-tab" type="button" data-lang-tab="java">Java</button>
+                    <button class="migration-tab" type="button" data-lang-tab="csharp">C#</button>
+                    <button class="migration-tab" type="button" data-lang-tab="rust">Rust</button>
+                    <button class="migration-tab" type="button" data-lang-tab="php">PHP</button>
+                    <button class="migration-tab" type="button" data-lang-tab="ruby">Ruby</button>
+                    <button class="migration-tab" type="button" data-lang-tab="kotlin">Kotlin</button>
+                    <button class="migration-tab" type="button" data-lang-tab="cpp">C++</button>
+                  </div>
+                  <button class="migration-arrow" type="button" data-scroll-dir="right" aria-label="Scroll languages right">
+                    <span aria-hidden="true">›</span>
+                  </button>
+                </div>
+              </div>
+
+              <section class="migration-pane migration-source">
+                <div class="code-card-header">
+                  <span data-lang-label>Python</span>
+                  <span>author + export + import</span>
+                </div>
+                <div class="migration-code-shell hero-code"><div data-lang-code>
+<span class="lang-block lang-python">
+<span class="code-line"><span class="tok-keyword">schema</span> = v.object({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: v.int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: v.string().format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">result = schema.safe_parse({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">print(schema.export()) <span class="tok-comment"># portable contract</span></span>
+<span class="code-line"><span class="tok-comment"># same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">imported_schema = v.import_schema(schema.export())</span>
+<span class="code-line">imported_result = imported_schema.safe_parse({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+</span>
+<span class="lang-block lang-go">
+<span class="code-line">schema := v.Object(v.Fields{</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: v.Int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: v.String().Format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">result := schema.SafeParse(map[string]any{</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">doc, _ := schema.Export(v.ExportPortable) <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">imported, _ := v.ImportSchema(doc)</span>
+<span class="code-line">roundTrip := imported.SafeParse(map[string]any{</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+</span>
+<span class="lang-block lang-typescript">
+<span class="code-line"><span class="tok-keyword">const</span> schema = v.object({</span>
+<span class="code-line indent-1">id: v.int64(),</span>
+<span class="code-line indent-1">email: v.string().format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">const</span> result = schema.safeParse({</span>
+<span class="code-line indent-1">id: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1">email: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line">console.log(schema.export()); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">const</span> importedSchema = importSchema(schema.export());</span>
+<span class="code-line"><span class="tok-keyword">const</span> importedResult = importedSchema.safeParse({</span>
+<span class="code-line indent-1">id: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1">email: <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">});</span>
+</span>
+<span class="lang-block lang-java">
+<span class="code-line">var schema = V.object(Map.of(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>, V.int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>, V.string().format(<span class="tok-string">"email"</span>)</span>
+<span class="code-line">));</span>
+<span class="code-line"></span>
+<span class="code-line">var result = schema.safeParse(Map.of(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>, <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span></span>
+<span class="code-line">));</span>
+<span class="code-line"></span>
+<span class="code-line">System.out.println(schema.export()); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">var imported = importSchema(schema.export());</span>
+<span class="code-line">var importedResult = imported.safeParse(Map.of(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>, <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span></span>
+<span class="code-line">));</span>
+</span>
+<span class="lang-block lang-csharp">
+<span class="code-line"><span class="tok-keyword">var</span> schema = V.Object(new Dictionary&lt;string, Schema&gt; {</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, V.Int64() },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, V.String().Format(<span class="tok-string">"email"</span>) },</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">var</span> result = schema.SafeParse(new Dictionary&lt;string, object&gt; {</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, <span class="tok-number">42</span> },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span> },</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line">Console.WriteLine(schema.Export()); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">var</span> imported = ImportSchema(schema.Export());</span>
+<span class="code-line"><span class="tok-keyword">var</span> importedResult = imported.SafeParse(new Dictionary&lt;string, object&gt; {</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, <span class="tok-number">42</span> },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span> },</span>
+<span class="code-line">});</span>
+</span>
+<span class="lang-block lang-rust">
+<span class="code-line"><span class="tok-keyword">let</span> schema = v::object(fields![</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; v::int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; v::string().format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">]);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">let</span> result = schema.safe_parse(json!({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span></span>
+<span class="code-line">}));</span>
+<span class="code-line"></span>
+<span class="code-line">println!("{}", schema.export()); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">let</span> imported = import_schema(schema.export());</span>
+<span class="code-line"><span class="tok-keyword">let</span> imported_result = imported.safe_parse(json!({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span>: <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span>: <span class="tok-string">"team@anyvali.dev"</span></span>
+<span class="code-line">}));</span>
+</span>
+<span class="lang-block lang-php">
+<span class="code-line">$schema = v\object([</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; v\int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; v\string()-&gt;format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">]);</span>
+<span class="code-line"></span>
+<span class="code-line">$result = $schema-&gt;safeParse([</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">]);</span>
+<span class="code-line"></span>
+<span class="code-line">echo json_encode($schema-&gt;export()); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">$imported = import_schema($schema-&gt;export());</span>
+<span class="code-line">$importedResult = $imported-&gt;safeParse([</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">]);</span>
+</span>
+<span class="lang-block lang-ruby">
+<span class="code-line">schema = AnyVali.object({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; AnyVali.int64,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; AnyVali.string.format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">result = schema.safe_parse({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+<span class="code-line"></span>
+<span class="code-line">puts schema.export <span class="tok-comment"># portable contract</span></span>
+<span class="code-line"><span class="tok-comment"># same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">imported = AnyVali.import_schema(schema.export)</span>
+<span class="code-line">imported_result = imported.safe_parse({</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> =&gt; <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> =&gt; <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">})</span>
+</span>
+<span class="lang-block lang-kotlin">
+<span class="code-line"><span class="tok-keyword">val</span> schema = V.obj(mapOf(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> to V.int64(),</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> to V.string().format(<span class="tok-string">"email"</span>),</span>
+<span class="code-line">))</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">val</span> result = schema.safeParse(mapOf(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> to <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> to <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">))</span>
+<span class="code-line"></span>
+<span class="code-line">println(schema.export()) <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-keyword">val</span> imported = importSchema(schema.export())</span>
+<span class="code-line"><span class="tok-keyword">val</span> importedResult = imported.safeParse(mapOf(</span>
+<span class="code-line indent-1"><span class="tok-string">"id"</span> to <span class="tok-number">42</span>,</span>
+<span class="code-line indent-1"><span class="tok-string">"email"</span> to <span class="tok-string">"team@anyvali.dev"</span>,</span>
+<span class="code-line">))</span>
+</span>
+<span class="lang-block lang-cpp">
+<span class="code-line">auto schema = v::object({</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, v::int64() },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, v::string().format(<span class="tok-string">"email"</span>) },</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line">auto result = schema.safe_parse({</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, <span class="tok-number">42</span> },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span> },</span>
+<span class="code-line">});</span>
+<span class="code-line"></span>
+<span class="code-line">std::cout &lt;&lt; schema.export(); <span class="tok-comment">// portable contract</span></span>
+<span class="code-line"><span class="tok-comment">// same JSON document every time</span></span>
+<span class="code-line"></span>
+<span class="code-line">auto imported = import_schema(schema.export());</span>
+<span class="code-line">auto imported_result = imported.safe_parse({</span>
+<span class="code-line indent-1">{ <span class="tok-string">"id"</span>, <span class="tok-number">42</span> },</span>
+<span class="code-line indent-1">{ <span class="tok-string">"email"</span>, <span class="tok-string">"team@anyvali.dev"</span> },</span>
+<span class="code-line">});</span>
+</span></div></div>
+              </section>
+
+            </div>
+          </div>
+        </section>
+
+        <section class="impact-grid" id="why">
+          <article class="impact-card">
+            <h2>Native-first, not JSON-first</h2>
+            <p>
+              AnyVali is meant to feel familiar if you use Zod, Valibot, or the
+              validation layer of your own platform. You keep authoring in the host
+              language instead of dropping into a neutral DSL.
+            </p>
+          </article>
+          <article class="impact-card">
+            <h2>Portability with boundaries</h2>
+            <p>
+              Portable core features move cleanly between SDKs. Local-only behavior
+              stays local. That split is explicit, which keeps your shared contracts
+              honest instead of silently drifting.
+            </p>
+          </article>
+          <article class="impact-card">
+            <h2>Deterministic parse semantics</h2>
+            <p>
+              The pipeline is defined: presence, coercion, defaults, validation,
+              output. Teams can reason about what happens in every runtime without
+              reverse-engineering edge cases.
+            </p>
+          </article>
+        </section>
+
+        <section class="workflow">
+          <div class="section-heading">
+            <p class="eyebrow">How it works</p>
+            <h2>Schema authoring that survives language boundaries</h2>
+          </div>
+          <div class="workflow-strip">
+            <div class="workflow-step">
+              <span>01</span>
+              <h3>Define locally</h3>
+              <p>Use the SDK API that fits your language conventions.</p>
+            </div>
+            <div class="workflow-step">
+              <span>02</span>
+              <h3>Export canonically</h3>
+              <p>Emit a versioned JSON document with definitions and extensions.</p>
+            </div>
+            <div class="workflow-step">
+              <span>03</span>
+              <h3>Import elsewhere</h3>
+              <p>Load the same contract in another AnyVali SDK.</p>
+            </div>
+            <div class="workflow-step">
+              <span>04</span>
+              <h3>Validate consistently</h3>
+              <p>Rely on the same issue codes, coercions, defaults, and constraints.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="examples-preview" id="examples">
+          <div class="section-heading">
+            <p class="eyebrow">Examples</p>
+            <h2>Fast, readable authoring across SDKs</h2>
+          </div>
+          <div class="example-grid">
+            <article class="example-card">
+              <h3>TypeScript</h3>
+              <pre><code class="language-typescript">const Account = v.object({
+  id: v.int64(),
+  plan: v.enum(["free", "pro"]),
+  email: v.string().format("email"),
+});</code></pre>
+            </article>
+            <article class="example-card">
+              <h3>Python</h3>
+              <pre><code class="language-python">account = v.object({
+    "id": v.int64(),
+    "plan": v.enum(["free", "pro"]),
+    "email": v.string().format("email"),
+})</code></pre>
+            </article>
+            <article class="example-card">
+              <h3>Go</h3>
+              <pre><code class="language-go">account := v.Object(v.Fields{
+    "id": v.Int64(),
+    "plan": v.Enum("free", "pro"),
+    "email": v.String().Format("email"),
+})</code></pre>
+            </article>
+          </div>
+          <a class="text-link" href="examples/index.html">Explore deeper examples</a>
+        </section>
+
+        <section class="use-cases">
+          <div class="section-heading">
+            <p class="eyebrow">Use cases</p>
+            <h2>Built for teams that cross service, client, and language boundaries</h2>
+          </div>
+          <div class="use-case-grid">
+            <article>
+              <h3>Frontend to backend contracts</h3>
+              <p>Author in TypeScript, validate in Go or Java without rewriting schema logic.</p>
+            </article>
+            <article>
+              <h3>Schema registries</h3>
+              <p>Store exported JSON documents and let any AnyVali runtime import them on demand.</p>
+            </article>
+            <article>
+              <h3>Polyglot platforms</h3>
+              <p>Keep consistency when services evolve independently but still share data contracts.</p>
+            </article>
+            <article>
+              <h3>SDK families</h3>
+              <p>Back every implementation with the same conformance corpus and issue model.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="sdk-section" id="languages">
+          <div class="section-heading">
+            <p class="eyebrow">SDK coverage</p>
+            <h2>One model, multiple ecosystems</h2>
+          </div>
+          <div class="sdk-table">
+            <div><span>JavaScript / TypeScript</span><strong>In repo</strong></div>
+            <div><span>Python</span><strong>In repo</strong></div>
+            <div><span>Go</span><strong>In repo</strong></div>
+            <div><span>Java</span><strong>In repo</strong></div>
+            <div><span>C#</span><strong>In repo</strong></div>
+            <div><span>Rust</span><strong>In repo</strong></div>
+            <div><span>PHP</span><strong>In repo</strong></div>
+            <div><span>Ruby</span><strong>In repo</strong></div>
+            <div><span>Kotlin</span><strong>In repo</strong></div>
+            <div><span>C++</span><strong>In repo</strong></div>
+          </div>
+        </section>
+
+        <section class="boundary">
+          <div class="boundary-copy">
+            <p class="eyebrow">Learn more</p>
+            <h2>Specification, portability, and implementation details</h2>
+            <p>
+              Use the docs for the normative spec, JSON format, portability rules,
+              and SDK guidance.
+            </p>
+          </div>
+          <div class="boundary-links">
+            <a href="https://docs.anyvali.com">Documentation</a>
+            <a href="https://docs.anyvali.com/spec/spec/">Normative spec</a>
+            <a href="https://docs.anyvali.com/spec/json-format/">JSON format</a>
+            <a href="https://docs.anyvali.com/docs/portability-guide/">Portability guide</a>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <a class="brand footer-brand" href="index.html">
+            <img src="assets/brand/logo.png" alt="AnyVali logo" />
+            <span>AnyVali</span>
+          </a>
+          <p>Native validation APIs with portable schema contracts.</p>
+        </div>
+        <div class="footer-links">
+          <a href="examples/index.html">Examples</a>
+          <a href="https://docs.anyvali.com">Docs</a>
+          <a href="https://docs.anyvali.com/spec/spec/">Spec</a>
+        </div>
+      </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

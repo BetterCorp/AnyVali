@@ -1,0 +1,79 @@
+{
+  "suite": "record",
+  "cases": [
+    {
+      "description": "accepts record with all valid values",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "record", "values": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "a": 1, "b": 2, "c": 3 },
+      "valid": true,
+      "output": { "a": 1, "b": 2, "c": 3 },
+      "issues": []
+    },
+    {
+      "description": "accepts empty record",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "record", "values": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {},
+      "issues": []
+    },
+    {
+      "description": "rejects record with invalid value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "record", "values": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "a": 1, "b": "two" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["b"], "expected": "int", "received": "string" }
+      ]
+    },
+    {
+      "description": "rejects non-object input",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "record", "values": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1, 2, 3],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "record", "received": "array" }
+      ]
+    },
+    {
+      "description": "record with string values accepts all strings",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "record", "values": { "kind": "string" } },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "key1": "value1", "key2": "value2" },
+      "valid": true,
+      "output": { "key1": "value1", "key2": "value2" },
+      "issues": []
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "suite": "string-constraints",
+  "cases": [
+    {
+      "description": "minLength passes when string is long enough",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "minLength": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "abc",
+      "valid": true,
+      "output": "abc",
+      "issues": []
+    },
+    {
+      "description": "minLength fails when string is too short",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "minLength": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "ab",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "3", "received": "2" }
+      ]
+    },
+    {
+      "description": "maxLength passes when string is short enough",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "maxLength": 5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "maxLength fails when string is too long",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "maxLength": 5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello!",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "5", "received": "6" }
+      ]
+    },
+    {
+      "description": "pattern passes when string matches regex",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "pattern": "^[a-z]+$" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "abc",
+      "valid": true,
+      "output": "abc",
+      "issues": []
+    },
+    {
+      "description": "pattern fails when string does not match regex",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "pattern": "^[a-z]+$" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "ABC",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "^[a-z]+$", "received": "ABC" }
+      ]
+    },
+    {
+      "description": "startsWith passes when string begins with prefix",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "startsWith": "hello" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello world",
+      "valid": true,
+      "output": "hello world",
+      "issues": []
+    },
+    {
+      "description": "startsWith fails when string does not begin with prefix",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "startsWith": "hello" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "world hello",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "hello", "received": "world hello" }
+      ]
+    },
+    {
+      "description": "endsWith passes when string ends with suffix",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "endsWith": ".json" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "file.json",
+      "valid": true,
+      "output": "file.json",
+      "issues": []
+    },
+    {
+      "description": "endsWith fails when string does not end with suffix",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "endsWith": ".json" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "file.xml",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": ".json", "received": "file.xml" }
+      ]
+    },
+    {
+      "description": "includes passes when string contains substring",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "includes": "world" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello world!",
+      "valid": true,
+      "output": "hello world!",
+      "issues": []
+    },
+    {
+      "description": "includes fails when string does not contain substring",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "includes": "world" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello there",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "world", "received": "hello there" }
+      ]
+    }
+  ]
+}

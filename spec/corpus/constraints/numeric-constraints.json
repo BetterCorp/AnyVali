@@ -1,0 +1,183 @@
+{
+  "suite": "numeric-constraints",
+  "cases": [
+    {
+      "description": "min passes when value equals min",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "min": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 10,
+      "valid": true,
+      "output": 10,
+      "issues": []
+    },
+    {
+      "description": "min fails when value is below min",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "min": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 9,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "10", "received": "9" }
+      ]
+    },
+    {
+      "description": "max passes when value equals max",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "max": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 100,
+      "valid": true,
+      "output": 100,
+      "issues": []
+    },
+    {
+      "description": "max fails when value exceeds max",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "max": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 101,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "100", "received": "101" }
+      ]
+    },
+    {
+      "description": "exclusiveMin passes when value is above exclusiveMin",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "exclusiveMin": 0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0.001,
+      "valid": true,
+      "output": 0.001,
+      "issues": []
+    },
+    {
+      "description": "exclusiveMin fails when value equals exclusiveMin",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "exclusiveMin": 0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "0", "received": "0" }
+      ]
+    },
+    {
+      "description": "exclusiveMax passes when value is below exclusiveMax",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "exclusiveMax": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 99.999,
+      "valid": true,
+      "output": 99.999,
+      "issues": []
+    },
+    {
+      "description": "exclusiveMax fails when value equals exclusiveMax",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "exclusiveMax": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 100,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "100", "received": "100" }
+      ]
+    },
+    {
+      "description": "multipleOf passes when value is a multiple",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 9,
+      "valid": true,
+      "output": 9,
+      "issues": []
+    },
+    {
+      "description": "multipleOf fails when value is not a multiple",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 10,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_number", "path": [], "expected": "3", "received": "10" }
+      ]
+    },
+    {
+      "description": "multipleOf works with float divisor",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 0.5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 2.5,
+      "valid": true,
+      "output": 2.5,
+      "issues": []
+    },
+    {
+      "description": "int with min and max constraints",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 1, "max": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": true,
+      "output": 5,
+      "issues": []
+    }
+  ]
+}

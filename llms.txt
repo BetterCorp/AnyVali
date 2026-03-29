@@ -1,0 +1,335 @@
+# AnyVali
+
+> Native validation libraries for 10 languages, one portable schema model.
+
+## What is AnyVali?
+
+AnyVali is a family of native validation libraries for multiple programming languages that share one portable schema model. Authors define schemas in their host language using a small native API (similar to Zod, Valibot, ArkType), and can export/import schemas as canonical JSON documents for cross-language interoperability. AnyVali is not a language-neutral authoring DSL — each SDK provides idiomatic builder functions for its target language.
+
+Each SDK can: validate and parse input locally, apply defaults during parsing, run portable validations, export schemas to canonical JSON, import JSON schemas from other SDKs, and reject schemas that depend on unsupported language-specific extensions.
+
+## Core Concepts
+
+### Schema Kinds (26 total)
+
+Primitive: `any`, `unknown`, `never`, `null`, `bool`, `string`
+Numeric: `number` (float64), `int` (int64), `float32`, `float64`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`
+Composite: `literal`, `enum`, `array`, `tuple`, `object`, `record`, `union`, `intersection`
+Modifiers: `optional`, `nullable`
+Reference: `ref` (for recursion/reuse via definitions)
+
+### Validation Constraints
+
+All constraints are declarative and data-only.
+
+**String:** `minLength`, `maxLength`, `pattern`, `startsWith`, `endsWith`, `includes`, `format`
+**Numeric:** `min`, `max`, `exclusiveMin`, `exclusiveMax`, `multipleOf`
+**Array:** `minItems`, `maxItems`
+**Object:** field required/optional state, `unknownKeys` mode (`reject` [default], `strip`, `allow`)
+
+### Format Validators
+
+Portable `format` values: `email`, `url`, `uuid`, `ipv4`, `ipv6`, `date`, `date-time`
+
+### Parse Pipeline (5 steps)
+
+1. Detect presence or absence of value
+2. If present and coercion configured, attempt coercion
+3. If absent and default exists, materialize default
+4. Validate resulting value
+5. Return parsed output or structured error
+
+### Portable Coercions
+
+- `string -> int`, `string -> number`, `string -> bool`
+- Whitespace trim for strings
+- Case normalization: `lower`, `upper`
+
+Coercion must be explicitly enabled per schema node. Coercions run before defaults (for present values), defaults apply to missing values, then validation runs on the final result.
+
+### Defaults
+
+- Applied only when input value is absent
+- Applied before validation
+- Must be pure data (not code)
+- Exportable only if JSON-serializable
+- Function-based defaults are local-only (not portable)
+
+### Portable JSON Interchange Format
+
+Top-level document structure:
+
+```json
+{
+  "anyvaliVersion": "1.0",
+  "schemaVersion": "1",
+  "root": { "kind": "string", "minLength": 1 },
+  "definitions": {},
+  "extensions": {}
+}
+```
+
+Schema nodes use explicit `kind` discriminators:
+
+```json
+{
+  "kind": "object",
+  "properties": {
+    "id": { "kind": "int64" },
+    "name": { "kind": "string", "minLength": 1 }
+  },
+  "required": ["id", "name"],
+  "unknownKeys": "reject"
+}
+```
+
+Definitions and references for recursion:
+- Define: `definitions.<name>` contains the schema node
+- Reference: `{ "kind": "ref", "ref": "#/definitions/User" }`
+
+### Extensions Model
+
+Language-specific metadata lives under namespaced keys in `extensions`:
+
+```json
+{
+  "extensions": {
+    "default": { "...": "fallback behavior" },
+    "js": { "...": "js-specific" },
+    "go": { "...": "go-specific" }
+  }
+}
+```
+
+Extension types: **informational** (safe to ignore) and **semantic** (required for correct behavior; blocks import if missing).
+
+### Portability Tiers
+
+1. **Portable core** — guaranteed import/export across all SDKs
+2. **Core + extensions** — compatible only where the extension namespace is understood
+3. **Local-only** — never part of canonical interchange (e.g., custom validators, function defaults)
+
+### Export Modes
+
+- `portable` — fails if schema depends on non-portable features
+- `extended` — emits core schema plus extension namespaces
+
+## Available SDKs
+
+| SDK | Package | Builder Style |
+|---|---|---|
+| JS/TS | `anyvali` (npm) | `string()`, `number()`, `object({...})` |
+| Python | `anyvali` (PyPI) | `v.string()`, `v.int_()`, `v.object_({...})` |
+| Go | `github.com/anyvali/anyvali/sdk/go` | `av.String()`, `av.Number()`, `av.Object(...)` |
+| Java | `com.anyvali:anyvali` (Maven) | `AnyVali.string()`, `AnyVali.int_()` |
+| C# | `AnyVali` (NuGet) | `V.String()`, `V.Number()`, `V.Object(...)` |
+| Rust | `anyvali` (crates.io) | `anyvali::string()`, `anyvali::int()` |
+| PHP | `anyvali/anyvali` (Composer) | `AnyVali::string()`, `AnyVali::int()` |
+| Ruby | `anyvali` (RubyGems) | `AnyVali.string`, `AnyVali.int_` |
+| Kotlin | `com.anyvali:anyvali` (Gradle) | `string()`, `number()`, `object(...)` |
+| C++ | `anyvali` (CMake) | `anyvali::string()`, `anyvali::int_()` |
+
+## API Reference
+
+### Builder Functions
+
+**JS/TS:** `string()`, `number()`, `float32()`, `float64()`, `int()`, `int8()`, `int16()`, `int32()`, `int64()`, `uint8()`, `uint16()`, `uint32()`, `uint64()`, `bool()`, `null_()`, `any()`, `unknown()`, `never()`, `literal(value)`, `enum_(values)`, `array(schema)`, `tuple(schemas)`, `object(shape, options?)`, `record(valueSchema)`, `union(variants)`, `intersection(schemas)`, `optional(schema)`, `nullable(schema)`
+
+**Python:** `string()`, `number()`, `float32()`, `float64()`, `int_()`, `int8()`, `int16()`, `int32()`, `int64()`, `uint8()`, `uint16()`, `uint32()`, `uint64()`, `bool_()`, `null()`, `any_()`, `unknown()`, `never()`, `literal(value)`, `enum_(values)`, `array(schema)`, `tuple_(schemas)`, `object_(properties, required=, unknown_keys=)`, `record(value_schema)`, `union(schemas)`, `intersection(schemas)`, `optional(schema)`, `nullable(schema)`, `ref(reference)`
+
+**Go:** `String()`, `Number()`, `Float32()`, `Float64()`, `Int()`, `Int8()`, `Int16()`, `Int32()`, `Int64()`, `Uint8()`, `Uint16()`, `Uint32()`, `Uint64()`, `Bool()`, `Null()`, `Any()`, `Unknown()`, `Never()`, `Literal(value)`, `Enum(values)`, `Array(schema)`, `Tuple(schemas)`, `Object(shape)`, `Record(valueSchema)`, `Union(variants)`, `Intersection(schemas)`, `Optional(schema)`, `Nullable(schema)`
+
+### Schema Methods
+
+All schemas support:
+- `.parse(input)` — parse or throw/raise on failure
+- `.safeParse(input)` / `.safe_parse(input)` — returns `ParseResult` (success + value or failure + issues)
+- `.export()` / `exportSchema(schema, mode)` / `export_schema(schema, mode)` — export to `AnyValiDocument`
+- `.default(value)` — set a default for absent values
+- `.coerce(config)` — enable coercion
+- `.optional()` — wrap as optional
+- `.nullable()` — wrap as nullable
+
+### String Constraint Methods
+
+- `.minLength(n)` / `.min_length(n)` / `.MinLength(n)`
+- `.maxLength(n)` / `.max_length(n)` / `.MaxLength(n)`
+- `.pattern(regex)` / `.Pattern(regex)`
+- `.startsWith(prefix)` / `.starts_with(prefix)` / `.StartsWith(prefix)`
+- `.endsWith(suffix)` / `.ends_with(suffix)` / `.EndsWith(suffix)`
+- `.includes(substring)` / `.Includes(substring)`
+- `.format(fmt)` / `.Format(fmt)` — one of: `email`, `url`, `uuid`, `ipv4`, `ipv6`, `date`, `date-time`
+
+### Numeric Constraint Methods
+
+- `.min(n)` / `.Min(n)`
+- `.max(n)` / `.Max(n)`
+- `.exclusiveMin(n)` / `.exclusive_min(n)` / `.ExclusiveMin(n)`
+- `.exclusiveMax(n)` / `.exclusive_max(n)` / `.ExclusiveMax(n)`
+- `.multipleOf(n)` / `.multiple_of(n)` / `.MultipleOf(n)`
+
+### Array Constraint Methods
+
+- `.minItems(n)` / `.min_items(n)` / `.MinItems(n)`
+- `.maxItems(n)` / `.max_items(n)` / `.MaxItems(n)`
+
+### Object Options
+
+- Fields listed in `required` array (or all fields required by default depending on SDK)
+- `unknownKeys` / `unknown_keys`: `"reject"` (default), `"strip"`, `"allow"`
+
+### Issue Codes
+
+| Code | Description |
+|---|---|
+| `invalid_type` | Value is not the expected type |
+| `required` | Required field is missing |
+| `unknown_key` | Object has an unrecognized key |
+| `too_small` | Value below minimum (length, value, items) |
+| `too_large` | Value above maximum (length, value, items) |
+| `invalid_string` | String constraint failed (pattern, format, etc.) |
+| `invalid_number` | Numeric constraint failed |
+| `invalid_literal` | Value does not match expected literal |
+| `invalid_union` | Value matches none of the union variants |
+| `custom_validation_not_portable` | Custom validator cannot be exported portably |
+| `unsupported_extension` | Required extension namespace not available |
+| `unsupported_schema_kind` | Schema kind not supported by this SDK |
+| `coercion_failed` | Coercion attempt did not succeed |
+| `default_invalid` | Default value does not pass validation |
+
+### Parse Result Shape
+
+Success: `{ success: true, data: <parsed value> }`
+Failure: `{ success: false, issues: [{ code, message, path, expected, received, meta? }] }`
+
+`path` is an ordered list of object keys (strings) and array indexes (numbers).
+
+## Quick Examples
+
+### JavaScript/TypeScript
+
+```js
+import { string, number, object, array } from 'anyvali';
+
+const userSchema = object({
+  name: string().minLength(1).maxLength(100),
+  age: number().min(0).max(150),
+  email: string().format('email'),
+  tags: array(string()).maxItems(10),
+});
+
+const result = userSchema.safeParse(input);
+if (result.success) {
+  console.log(result.data);
+} else {
+  console.log(result.issues);
+}
+
+const doc = userSchema.export();
+```
+
+### Python
+
+```python
+import anyvali as v
+
+user_schema = v.object_({
+    "name": v.string().min_length(1).max_length(100),
+    "age": v.number().min(0).max(150),
+    "email": v.string().format("email"),
+    "tags": v.array(v.string()).max_items(10),
+})
+
+result = user_schema.safe_parse(input_data)
+if result.success:
+    print(result.data)
+else:
+    print(result.issues)
+
+doc = v.export_schema(user_schema)
+```
+
+### Go
+
+```go
+import av "github.com/anyvali/anyvali/sdk/go"
+
+userSchema := av.Object(map[string]av.Schema{
+    "name":  av.String().MinLength(1).MaxLength(100),
+    "age":   av.Number().Min(0).Max(150),
+    "email": av.String().Format("email"),
+    "tags":  av.Array(av.String()).MaxItems(10),
+})
+
+result := userSchema.SafeParse(input)
+doc, _ := av.Export(userSchema, av.Portable)
+```
+
+## Numeric Semantics
+
+- `number` is an alias for `float64` (IEEE 754 double-precision)
+- `int` is an alias for `int64` (64-bit signed integer)
+- Wide defaults chosen to reduce silent narrowing and overflow risk across languages
+- Available widths: `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`
+- If a target language cannot represent a type natively, the SDK must ship helpers or reject the schema kind
+- Approximation without explicit opt-in is not allowed for portable core types
+
+## Design Principles
+
+- Native-first authoring: write schemas in the host language
+- Portable core: exported schemas guarantee only the standard AnyVali feature set
+- Explicit non-portability: language-specific behavior lives in namespaced extensions
+- Small core: no arbitrary transform pipeline in v1
+- Deterministic parsing: defaults run before validation
+- Custom validators are local-only and non-exportable in portable mode
+- The portable contract is synchronous and declarative
+
+## CLI & HTTP API
+
+AnyVali includes a Go-based CLI binary and HTTP validation server for use without an SDK.
+
+### CLI Commands
+
+- `anyvali validate <schema-file> [input]` — validate JSON input against a schema document
+  - Input can be inline JSON, a file path, or `-` for stdin
+  - Output formats: `json`, `text`, `quiet`
+  - Exit codes: 0 = valid, 1 = invalid, 2 = error
+- `anyvali serve [--port 8080] [--schemas ./dir]` — start an HTTP validation server
+- `anyvali inspect <schema-file>` — display schema structure (kinds, properties, constraints)
+- `anyvali check <schema-file>` — verify schema portability across all SDKs
+- `anyvali version` — print CLI and spec version
+
+### HTTP API Endpoints
+
+- `POST /validate` — validate with inline schema or schema reference
+  - Body: `{ "schema": {...}, "input": {...} }` or `{ "schemaRef": "name", "input": {...} }`
+  - Response: `{ "valid": true/false, "data": ..., "issues": [...] }`
+- `POST /validate/:name` — validate against a pre-loaded schema by name
+  - Body is the raw input data
+  - Schema names derived from filenames in `--schemas` directory
+- `GET /schemas` — list loaded schema names
+- `GET /health` — health check (`{ "status": "ok", "version": "0.0.1" }`)
+
+### Docker
+
+```bash
+docker pull anyvali/cli
+docker run --rm -p 8080:8080 -v $(pwd)/schemas:/schemas anyvali/cli serve --schemas /schemas
+```
+
+The Docker image uses a scratch base with a statically linked Go binary (~5MB).
+
+### Deployment Patterns
+
+- **Sidecar**: run alongside your application in Docker Compose or Kubernetes
+- **Standalone**: internal validation microservice
+- **CI pipeline**: validate config files in GitHub Actions, GitLab CI, etc.
+- **Pre-commit hook**: reject commits with invalid config files
+
+## Links
+
+- Spec: spec/spec.md, spec/json-format.md
+- Test corpus: spec/corpus/
+- Docs: docs/overview.md, docs/numeric-semantics.md, docs/portability-guide.md, docs/cli.md, docs/api.md
+- CLI source: cli/
+- SDK source: sdk/js/, sdk/python/, sdk/go/, sdk/java/, sdk/csharp/, sdk/rust/, sdk/php/, sdk/ruby/, sdk/kotlin/, sdk/cpp/

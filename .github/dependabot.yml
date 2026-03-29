@@ -1,0 +1,101 @@
+version: 2
+
+updates:
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - ci
+
+  # JavaScript (npm)
+  - package-ecosystem: npm
+    directory: /sdk/js
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - javascript
+    open-pull-requests-limit: 10
+
+  # Python (pip)
+  - package-ecosystem: pip
+    directory: /sdk/python
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - python
+    open-pull-requests-limit: 10
+
+  # Go (gomod)
+  - package-ecosystem: gomod
+    directory: /sdk/go
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - go
+    open-pull-requests-limit: 10
+
+  # Java (Maven)
+  - package-ecosystem: maven
+    directory: /sdk/java
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - java
+    open-pull-requests-limit: 10
+
+  # C# (NuGet)
+  - package-ecosystem: nuget
+    directory: /sdk/csharp
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - csharp
+    open-pull-requests-limit: 10
+
+  # Rust (Cargo)
+  - package-ecosystem: cargo
+    directory: /sdk/rust
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - rust
+    open-pull-requests-limit: 10
+
+  # PHP (Composer)
+  - package-ecosystem: composer
+    directory: /sdk/php
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - php
+    open-pull-requests-limit: 10
+
+  # Ruby (Bundler)
+  - package-ecosystem: bundler
+    directory: /sdk/ruby
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - ruby
+    open-pull-requests-limit: 10
+
+  # Kotlin (Gradle)
+  - package-ecosystem: gradle
+    directory: /sdk/kotlin
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - kotlin
+    open-pull-requests-limit: 10

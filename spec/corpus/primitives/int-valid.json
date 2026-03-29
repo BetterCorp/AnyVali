@@ -1,0 +1,79 @@
+{
+  "suite": "int-valid",
+  "cases": [
+    {
+      "description": "accepts a positive integer",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "accepts zero",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": true,
+      "output": 0,
+      "issues": []
+    },
+    {
+      "description": "accepts a negative integer",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -100,
+      "valid": true,
+      "output": -100,
+      "issues": []
+    },
+    {
+      "description": "rejects a float",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 3.14,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "int", "received": "number" }
+      ]
+    },
+    {
+      "description": "rejects a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "42",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "int", "received": "string" }
+      ]
+    }
+  ]
+}

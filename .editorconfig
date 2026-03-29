@@ -1,0 +1,65 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# JavaScript / TypeScript / JSON / YAML
+[*.{js,jsx,ts,tsx,json,yml,yaml}]
+indent_size = 2
+
+# Python
+[*.py]
+indent_size = 4
+
+# Go
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# Java / Kotlin
+[*.{java,kt,kts}]
+indent_size = 4
+
+# C#
+[*.{cs,csproj,sln}]
+indent_size = 4
+
+# Rust
+[*.rs]
+indent_size = 4
+
+# PHP
+[*.php]
+indent_size = 4
+
+# Ruby
+[*.{rb,rake,gemspec}]
+indent_size = 2
+
+# C++
+[*.{cpp,hpp,h,cc,c}]
+indent_size = 4
+
+# Makefiles require tabs
+[Makefile]
+indent_style = tab
+
+[CMakeLists.txt]
+indent_size = 2
+
+# Shell scripts
+[*.sh]
+indent_size = 2
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+
+# XML (Maven POM, etc.)
+[*.xml]
+indent_size = 4

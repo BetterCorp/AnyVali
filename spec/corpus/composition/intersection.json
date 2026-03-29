@@ -1,0 +1,131 @@
+{
+  "suite": "intersection",
+  "cases": [
+    {
+      "description": "accepts value satisfying all schemas in intersection",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "intersection",
+          "allOf": [
+            {
+              "kind": "object",
+              "properties": { "name": { "kind": "string" } },
+              "required": ["name"],
+              "unknownKeys": "allow"
+            },
+            {
+              "kind": "object",
+              "properties": { "age": { "kind": "int" } },
+              "required": ["age"],
+              "unknownKeys": "allow"
+            }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "age": 30 },
+      "valid": true,
+      "output": { "name": "Alice", "age": 30 },
+      "issues": []
+    },
+    {
+      "description": "rejects value missing a required field from second schema",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "intersection",
+          "allOf": [
+            {
+              "kind": "object",
+              "properties": { "name": { "kind": "string" } },
+              "required": ["name"],
+              "unknownKeys": "allow"
+            },
+            {
+              "kind": "object",
+              "properties": { "age": { "kind": "int" } },
+              "required": ["age"],
+              "unknownKeys": "allow"
+            }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "required", "path": ["age"], "expected": "int", "received": "undefined" }
+      ]
+    },
+    {
+      "description": "rejects value failing validation in first schema",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "intersection",
+          "allOf": [
+            { "kind": "number", "min": 0 },
+            { "kind": "number", "max": 100 }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "0", "received": "-5" }
+      ]
+    },
+    {
+      "description": "accepts value within both numeric ranges",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "intersection",
+          "allOf": [
+            { "kind": "number", "min": 0 },
+            { "kind": "number", "max": 100 }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 50,
+      "valid": true,
+      "output": 50,
+      "issues": []
+    },
+    {
+      "description": "collects issues from all failing schemas",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "intersection",
+          "allOf": [
+            { "kind": "number", "min": 10 },
+            { "kind": "number", "max": 5 }
+          ]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 7,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "5", "received": "7" }
+      ]
+    }
+  ]
+}

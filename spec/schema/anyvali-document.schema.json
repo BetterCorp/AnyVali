@@ -1,0 +1,566 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anyvali.dev/schema/v1/anyvali-document.schema.json",
+  "title": "AnyVali v1.0 Canonical Document",
+  "description": "JSON Schema for validating AnyVali canonical JSON interchange documents.",
+  "type": "object",
+  "required": ["anyvaliVersion", "schemaVersion", "root", "definitions", "extensions"],
+  "additionalProperties": false,
+  "properties": {
+    "anyvaliVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "AnyVali specification family version."
+    },
+    "schemaVersion": {
+      "type": "string",
+      "const": "1",
+      "description": "Interchange format version."
+    },
+    "root": {
+      "$ref": "#/$defs/schemaNode",
+      "description": "Root schema node."
+    },
+    "definitions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/schemaNode"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+      },
+      "description": "Named schema definitions for refs and reuse."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/extensionNamespace"
+      },
+      "description": "Extension namespaces."
+    }
+  },
+  "$defs": {
+    "schemaNode": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        { "$ref": "#/$defs/anyNode" },
+        { "$ref": "#/$defs/unknownNode" },
+        { "$ref": "#/$defs/neverNode" },
+        { "$ref": "#/$defs/nullNode" },
+        { "$ref": "#/$defs/boolNode" },
+        { "$ref": "#/$defs/stringNode" },
+        { "$ref": "#/$defs/numberNode" },
+        { "$ref": "#/$defs/float32Node" },
+        { "$ref": "#/$defs/float64Node" },
+        { "$ref": "#/$defs/intNode" },
+        { "$ref": "#/$defs/int8Node" },
+        { "$ref": "#/$defs/int16Node" },
+        { "$ref": "#/$defs/int32Node" },
+        { "$ref": "#/$defs/int64Node" },
+        { "$ref": "#/$defs/uint8Node" },
+        { "$ref": "#/$defs/uint16Node" },
+        { "$ref": "#/$defs/uint32Node" },
+        { "$ref": "#/$defs/uint64Node" },
+        { "$ref": "#/$defs/literalNode" },
+        { "$ref": "#/$defs/enumNode" },
+        { "$ref": "#/$defs/arrayNode" },
+        { "$ref": "#/$defs/tupleNode" },
+        { "$ref": "#/$defs/objectNode" },
+        { "$ref": "#/$defs/recordNode" },
+        { "$ref": "#/$defs/unionNode" },
+        { "$ref": "#/$defs/intersectionNode" },
+        { "$ref": "#/$defs/optionalNode" },
+        { "$ref": "#/$defs/nullableNode" },
+        { "$ref": "#/$defs/refNode" }
+      ]
+    },
+    "commonNodeProperties": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "description": "Default value materialized when input is absent."
+        },
+        "coerce": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Coercion identifier or ordered list of identifiers."
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/extensionNamespace"
+          },
+          "description": "Node-level extension data."
+        }
+      }
+    },
+    "numericConstraints": {
+      "type": "object",
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "anyNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "any" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "unknownNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "unknown" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "neverNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "never" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "nullNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "null" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "boolNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "bool" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "stringNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "string" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "pattern": { "type": "string" },
+        "startsWith": { "type": "string" },
+        "endsWith": { "type": "string" },
+        "includes": { "type": "string" },
+        "format": {
+          "type": "string",
+          "enum": ["email", "url", "uuid", "ipv4", "ipv6", "date", "date-time"]
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "numberNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "number" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "float32Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "float32" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "float64Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "float64" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "intNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "int" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "int8Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "int8" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "int16Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "int16" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "int32Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "int32" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "int64Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "int64" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "uint8Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "uint8" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "uint16Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "uint16" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "uint32Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "uint32" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "uint64Node": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "uint64" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "exclusiveMin": { "type": "number" },
+        "exclusiveMax": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind"],
+      "additionalProperties": false
+    },
+    "literalNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "literal" },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "value"],
+      "additionalProperties": false
+    },
+    "enumNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "enum" },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "values"],
+      "additionalProperties": false
+    },
+    "arrayNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "array" },
+        "items": { "$ref": "#/$defs/schemaNode" },
+        "minItems": { "type": "integer", "minimum": 0 },
+        "maxItems": { "type": "integer", "minimum": 0 },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "items"],
+      "additionalProperties": false
+    },
+    "tupleNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "tuple" },
+        "elements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/schemaNode" }
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "elements"],
+      "additionalProperties": false
+    },
+    "objectNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "object" },
+        "properties": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/schemaNode" }
+        },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "unknownKeys": {
+          "type": "string",
+          "enum": ["reject", "strip", "allow"]
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "properties", "required"],
+      "additionalProperties": false
+    },
+    "recordNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "record" },
+        "values": { "$ref": "#/$defs/schemaNode" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "values"],
+      "additionalProperties": false
+    },
+    "unionNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "union" },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/schemaNode" }
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "variants"],
+      "additionalProperties": false
+    },
+    "intersectionNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "intersection" },
+        "allOf": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/schemaNode" }
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "allOf"],
+      "additionalProperties": false
+    },
+    "optionalNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "optional" },
+        "schema": { "$ref": "#/$defs/schemaNode" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "schema"],
+      "additionalProperties": false
+    },
+    "nullableNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "nullable" },
+        "schema": { "$ref": "#/$defs/schemaNode" },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "schema"],
+      "additionalProperties": false
+    },
+    "refNode": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "ref" },
+        "ref": {
+          "type": "string",
+          "pattern": "^#/definitions/[A-Za-z_][A-Za-z0-9_-]*$"
+        },
+        "default": true,
+        "coerce": { "$ref": "#/$defs/commonNodeProperties/properties/coerce" },
+        "extensions": { "$ref": "#/$defs/commonNodeProperties/properties/extensions" }
+      },
+      "required": ["kind", "ref"],
+      "additionalProperties": false
+    },
+    "extensionNamespace": {
+      "type": "object",
+      "properties": {
+        "_criticality": {
+          "type": "string",
+          "enum": ["informational", "semantic"]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

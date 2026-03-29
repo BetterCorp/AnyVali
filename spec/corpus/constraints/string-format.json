@@ -1,0 +1,289 @@
+{
+  "suite": "string-format",
+  "cases": [
+    {
+      "description": "email format accepts valid email",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "email" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "user@example.com",
+      "valid": true,
+      "output": "user@example.com",
+      "issues": []
+    },
+    {
+      "description": "email format rejects string without @",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "email" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-an-email",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "email", "received": "not-an-email" }
+      ]
+    },
+    {
+      "description": "email format rejects string without dot after @",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "email" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "user@localhost",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "email", "received": "user@localhost" }
+      ]
+    },
+    {
+      "description": "url format accepts https url",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "url" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "https://example.com",
+      "valid": true,
+      "output": "https://example.com",
+      "issues": []
+    },
+    {
+      "description": "url format accepts http url",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "url" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "http://example.com/path?q=1",
+      "valid": true,
+      "output": "http://example.com/path?q=1",
+      "issues": []
+    },
+    {
+      "description": "url format rejects ftp url",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "url" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "ftp://files.example.com",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "url", "received": "ftp://files.example.com" }
+      ]
+    },
+    {
+      "description": "uuid format accepts valid uuid",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "uuid" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "550e8400-e29b-41d4-a716-446655440000",
+      "valid": true,
+      "output": "550e8400-e29b-41d4-a716-446655440000",
+      "issues": []
+    },
+    {
+      "description": "uuid format rejects invalid uuid",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "uuid" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-a-uuid",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "uuid", "received": "not-a-uuid" }
+      ]
+    },
+    {
+      "description": "ipv4 format accepts valid ipv4",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv4" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "192.168.1.1",
+      "valid": true,
+      "output": "192.168.1.1",
+      "issues": []
+    },
+    {
+      "description": "ipv4 format rejects leading zeros",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv4" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "192.168.01.1",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "ipv4", "received": "192.168.01.1" }
+      ]
+    },
+    {
+      "description": "ipv4 format rejects out-of-range octet",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv4" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "256.1.1.1",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "ipv4", "received": "256.1.1.1" }
+      ]
+    },
+    {
+      "description": "ipv6 format accepts valid ipv6",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv6" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+      "valid": true,
+      "output": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+      "issues": []
+    },
+    {
+      "description": "ipv6 format accepts compressed ipv6",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv6" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "::1",
+      "valid": true,
+      "output": "::1",
+      "issues": []
+    },
+    {
+      "description": "ipv6 format rejects invalid ipv6",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "ipv6" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not:an:ipv6",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "ipv6", "received": "not:an:ipv6" }
+      ]
+    },
+    {
+      "description": "date format accepts valid date",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "date" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2024-02-29",
+      "valid": true,
+      "output": "2024-02-29",
+      "issues": []
+    },
+    {
+      "description": "date format rejects invalid leap day",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "date" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2023-02-29",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "date", "received": "2023-02-29" }
+      ]
+    },
+    {
+      "description": "date-time format accepts valid datetime with Z",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "date-time" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2024-01-15T10:30:00Z",
+      "valid": true,
+      "output": "2024-01-15T10:30:00Z",
+      "issues": []
+    },
+    {
+      "description": "date-time format accepts valid datetime with offset",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "date-time" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2024-01-15T10:30:00+05:30",
+      "valid": true,
+      "output": "2024-01-15T10:30:00+05:30",
+      "issues": []
+    },
+    {
+      "description": "date-time format rejects datetime without timezone",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "date-time" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "2024-01-15T10:30:00",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [], "expected": "date-time", "received": "2024-01-15T10:30:00" }
+      ]
+    }
+  ]
+}

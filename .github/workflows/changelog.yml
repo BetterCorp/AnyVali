@@ -1,0 +1,116 @@
+name: Auto Changelog
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: generate
+        run: |
+          # Find the latest tag, if any
+          latest_tag=$(git tag --sort=-v:refname | head -1 || echo "")
+
+          if [[ -n "$latest_tag" ]]; then
+            range="${latest_tag}..HEAD"
+          else
+            range="HEAD"
+          fi
+
+          # Collect conventional commits since last tag
+          changelog=""
+
+          features=$(git log "$range" --pretty=format:"- %s (%h)" --no-merges --grep="^feat" 2>/dev/null || true)
+          fixes=$(git log "$range" --pretty=format:"- %s (%h)" --no-merges --grep="^fix" 2>/dev/null || true)
+          docs=$(git log "$range" --pretty=format:"- %s (%h)" --no-merges --grep="^docs" 2>/dev/null || true)
+          chores=$(git log "$range" --pretty=format:"- %s (%h)" --no-merges --grep="^chore" 2>/dev/null || true)
+          refactors=$(git log "$range" --pretty=format:"- %s (%h)" --no-merges --grep="^refactor" 2>/dev/null || true)
+
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            if [[ -n "$features" ]]; then
+              echo "### Features"
+              echo "$features"
+              echo ""
+            fi
+            if [[ -n "$fixes" ]]; then
+              echo "### Bug Fixes"
+              echo "$fixes"
+              echo ""
+            fi
+            if [[ -n "$docs" ]]; then
+              echo "### Documentation"
+              echo "$docs"
+              echo ""
+            fi
+            if [[ -n "$refactors" ]]; then
+              echo "### Refactoring"
+              echo "$refactors"
+              echo ""
+            fi
+            if [[ -n "$chores" ]]; then
+              echo "### Chores"
+              echo "$chores"
+              echo ""
+            fi
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          # Check if there are meaningful changes
+          if [[ -z "$features" && -z "$fixes" && -z "$docs" && -z "$refactors" && -z "$chores" ]]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update CHANGELOG.md
+        if: steps.generate.outputs.has_changes == 'true'
+        run: |
+          date_str=$(date +%Y-%m-%d)
+          new_section="## [Unreleased] - ${date_str}
+
+          ${{ steps.generate.outputs.changelog }}"
+
+          if [[ -f CHANGELOG.md ]]; then
+            # Insert new section after the title line
+            tmp=$(mktemp)
+            head -1 CHANGELOG.md > "$tmp"
+            echo "" >> "$tmp"
+            echo "$new_section" >> "$tmp"
+            echo "" >> "$tmp"
+            tail -n +2 CHANGELOG.md >> "$tmp"
+            mv "$tmp" CHANGELOG.md
+          else
+            {
+              echo "# Changelog"
+              echo ""
+              echo "$new_section"
+            } > CHANGELOG.md
+          fi
+
+      - name: Create pull request
+        if: steps.generate.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: auto-changelog-update
+          commit-message: "docs: update CHANGELOG.md"
+          title: "docs: update CHANGELOG.md"
+          body: |
+            Automated changelog update from conventional commits.
+
+            ---
+            *This PR was generated automatically.*
+          labels: documentation, automated
+          delete-branch: true

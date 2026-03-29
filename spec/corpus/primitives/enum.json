@@ -1,0 +1,79 @@
+{
+  "suite": "enum",
+  "cases": [
+    {
+      "description": "accepts a value in the enum",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "enum", "values": ["red", "green", "blue"] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "red",
+      "valid": true,
+      "output": "red",
+      "issues": []
+    },
+    {
+      "description": "accepts another value in the enum",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "enum", "values": ["red", "green", "blue"] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "blue",
+      "valid": true,
+      "output": "blue",
+      "issues": []
+    },
+    {
+      "description": "rejects a value not in the enum",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "enum", "values": ["red", "green", "blue"] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "yellow",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "enum(red,green,blue)", "received": "yellow" }
+      ]
+    },
+    {
+      "description": "accepts numeric enum value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "enum", "values": [1, 2, 3] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 2,
+      "valid": true,
+      "output": 2,
+      "issues": []
+    },
+    {
+      "description": "rejects wrong type even if value representation matches",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "enum", "values": [1, 2, 3] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "1",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "enum(1,2,3)", "received": "1" }
+      ]
+    }
+  ]
+}

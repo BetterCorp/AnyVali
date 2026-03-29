@@ -1,0 +1,81 @@
+{
+  "suite": "bool",
+  "cases": [
+    {
+      "description": "accepts true",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "accepts false",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": false,
+      "valid": true,
+      "output": false,
+      "issues": []
+    },
+    {
+      "description": "rejects a number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 1,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "bool", "received": "number" }
+      ]
+    },
+    {
+      "description": "rejects a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "true",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "bool", "received": "string" }
+      ]
+    },
+    {
+      "description": "rejects null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "bool", "received": "null" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "suite": "never",
+  "cases": [
+    {
+      "description": "rejects a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "never" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "never", "received": "string" }
+      ]
+    },
+    {
+      "description": "rejects a number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "never" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "never", "received": "number" }
+      ]
+    },
+    {
+      "description": "rejects null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "never" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "never", "received": "null" }
+      ]
+    },
+    {
+      "description": "rejects a boolean",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "never" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "never", "received": "boolean" }
+      ]
+    },
+    {
+      "description": "rejects an empty object",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "never" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "never", "received": "object" }
+      ]
+    }
+  ]
+}

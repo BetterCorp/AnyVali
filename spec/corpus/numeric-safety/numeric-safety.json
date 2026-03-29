@@ -1,0 +1,125 @@
+{
+  "suite": "numeric-safety",
+  "cases": [
+    {
+      "description": "number roundtrips as float64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 1.7976931348623157e+308,
+      "valid": true,
+      "output": 1.7976931348623157e+308,
+      "issues": []
+    },
+    {
+      "description": "int roundtrips as int64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 9007199254740991,
+      "valid": true,
+      "output": 9007199254740991,
+      "issues": []
+    },
+    {
+      "description": "int rejects non-integer number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 3.14,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "int", "received": "number" }
+      ]
+    },
+    {
+      "description": "int32 rejects value that fits in int64 but not int32",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 2147483648,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "int32", "received": "2147483648" }
+      ]
+    },
+    {
+      "description": "uint64 rejects negative value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -1,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "uint64", "received": "-1" }
+      ]
+    },
+    {
+      "description": "float64 and number are semantically identical",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42.5,
+      "valid": true,
+      "output": 42.5,
+      "issues": []
+    },
+    {
+      "description": "int64 and int are semantically identical",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "narrowing from int64 to int8 is rejected",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 200,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "int8", "received": "200" }
+      ]
+    }
+  ]
+}

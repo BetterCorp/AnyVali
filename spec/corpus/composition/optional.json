@@ -1,0 +1,93 @@
+{
+  "suite": "optional",
+  "cases": [
+    {
+      "description": "accepts present valid value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "optional", "schema": { "kind": "string" } }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice" },
+      "valid": true,
+      "output": { "name": "Alice" },
+      "issues": []
+    },
+    {
+      "description": "accepts absent optional field",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "optional", "schema": { "kind": "string" } }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {},
+      "issues": []
+    },
+    {
+      "description": "rejects present but invalid value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "optional", "schema": { "kind": "string" } }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": 123 },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["name"], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "null is not treated as absent for optional",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "optional", "schema": { "kind": "string" } }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": null },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["name"], "expected": "string", "received": "null" }
+      ]
+    }
+  ]
+}

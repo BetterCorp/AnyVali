@@ -1,0 +1,93 @@
+{
+  "suite": "literal",
+  "cases": [
+    {
+      "description": "accepts matching string literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": "hello" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "rejects non-matching string literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": "hello" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "world",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_literal", "path": [], "expected": "hello", "received": "world" }
+      ]
+    },
+    {
+      "description": "accepts matching numeric literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": 42 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "accepts matching boolean literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": true },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "rejects wrong type for literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": 42 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "42",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_literal", "path": [], "expected": "42", "received": "42" }
+      ]
+    },
+    {
+      "description": "accepts null literal",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": null },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    }
+  ]
+}

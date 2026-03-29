@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>AnyVali</RootNamespace>
+    <Version>0.0.1</Version>
+    <PackageId>AnyVali</PackageId>
+    <Description>Native validation with portable schema interchange</Description>
+    <PackageProjectUrl>https://anyvali.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/anyvali/anyvali</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

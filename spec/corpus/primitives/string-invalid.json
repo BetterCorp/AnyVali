@@ -1,0 +1,85 @@
+{
+  "suite": "string-invalid",
+  "cases": [
+    {
+      "description": "rejects a number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "rejects a boolean",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "boolean" }
+      ]
+    },
+    {
+      "description": "rejects null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "null" }
+      ]
+    },
+    {
+      "description": "rejects an array",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["a", "b"],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "array" }
+      ]
+    },
+    {
+      "description": "rejects an object",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "key": "value" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "object" }
+      ]
+    }
+  ]
+}

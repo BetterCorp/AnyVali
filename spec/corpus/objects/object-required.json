@@ -1,0 +1,121 @@
+{
+  "suite": "object-required",
+  "cases": [
+    {
+      "description": "accepts object with all required fields",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" },
+            "age": { "kind": "int" }
+          },
+          "required": ["name", "age"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "age": 30 },
+      "valid": true,
+      "output": { "name": "Alice", "age": 30 },
+      "issues": []
+    },
+    {
+      "description": "rejects object missing a required field",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" },
+            "age": { "kind": "int" }
+          },
+          "required": ["name", "age"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "required", "path": ["age"], "expected": "int", "received": "undefined" }
+      ]
+    },
+    {
+      "description": "rejects object missing all required fields",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" },
+            "age": { "kind": "int" }
+          },
+          "required": ["name", "age"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "required", "path": ["name"], "expected": "string", "received": "undefined" },
+        { "code": "required", "path": ["age"], "expected": "int", "received": "undefined" }
+      ]
+    },
+    {
+      "description": "accepts object with optional field absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" },
+            "nickname": { "kind": "string" }
+          },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice" },
+      "valid": true,
+      "output": { "name": "Alice" },
+      "issues": []
+    },
+    {
+      "description": "rejects non-object input",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" }
+          },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not an object",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "object", "received": "string" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "suite": "int-widths",
+  "cases": [
+    {
+      "description": "int8 accepts value in range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 127,
+      "valid": true,
+      "output": 127,
+      "issues": []
+    },
+    {
+      "description": "int8 accepts minimum value -128",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -128,
+      "valid": true,
+      "output": -128,
+      "issues": []
+    },
+    {
+      "description": "int8 rejects value above range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 128,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "int8", "received": "128" }
+      ]
+    },
+    {
+      "description": "int8 rejects value below range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -129,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "int8", "received": "-129" }
+      ]
+    },
+    {
+      "description": "int16 accepts value in range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int16" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 32767,
+      "valid": true,
+      "output": 32767,
+      "issues": []
+    },
+    {
+      "description": "int16 rejects value above range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int16" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 32768,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "int16", "received": "32768" }
+      ]
+    },
+    {
+      "description": "int32 accepts max value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 2147483647,
+      "valid": true,
+      "output": 2147483647,
+      "issues": []
+    },
+    {
+      "description": "int32 rejects value above range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 2147483648,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "int32", "received": "2147483648" }
+      ]
+    },
+    {
+      "description": "uint8 accepts 0",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": true,
+      "output": 0,
+      "issues": []
+    },
+    {
+      "description": "uint8 accepts 255",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 255,
+      "valid": true,
+      "output": 255,
+      "issues": []
+    },
+    {
+      "description": "uint8 rejects negative value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -1,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "uint8", "received": "-1" }
+      ]
+    },
+    {
+      "description": "uint8 rejects 256",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint8" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 256,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [], "expected": "uint8", "received": "256" }
+      ]
+    },
+    {
+      "description": "uint16 accepts 65535",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint16" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 65535,
+      "valid": true,
+      "output": 65535,
+      "issues": []
+    },
+    {
+      "description": "uint32 accepts 4294967295",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "uint32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 4294967295,
+      "valid": true,
+      "output": 4294967295,
+      "issues": []
+    }
+  ]
+}

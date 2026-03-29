@@ -1,0 +1,116 @@
+{
+  "suite": "object-unknown-keys",
+  "cases": [
+    {
+      "description": "reject mode rejects unknown keys by default",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" }
+          },
+          "required": ["name"]
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "extra": "value" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "unknown_key", "path": ["extra"], "expected": "undefined", "received": "extra" }
+      ]
+    },
+    {
+      "description": "reject mode explicitly set rejects unknown keys",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" }
+          },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "extra": "value" },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "unknown_key", "path": ["extra"], "expected": "undefined", "received": "extra" }
+      ]
+    },
+    {
+      "description": "strip mode removes unknown keys silently",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" }
+          },
+          "required": ["name"],
+          "unknownKeys": "strip"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "extra": "value", "another": 42 },
+      "valid": true,
+      "output": { "name": "Alice" },
+      "issues": []
+    },
+    {
+      "description": "allow mode passes unknown keys through",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" }
+          },
+          "required": ["name"],
+          "unknownKeys": "allow"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "extra": "value" },
+      "valid": true,
+      "output": { "name": "Alice", "extra": "value" },
+      "issues": []
+    },
+    {
+      "description": "reject mode reports multiple unknown keys",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "id": { "kind": "int" }
+          },
+          "required": ["id"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "id": 1, "foo": "bar", "baz": true },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "unknown_key", "path": ["foo"], "expected": "undefined", "received": "foo" },
+        { "code": "unknown_key", "path": ["baz"], "expected": "undefined", "received": "baz" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "suite": "null",
+  "cases": [
+    {
+      "description": "accepts null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "null" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": true,
+      "output": null,
+      "issues": []
+    },
+    {
+      "description": "rejects a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "null" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "null",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "null", "received": "string" }
+      ]
+    },
+    {
+      "description": "rejects zero",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "null" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "null", "received": "number" }
+      ]
+    },
+    {
+      "description": "rejects false",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "null" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": false,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "null", "received": "boolean" }
+      ]
+    },
+    {
+      "description": "rejects empty string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "null" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "null", "received": "string" }
+      ]
+    }
+  ]
+}

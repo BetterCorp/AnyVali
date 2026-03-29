@@ -1,0 +1,79 @@
+{
+  "suite": "float-widths",
+  "cases": [
+    {
+      "description": "float64 accepts a normal float",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 3.141592653589793,
+      "valid": true,
+      "output": 3.141592653589793,
+      "issues": []
+    },
+    {
+      "description": "float64 accepts an integer as float",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "float64 rejects a string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "3.14",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "float64", "received": "string" }
+      ]
+    },
+    {
+      "description": "float32 accepts a value within float32 range",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 1.5,
+      "valid": true,
+      "output": 1.5,
+      "issues": []
+    },
+    {
+      "description": "float32 rejects a boolean",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float32" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "float32", "received": "boolean" }
+      ]
+    }
+  ]
+}

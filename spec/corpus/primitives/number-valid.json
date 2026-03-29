@@ -1,0 +1,75 @@
+{
+  "suite": "number-valid",
+  "cases": [
+    {
+      "description": "accepts a positive integer as number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "accepts zero",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 0,
+      "valid": true,
+      "output": 0,
+      "issues": []
+    },
+    {
+      "description": "accepts a negative number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": -3.14,
+      "valid": true,
+      "output": -3.14,
+      "issues": []
+    },
+    {
+      "description": "accepts a floating-point number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 1.7976931348623157e+308,
+      "valid": true,
+      "output": 1.7976931348623157e+308,
+      "issues": []
+    },
+    {
+      "description": "accepts a very small number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5e-324,
+      "valid": true,
+      "output": 5e-324,
+      "issues": []
+    }
+  ]
+}

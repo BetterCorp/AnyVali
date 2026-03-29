@@ -1,0 +1,179 @@
+{
+  "suite": "refs",
+  "cases": [
+    {
+      "description": "basic ref resolves to definition",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "user": { "kind": "ref", "ref": "#/definitions/User" }
+          },
+          "required": ["user"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {
+          "User": {
+            "kind": "object",
+            "properties": {
+              "name": { "kind": "string" },
+              "age": { "kind": "int" }
+            },
+            "required": ["name", "age"],
+            "unknownKeys": "reject"
+          }
+        },
+        "extensions": {}
+      },
+      "input": { "user": { "name": "Alice", "age": 30 } },
+      "valid": true,
+      "output": { "user": { "name": "Alice", "age": 30 } },
+      "issues": []
+    },
+    {
+      "description": "ref validates against definition schema",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "user": { "kind": "ref", "ref": "#/definitions/User" }
+          },
+          "required": ["user"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {
+          "User": {
+            "kind": "object",
+            "properties": {
+              "name": { "kind": "string" },
+              "age": { "kind": "int" }
+            },
+            "required": ["name", "age"],
+            "unknownKeys": "reject"
+          }
+        },
+        "extensions": {}
+      },
+      "input": { "user": { "name": "Alice" } },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "required", "path": ["user", "age"], "expected": "int", "received": "undefined" }
+      ]
+    },
+    {
+      "description": "recursive ref validates a tree structure",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "ref", "ref": "#/definitions/TreeNode" },
+        "definitions": {
+          "TreeNode": {
+            "kind": "object",
+            "properties": {
+              "value": { "kind": "int" },
+              "children": {
+                "kind": "array",
+                "items": { "kind": "ref", "ref": "#/definitions/TreeNode" }
+              }
+            },
+            "required": ["value", "children"],
+            "unknownKeys": "reject"
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "value": 1,
+        "children": [
+          { "value": 2, "children": [] },
+          { "value": 3, "children": [
+            { "value": 4, "children": [] }
+          ]}
+        ]
+      },
+      "valid": true,
+      "output": {
+        "value": 1,
+        "children": [
+          { "value": 2, "children": [] },
+          { "value": 3, "children": [
+            { "value": 4, "children": [] }
+          ]}
+        ]
+      },
+      "issues": []
+    },
+    {
+      "description": "recursive ref rejects invalid nested node",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "ref", "ref": "#/definitions/TreeNode" },
+        "definitions": {
+          "TreeNode": {
+            "kind": "object",
+            "properties": {
+              "value": { "kind": "int" },
+              "children": {
+                "kind": "array",
+                "items": { "kind": "ref", "ref": "#/definitions/TreeNode" }
+              }
+            },
+            "required": ["value", "children"],
+            "unknownKeys": "reject"
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "value": 1,
+        "children": [
+          { "value": "not-an-int", "children": [] }
+        ]
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["children", 0, "value"], "expected": "int", "received": "string" }
+      ]
+    },
+    {
+      "description": "ref used in array items",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "array",
+          "items": { "kind": "ref", "ref": "#/definitions/Point" }
+        },
+        "definitions": {
+          "Point": {
+            "kind": "object",
+            "properties": {
+              "x": { "kind": "number" },
+              "y": { "kind": "number" }
+            },
+            "required": ["x", "y"],
+            "unknownKeys": "reject"
+          }
+        },
+        "extensions": {}
+      },
+      "input": [
+        { "x": 1.0, "y": 2.0 },
+        { "x": 3.0, "y": 4.0 }
+      ],
+      "valid": true,
+      "output": [
+        { "x": 1.0, "y": 2.0 },
+        { "x": 3.0, "y": 4.0 }
+      ],
+      "issues": []
+    }
+  ]
+}

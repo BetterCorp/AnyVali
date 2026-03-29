@@ -1,0 +1,38 @@
+site_name: AnyVali Docs
+site_description: Documentation for the AnyVali portable validation system.
+site_url: https://docs.anyvali.com
+repo_name: anyvali
+docs_dir: .docs-build
+site_dir: site
+use_directory_urls: true
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Overview: docs/overview.md
+      - Numeric Semantics: docs/numeric-semantics.md
+      - Portability Guide: docs/portability-guide.md
+      - SDK Authors Guide: docs/sdk-authors-guide.md
+  - Specification:
+      - Normative Spec: spec/spec.md
+      - JSON Interchange Format: spec/json-format.md
+      - Conformance Corpus: spec/corpus/README.md
+  - Project:
+      - Contributing: CONTRIBUTING.md
+      - License: LICENSE
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true

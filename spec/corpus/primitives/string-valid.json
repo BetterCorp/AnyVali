@@ -1,0 +1,75 @@
+{
+  "suite": "string-valid",
+  "cases": [
+    {
+      "description": "accepts a simple string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "accepts an empty string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "",
+      "valid": true,
+      "output": "",
+      "issues": []
+    },
+    {
+      "description": "accepts a string with unicode characters",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "\u00e9\u00e0\u00fc\u00f1\u00f6",
+      "valid": true,
+      "output": "\u00e9\u00e0\u00fc\u00f1\u00f6",
+      "issues": []
+    },
+    {
+      "description": "accepts a string with newlines and tabs",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "line1\nline2\ttab",
+      "valid": true,
+      "output": "line1\nline2\ttab",
+      "issues": []
+    },
+    {
+      "description": "accepts a very long string",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": true,
+      "output": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "issues": []
+    }
+  ]
+}

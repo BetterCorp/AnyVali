@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AnyVali Examples</title>
+    <meta
+      name="description"
+      content="Examples of AnyVali schema authoring, export, import, and parse behavior across languages."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="icon" href="../favicon.ico" sizes="any" />
+    <link rel="icon" href="../favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="../site.webmanifest" />
+  </head>
+  <body>
+    <div class="page-shell page-shell-examples">
+      <header class="topbar">
+        <a class="brand" href="../index.html">
+          <img src="../assets/brand/logo.png" alt="AnyVali logo" />
+          <span>AnyVali</span>
+        </a>
+        <nav class="nav">
+          <a href="../index.html#why">Why</a>
+          <a href="../index.html#languages">SDKs</a>
+          <a href="https://docs.anyvali.com">Docs</a>
+        </nav>
+      </header>
+
+      <main class="examples-page">
+        <section class="hero examples-hero examples-hero-centered">
+          <div class="hero-copy">
+            <p class="eyebrow">Examples</p>
+            <h1>Portable schemas, shown quickly.</h1>
+            <p class="lede">
+              A few short examples across SDKs.
+            </p>
+          </div>
+        </section>
+
+        <section class="stacked-examples">
+          <article class="example-block">
+            <div>
+              <p class="eyebrow">Example 01</p>
+              <h2>Shared account contract</h2>
+              <p>
+                Define once in TypeScript, export a portable document, import it in
+                Python, and keep the validation contract aligned.
+              </p>
+            </div>
+            <div class="example-columns">
+              <pre><code class="language-typescript">// TypeScript
+const Account = v.object({
+  id: v.int64(),
+  email: v.string().format("email"),
+  status: v.enum(["active", "suspended"]).default("active"),
+});
+
+const document = Account.export({ mode: "portable" });</code></pre>
+              <pre><code class="language-python"># Python
+account = v.import_schema(document)
+result = account.safe_parse({
+    "id": 42,
+    "email": "team@anyvali.dev",
+})</code></pre>
+            </div>
+          </article>
+
+          <article class="example-block">
+            <div>
+              <p class="eyebrow">Example 02</p>
+              <h2>Coercion and defaults with explicit ordering</h2>
+              <p>
+                AnyVali defines the parse pipeline, so you do not need to guess how
+                coercion, missing values, and defaults interact.
+              </p>
+            </div>
+            <div class="example-columns">
+              <pre><code class="language-typescript">const Config = v.object({
+  port: v.int().coerce("string").default(8080),
+  secure: v.bool().coerce("string").default(false),
+});
+
+Config.parse({ port: "9000", secure: "true" });
+// => { port: 9000, secure: true }</code></pre>
+              <pre><code class="language-typescript">Config.parse({});
+// => { port: 8080, secure: false }</code></pre>
+            </div>
+          </article>
+
+          <article class="example-block">
+            <div>
+              <p class="eyebrow">Example 03</p>
+              <h2>Portability boundaries</h2>
+              <p>
+                Portable features export cleanly. Local-only behavior stays local.
+              </p>
+            </div>
+            <div class="example-columns">
+              <pre><code class="language-typescript">// portable
+v.string().minLength(3).format("email")
+v.int().min(0).max(100)
+v.object({ role: v.enum(["admin", "user"]) })</code></pre>
+              <pre><code class="language-typescript">// local-only
+v.string().custom((value) =&gt; value.startsWith("usr_"))
+v.string().default(() =&gt; crypto.randomUUID())</code></pre>
+            </div>
+          </article>
+        </section>
+
+        <section class="boundary">
+          <div class="boundary-copy">
+            <p class="eyebrow">Docs</p>
+            <h2>Go deeper in the reference docs</h2>
+            <p>
+              For the full spec, JSON format, portability rules, and SDK guidance,
+              use the docs.
+            </p>
+          </div>
+          <div class="boundary-links">
+            <a href="https://docs.anyvali.com/docs/overview/">Overview</a>
+            <a href="https://docs.anyvali.com/docs/numeric-semantics/">Numeric semantics</a>
+            <a href="https://docs.anyvali.com/docs/sdk-authors-guide/">SDK authors guide</a>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../main.js"></script>
+  </body>
+</html>

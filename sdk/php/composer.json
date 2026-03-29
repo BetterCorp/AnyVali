@@ -1,0 +1,24 @@
+{
+    "name": "anyvali/anyvali",
+    "version": "0.0.1",
+    "description": "Native validation with portable schema interchange",
+    "homepage": "https://anyvali.com",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AnyVali\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AnyVali\\Tests\\": "tests/"
+        }
+    }
+}

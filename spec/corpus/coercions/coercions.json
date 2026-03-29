@@ -1,0 +1,219 @@
+{
+  "suite": "coercions",
+  "cases": [
+    {
+      "description": "string->int coerces valid string to integer",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "42",
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "string->int trims whitespace before parsing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "  42  ",
+      "valid": true,
+      "output": 42,
+      "issues": []
+    },
+    {
+      "description": "string->number coerces valid string to float",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "coerce": "string->number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "3.14",
+      "valid": true,
+      "output": 3.14,
+      "issues": []
+    },
+    {
+      "description": "string->bool coerces 'true' to true",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "true",
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "string->bool coerces 'false' to false",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "false",
+      "valid": true,
+      "output": false,
+      "issues": []
+    },
+    {
+      "description": "string->bool coerces '1' to true",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "1",
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "string->bool coerces '0' to false",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "0",
+      "valid": true,
+      "output": false,
+      "issues": []
+    },
+    {
+      "description": "string->bool is case-insensitive",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "TRUE",
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "trim coercion removes whitespace",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": "trim" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "  hello  ",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "lower coercion converts to lowercase",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": "lower" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "HELLO World",
+      "valid": true,
+      "output": "hello world",
+      "issues": []
+    },
+    {
+      "description": "upper coercion converts to uppercase",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": "upper" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "hello world",
+      "valid": true,
+      "output": "HELLO WORLD",
+      "issues": []
+    },
+    {
+      "description": "coercion failure produces coercion_failed issue",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-a-number",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "coercion_failed", "path": [], "expected": "int", "received": "not-a-number" }
+      ]
+    },
+    {
+      "description": "coercion happens before validation",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 10, "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "5",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [], "expected": "10", "received": "5" }
+      ]
+    },
+    {
+      "description": "coercion then validation success",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 1, "max": 100, "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "50",
+      "valid": true,
+      "output": 50,
+      "issues": []
+    },
+    {
+      "description": "chained coercions applied left to right",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": ["trim", "lower"] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "  HELLO  ",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    }
+  ]
+}
