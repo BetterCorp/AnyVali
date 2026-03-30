@@ -118,7 +118,7 @@ Extension types: **informational** (safe to ignore) and **semantic** (required f
 
 | SDK | Package | Builder Style |
 |---|---|---|
-| JS/TS | `anyvali` (npm) | `string()`, `number()`, `object({...})` |
+| JS/TS | `@anyvali/js` (npm) | `string()`, `number()`, `object({...})` |
 | Python | `anyvali` (PyPI) | `v.string()`, `v.int_()`, `v.object_({...})` |
 | Go | `github.com/BetterCorp/AnyVali/sdk/go` | `av.String()`, `av.Number()`, `av.Object(...)` |
 | Java | `com.anyvali:anyvali` (Maven) | `AnyVali.string()`, `AnyVali.int_()` |
