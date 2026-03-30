@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.2...anyvali-v0.1.3) (2026-03-30)
+
+
+### Bug Fixes
+
+* **java:** change release-type from java to simple ([3e10859](https://github.com/BetterCorp/AnyVali/commit/3e10859e02c4be6f12663ed2594971a3a058d742))
+
 ## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.1...anyvali-v0.1.2) (2026-03-30)
 
 
