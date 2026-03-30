@@ -209,22 +209,27 @@ Coolify can deploy the repository directly with the root `Dockerfile`.
 
 ## CI, Releases, and Changelogs
 
-GitHub Actions workflows are included for:
+See the [Release Process](release-process.md) for the full release flow, commit conventions, and publishing details.
 
-- **ci.yml** -- Multi-SDK CI with matrix testing
-- **release-please.yml** -- Automated release PRs and changelog generation
+**Short version:** merge a PR to `master` with conventional commits → versions bump, changelogs update, and packages publish automatically.
 
-Release and changelog management use [Release Please](https://github.com/googleapis/release-please) with manifest-based versioning so each package can be versioned independently.
+GitHub Actions workflows:
+
+- **ci.yml** -- Multi-SDK CI with matrix testing (runs on PRs and pushes to master)
+- **build-release.yml** -- Version bump, changelog, GitHub releases, package publishing
+- **release-*.yml** -- Per-registry publish workflows (called by build-release)
 
 ## Commit Messages
 
-Use conventional commits:
+Use [conventional commits](https://www.conventionalcommits.org/). The commit type and scope determine which packages get a version bump:
 
 ```text
-feat(js): add tuple schema export
-fix(go): reject invalid uint32 coercion
-docs: clarify numeric alias defaults
-chore: update CI node version
+fix(js): handle null input in parser        → patch bump for JS
+feat(python): add date-time coercion        → minor bump for Python
+fix: update error messages                  → patch bump for root + touched paths
+feat!: rename SafeParse to Validate         → major bump (breaking change)
+docs: clarify numeric alias defaults        → no version bump
+chore: update CI node version               → no version bump
 ```
 
 ## Adding a New Schema Kind

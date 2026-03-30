@@ -17,12 +17,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      pr: ${{ steps.release.outputs.pr }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Auto-merge the release PR so developers never have to merge it manually.
+      # On the first push: Release Please creates/updates a PR (no releases yet).
+      # This step merges it immediately, which triggers a second push to master.
+      # On that second push: Release Please detects the merged PR and creates releases.
+      - name: Auto-merge release PR
+        if: steps.release.outputs.pr && steps.release.outputs.releases_created != 'true'
+        run: |
+          pr_number=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
+          if [ "$pr_number" != "null" ] && [ -n "$pr_number" ]; then
+            echo "Auto-merging release PR #${pr_number}"
+            gh pr merge "$pr_number" --squash --auto
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
     needs: build-release
