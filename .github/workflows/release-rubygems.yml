@@ -1,0 +1,31 @@
+name: Publish RubyGems
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/ruby
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Build and publish gem
+        run: |
+          cp ../../README.md README.md
+          mkdir -p ~/.gem
+          cat <<CRED > ~/.gem/credentials
+          ---
+          :rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}
+          CRED
+          chmod 0600 ~/.gem/credentials
+          gem build anyvali.gemspec
+          gem push anyvali-*.gem
+          rm -f ~/.gem/credentials

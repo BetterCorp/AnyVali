@@ -1,0 +1,26 @@
+name: Publish PHP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Copy README into PHP SDK
+        run: cp README.md sdk/php/README.md
+      - uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.PHP_SPLIT_DEPLOY_KEY }}
+        with:
+          source-directory: sdk/php
+          destination-github-username: BetterCorp
+          destination-repository-name: anyvali-php
+          target-branch: main
+          create-target-branch-if-needed: true

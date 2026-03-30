@@ -10,12 +10,62 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      js--release_created: ${{ steps.release.outputs['sdk/js--release_created'] }}
+      python--release_created: ${{ steps.release.outputs['sdk/python--release_created'] }}
+      go--release_created: ${{ steps.release.outputs['sdk/go--release_created'] }}
+      java--release_created: ${{ steps.release.outputs['sdk/java--release_created'] }}
+      rust--release_created: ${{ steps.release.outputs['sdk/rust--release_created'] }}
+      php--release_created: ${{ steps.release.outputs['sdk/php--release_created'] }}
+      ruby--release_created: ${{ steps.release.outputs['sdk/ruby--release_created'] }}
+      kotlin--release_created: ${{ steps.release.outputs['sdk/kotlin--release_created'] }}
+      csharp--release_created: ${{ steps.release.outputs['sdk/csharp--release_created'] }}
+      cpp--release_created: ${{ steps.release.outputs['sdk/cpp--release_created'] }}
+      cli--release_created: ${{ steps.release.outputs['cli--release_created'] }}
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Releases created, dispatching publish workflows"
+
+      - name: Trigger SDK releases
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const outputs = ${{ toJSON(needs.release-please.outputs) }};
+            const dispatches = [];
+
+            if (outputs['js--release_created'] === 'true') dispatches.push('release-npm.yml');
+            if (outputs['python--release_created'] === 'true') dispatches.push('release-pypi.yml');
+            if (outputs['go--release_created'] === 'true') dispatches.push('release-go.yml');
+            if (outputs['java--release_created'] === 'true') dispatches.push('release-maven.yml');
+            if (outputs['rust--release_created'] === 'true') dispatches.push('release-crates.yml');
+            if (outputs['php--release_created'] === 'true') dispatches.push('release-php.yml');
+            if (outputs['ruby--release_created'] === 'true') dispatches.push('release-rubygems.yml');
+            if (outputs['kotlin--release_created'] === 'true') dispatches.push('release-kotlin.yml');
+            if (outputs['csharp--release_created'] === 'true') dispatches.push('release-nuget.yml');
+            if (outputs['cli--release_created'] === 'true') dispatches.push('release-cli.yml');
+
+            for (const workflow of dispatches) {
+              console.log(`Dispatching ${workflow}`);
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflow,
+                ref: 'master',
+              });
+            }
