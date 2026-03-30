@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.3...anyvali-v0.1.4) (2026-03-30)
+
+
+### Bug Fixes
+
+* synchronize all SDK releases ([904dda4](https://github.com/BetterCorp/AnyVali/commit/904dda427fe45aeb2321ceaf32f71683d71e96d2))
+
 ## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.2...anyvali-v0.1.3) (2026-03-30)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/BetterCorp/AnyVali/compare/python-v0.0.3...python-v0.0.4) (2026-03-30)
+
+
+### Bug Fixes
+
+* synchronize all SDK releases ([904dda4](https://github.com/BetterCorp/AnyVali/commit/904dda427fe45aeb2321ceaf32f71683d71e96d2))
+
 ## [0.0.3](https://github.com/BetterCorp/AnyVali/compare/python-v0.0.2...python-v0.0.3) (2026-03-30)
 
 
