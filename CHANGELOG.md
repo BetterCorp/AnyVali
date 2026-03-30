@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.5...anyvali-v0.1.6) (2026-03-30)
+
+
+### Bug Fixes
+
+* use on:release trigger instead of on:push:tags ([62b76a5](https://github.com/BetterCorp/AnyVali/commit/62b76a59fa9aa97a6a2d0a6eb61ec832e4e5d9a0))
+
 ## [0.1.5](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.4...anyvali-v0.1.5) (2026-03-30)
 
 
