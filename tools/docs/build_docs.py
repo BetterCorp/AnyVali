@@ -20,6 +20,11 @@ SOURCE_FILES = [
     Path("spec/corpus/README.md"),
 ]
 
+STATIC_FILES = [
+    Path("docs/robots.txt"),
+    Path("docs/llms.txt"),
+]
+
 
 def rewrite_home_links(text: str) -> str:
     return (
@@ -64,6 +69,12 @@ def main() -> None:
         destination_path.write_text(content, encoding="utf-8")
 
     copy_assets(OUTPUT_DIR)
+
+    for static_file in STATIC_FILES:
+        source_path = ROOT / static_file
+        if source_path.exists():
+            destination_path = OUTPUT_DIR / source_path.name
+            shutil.copy2(source_path, destination_path)
 
 
 if __name__ == "__main__":

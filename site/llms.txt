@@ -1,0 +1,52 @@
+# AnyVali
+
+> Native validation libraries for 10 languages, one portable schema model.
+
+AnyVali is a family of native validation libraries that share a single portable schema model across 10 programming languages: JavaScript/TypeScript, Python, Go, Java, C#, Rust, PHP, Ruby, Kotlin, and C++.
+
+Write schemas in your host language using idiomatic builder APIs, export them to a canonical JSON document, and import them in any other supported SDK. All SDKs pass a shared conformance test suite ensuring identical behavior.
+
+- Website: https://anyvali.com
+- Documentation: https://docs.anyvali.com
+- GitHub: https://github.com/BetterCorp/AnyVali
+
+## Documentation
+
+For full API reference, specification, and guides, see the documentation site:
+
+- [Full LLM-optimised docs](https://docs.anyvali.com/llms.txt)
+- [Overview](https://docs.anyvali.com/docs/overview/)
+- [Normative Spec](https://docs.anyvali.com/spec/spec/)
+- [JSON Interchange Format](https://docs.anyvali.com/spec/json-format/)
+- [Portability Guide](https://docs.anyvali.com/docs/portability-guide/)
+- [Numeric Semantics](https://docs.anyvali.com/docs/numeric-semantics/)
+- [SDK Authors Guide](https://docs.anyvali.com/docs/sdk-authors-guide/)
+- [CLI Reference](https://docs.anyvali.com/docs/cli/)
+- [HTTP API Reference](https://docs.anyvali.com/docs/api/)
+
+## Install
+
+```
+npm install @anyvali/js          # JavaScript / TypeScript
+pip install anyvali              # Python
+go get github.com/BetterCorp/AnyVali/sdk/go  # Go
+cargo add anyvali                # Rust
+dotnet add package AnyVali       # C#
+composer require anyvali/anyvali # PHP
+gem install anyvali              # Ruby
+```
+
+## Quick Example (TypeScript)
+
+```typescript
+import { object, string, int64, importSchema } from "@anyvali/js";
+
+const User = object({
+  id: int64(),
+  email: string().format("email"),
+});
+
+const result = User.safeParse({ id: 42, email: "team@anyvali.dev" });
+const doc = User.export(); // portable JSON
+const imported = importSchema(doc); // import in any SDK
+```
