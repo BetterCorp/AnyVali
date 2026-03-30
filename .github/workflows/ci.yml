@@ -27,9 +27,12 @@ jobs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
       - id: check
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          MSG="${{ github.event.head_commit.message }}"
-          if [[ "${{ github.event_name }}" == "push" && "$MSG" == "chore: release"* ]]; then
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+          if [[ "$EVENT_NAME" == "push" && "$FIRST_LINE" == "chore: release"* ]]; then
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             echo "Skipping CI for release commit"
           else
