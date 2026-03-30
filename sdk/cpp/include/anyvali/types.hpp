@@ -115,7 +115,7 @@ inline SchemaKind string_to_kind(const std::string& s) {
     if (s == "optional") return SchemaKind::Optional;
     if (s == "nullable") return SchemaKind::Nullable;
     if (s == "ref") return SchemaKind::Ref;
-    return SchemaKind::Unknown;
+    throw std::runtime_error("Unsupported schema kind: " + s);
 }
 
 using PathSegment = std::variant<std::string, int>;
