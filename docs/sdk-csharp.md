@@ -315,22 +315,86 @@ if (userResult.Success)
 
 ### Defaults
 
-Set a default value that is materialized when the input is absent.
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `.Default(value)` on any schema.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
 
 ```csharp
 var role = V.String().Default("user");
+role.Parse(null);     // => "user" (absent value filled)
+role.Parse("admin");  // => "admin"
+
 var count = V.Int().Default(0);
 ```
 
-Defaults are applied inside the parse pipeline: if the input is absent and a default exists, the default is validated against the schema constraints before being returned.
+Defaults work with optional fields in objects:
+
+```csharp
+var config = V.Object(new Dictionary<string, Schema>
+{
+    ["theme"] = V.Optional(V.String().Default("light")),
+    ["language"] = V.Optional(V.String().Default("en")),
+});
+
+config.Parse(new Dictionary<string, object?>());
+// => { "theme": "light", "language": "en" }
+```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
 
 ### Coercion
 
-Enable automatic type coercion during parsing.
+Coercion transforms the input value before validation. It runs only when the value is present. Call `.Coerce(config)` on any schema to enable coercion.
+
+#### Available Coercions
+
+**String to Integer**
 
 ```csharp
-var schema = V.String().Coerce();
-var result = schema.Parse(42);  // coerces 42 to "42"
+var age = V.Int().Coerce(new CoercionConfig { From = "string" });
+age.Parse("42");   // => 42L (string coerced to integer)
+age.Parse(42);     // => 42L (already an integer, no coercion needed)
+```
+
+**String to Number**
+
+```csharp
+var price = V.Number().Coerce(new CoercionConfig { From = "string" });
+price.Parse("3.14");  // => 3.14
+```
+
+**String to Boolean**
+
+```csharp
+var flag = V.Bool().Coerce(new CoercionConfig { From = "string" });
+flag.Parse("true");   // => true
+flag.Parse("false");  // => false
+flag.Parse("1");      // => true
+flag.Parse("0");      // => false
+```
+
+**Trim Whitespace**
+
+```csharp
+var trimmed = V.String().Coerce(new CoercionConfig { Trim = true });
+trimmed.Parse("  hello  ");  // => "hello"
+```
+
+**Lowercase / Uppercase**
+
+```csharp
+var lower = V.String().Coerce(new CoercionConfig { Lower = true });
+lower.Parse("HELLO");  // => "hello"
+
+var upper = V.String().Coerce(new CoercionConfig { Upper = true });
+upper.Parse("hello");  // => "HELLO"
+```
+
+Transformations can be combined:
+
+```csharp
+var normalized = V.String().Coerce(new CoercionConfig { Trim = true, Lower = true });
+normalized.Parse("  Hello World  ");  // => "hello world"
 ```
 
 ## Export and Import
@@ -477,6 +541,45 @@ foreach (var issue in result.Issues)
 | `unknown_key` | Object has an unrecognized key |
 | `coercion_failed` | Coercion could not convert the value |
 | `default_invalid` | Default value failed schema validation |
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `UnknownKeyMode.Strip` when parsing objects that contain many extra keys you don't care about, like environment variables:
+
+```csharp
+var envSchema = V.Object(new Dictionary<string, Schema>
+{
+    ["NODE_ENV"] = V.Optional(V.String()).WithDefault("development"),
+    ["DATABASE_URL"] = V.String(),
+}, UnknownKeyMode.Strip);
+```
+
+Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `Reject` (default) | Parse fails with `unknown_key` issues |
+| `Strip` | Extra keys silently removed from output |
+| `Allow` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.WithDefault()` accepts any value of the correct type. Expressions like `Directory.GetCurrentDirectory()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy delegate defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```csharp
+var configSchema = V.Object(new Dictionary<string, Schema>
+{
+    ["profile"] = V.Optional(V.String()).WithDefault("default"),
+    ["appDir"] = V.Optional(V.String()),
+}, UnknownKeyMode.Strip);
+
+var config = (Dictionary<string, object?>)configSchema.Parse(data);
+config["appDir"] ??= Directory.GetCurrentDirectory();
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

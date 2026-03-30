@@ -306,6 +306,14 @@ items := v.Array(v.String()).
 
 ### Object Unknown Key Handling
 
+The `UnknownKeys` option controls how keys not declared in the shape are handled:
+
+| Mode | Behavior |
+|---|---|
+| `Reject` (default) | Produces an `unknown_key` issue for each extra key |
+| `Strip` | Silently removes extra keys from the output |
+| `Allow` | Passes extra keys through to the output |
+
 ```go
 // Reject unknown keys (default)
 strict := v.Object(map[string]v.Schema{
@@ -361,7 +369,9 @@ Available coercion types:
 
 ### Defaults
 
-Defaults fill in missing (absent) values. The default value must pass validation.
+Defaults fill in missing (absent) values. The default value must pass validation. Defaults must be static values (for portability across SDKs); use the Common Patterns section below for computed defaults.
+
+Call `.Default(value)` on any schema:
 
 ```go
 role := v.Enum("admin", "user", "guest").Default("user")
@@ -519,6 +529,44 @@ type ValidationIssue struct {
 | `IssueDefaultInvalid` | `"default_invalid"` | Default value fails validation |
 | `IssueUnsupportedSchemaKind` | `"unsupported_schema_kind"` | Unknown or unresolved schema kind |
 | `IssueUnsupportedExtension` | `"unsupported_extension"` | Non-portable extension encountered |
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `UnknownKeysStrip` when parsing maps that contain many extra keys you don't care about, like environment variables:
+
+```go
+envSchema := av.Object(map[string]av.Schema{
+    "NODE_ENV":     av.Optional(av.String()).WithDefault("development"),
+    "PORT":         av.Optional(av.Int()),
+    "DATABASE_URL": av.String(),
+}).UnknownKeys(av.UnknownKeysStrip)
+```
+
+Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.Default()` accepts any value of the correct type. Expressions like `os.Getwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy function defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```go
+configSchema := av.Object(map[string]av.Schema{
+    "profile": av.Optional(av.String()).Default("default"),
+    "appDir":  av.Optional(av.String()),
+}).UnknownKeys(av.Strip)
+
+config, err := configSchema.Parse(envMap)
+if err != nil {
+    log.Fatal(err)
+}
+if config.(map[string]any)["appDir"] == nil {
+    wd, _ := os.Getwd()
+    config.(map[string]any)["appDir"] = wd
+}
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Python, JavaScript, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

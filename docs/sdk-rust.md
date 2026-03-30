@@ -340,6 +340,14 @@ let items = array(Box::new(string()))
 
 ### Object Unknown Key Handling
 
+The `unknown_keys` option controls how keys not declared in the schema are handled:
+
+| Mode | Behavior |
+|---|---|
+| `UnknownKeyMode::Reject` (default) | Produces an `unknown_key` issue for each extra key |
+| `UnknownKeyMode::Strip` | Silently removes extra keys from the output |
+| `UnknownKeyMode::Allow` | Passes extra keys through to the output |
+
 ```rust
 use anyvali::*;
 
@@ -394,7 +402,9 @@ Available coercion strings:
 
 ### Defaults
 
-Defaults fill in missing values. Specified as `serde_json::Value`:
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `.default(value)` on any schema, passing a `serde_json::Value`. The default only applies when the value is absent -- if a value is present, it is validated normally.
+
+Defaults must be static values (for portability across SDKs). For computed defaults, see the Common Patterns section below.
 
 ```rust
 use anyvali::*;
@@ -413,6 +423,8 @@ let config = object()
     .field_with_default("tls", Box::new(bool_()), json!(false))
     .required(vec!["host"]);
 ```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
 
 ## Export and Import
 
@@ -584,6 +596,47 @@ pub enum PathSegment {
 | `DEFAULT_INVALID` | `"default_invalid"` | Default value fails validation |
 | `UNSUPPORTED_SCHEMA_KIND` | `"unsupported_schema_kind"` | Unknown or unresolved schema kind |
 | `UNSUPPORTED_EXTENSION` | `"unsupported_extension"` | Non-portable extension encountered |
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `UnknownKeyMode::Strip` when parsing objects that contain many extra keys you don't care about, like environment variables:
+
+```rust
+use anyvali::*;
+use std::env;
+
+let env_schema = object()
+    .field("DATABASE_URL", Box::new(string()))
+    .required(vec!["DATABASE_URL"])
+    .unknown_keys(UnknownKeyMode::Strip);
+```
+
+Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.default()` accepts any `serde_json::Value`. Expressions like `std::env::current_dir()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy closure defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```rust
+use anyvali::*;
+use serde_json::json;
+
+let config_schema = object()
+    .field("profile", Box::new(string().default(json!("default"))))
+    .field("app_dir", Box::new(optional(Box::new(string()))))
+    .required(vec!["profile"])
+    .unknown_keys(UnknownKeyMode::Strip);
+
+let mut config = config_schema.parse(&input).unwrap();
+if config.get("app_dir").map_or(true, |v| v.is_null()) {
+    let cwd = std::env::current_dir().unwrap();
+    config["app_dir"] = json!(cwd.to_string_lossy());
+}
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

@@ -250,13 +250,19 @@ Object schemas control how undeclared keys in the input are handled:
 
 Use `strip` when parsing objects that may contain extra keys you want to ignore, such as environment variables or API responses with evolving fields. Use `allow` when you need to preserve all input data while still validating your declared fields.
 
-### Defaults and Computed Values
+### Defaults: Eager vs Lazy
 
-Defaults in AnyVali must be static data values (strings, numbers, booleans, null, arrays, objects) -- not function calls. This keeps schemas portable across languages. If you need a computed default like `process.cwd()` in Node.js or `os.getcwd()` in Python, apply it after parsing:
+`.default()` accepts any value of the correct type. Expressions like `process.cwd()` or `os.getcwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine and exports portably.
+
+What AnyVali does **not** support is lazy/deferred defaults (callbacks that re-evaluate on each parse call). If you need a fresh value on every parse, apply it after:
 
 ```typescript
-const config = ConfigSchema.parse(input);
-config.appDir ??= process.cwd(); // computed default applied outside the schema
+// Eager default -- works fine, evaluated once at schema creation
+const schema = object({ appDir: optional(string()).default(process.cwd()) });
+
+// Lazy default -- not supported, apply manually
+const result = schema.parse(input);
+result.requestId ??= crypto.randomUUID(); // different value each time
 ```
 
 ### Parse Pipeline

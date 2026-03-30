@@ -156,6 +156,14 @@ var looseUser = object_(
 );
 ```
 
+The `unknownKeys` parameter controls how keys not declared in the properties are handled:
+
+| Mode | Behavior |
+|---|---|
+| `REJECT` (default) | Produces an `unknown_key` issue for each extra key |
+| `STRIP` | Silently removes extra keys from the output |
+| `ALLOW` | Passes extra keys through to the output |
+
 ### Composition
 
 ```java
@@ -294,23 +302,87 @@ if (userResult.success()) {
 
 ### Defaults
 
-Set a default value that is materialized when input is absent.
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `.withDefault(value)` on any schema.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
 
 ```java
 var role = string().withDefault("user");
+role.parse(null);     // => "user" (absent value filled)
+role.parse("admin");  // => "admin"
+
 var count = int_().withDefault(0);
+
+var tags = array(string()).withDefault(List.of());
 ```
 
-When a field with a default is missing from object input, the default is validated against the schema before being returned.
+Defaults work with optional fields in objects:
+
+```java
+var config = object_(Map.of(
+    "theme", optional(string().withDefault("light")),
+    "language", optional(string().withDefault("en"))
+));
+
+config.parse(Map.of());
+// => {"theme": "light", "language": "en"}
+```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
 
 ### Coercion
 
-Enable automatic type coercion during parsing.
+Coercion transforms the input value before validation. It runs only when the value is present. Call `.coerce(config)` on any schema to enable coercion.
+
+#### Available Coercions
+
+**String to Integer**
 
 ```java
-import com.anyvali.parse.CoercionConfig;
+var age = int_().coerce(new CoercionConfig().from("string"));
+age.parse("42");   // => 42L (string coerced to integer)
+age.parse(42);     // => 42L (already an integer, no coercion needed)
+```
 
-var schema = string().coerce(new CoercionConfig());
+**String to Number**
+
+```java
+var price = number().coerce(new CoercionConfig().from("string"));
+price.parse("3.14");  // => 3.14
+```
+
+**String to Boolean**
+
+```java
+var flag = bool_().coerce(new CoercionConfig().from("string"));
+flag.parse("true");   // => true
+flag.parse("false");  // => false
+flag.parse("1");      // => true
+flag.parse("0");      // => false
+```
+
+**Trim Whitespace**
+
+```java
+var trimmed = string().coerce(new CoercionConfig().trim(true));
+trimmed.parse("  hello  ");  // => "hello"
+```
+
+**Lowercase / Uppercase**
+
+```java
+var lower = string().coerce(new CoercionConfig().lower(true));
+lower.parse("HELLO");  // => "hello"
+
+var upper = string().coerce(new CoercionConfig().upper(true));
+upper.parse("hello");  // => "HELLO"
+```
+
+Transformations can be combined:
+
+```java
+var normalized = string().coerce(new CoercionConfig().trim(true).lower(true));
+normalized.parse("  Hello World  ");  // => "hello world"
 ```
 
 ## Export and Import
@@ -442,6 +514,48 @@ for (ValidationIssue issue : result.issues()) {
 | `unknown_key` | Object has an unrecognized key |
 | `coercion_failed` | Coercion could not convert the value |
 | `default_invalid` | Default value failed schema validation |
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `UnknownKeyMode.STRIP` when parsing maps that contain many extra keys you don't care about, like environment variables:
+
+```java
+var envSchema = AnyVali.object_(
+    Map.of("DATABASE_URL", AnyVali.string()),
+    Set.of("DATABASE_URL"),
+    UnknownKeyMode.STRIP
+);
+```
+
+Without `STRIP`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `REJECT`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `REJECT` (default) | Parse fails with `unknown_key` issues |
+| `STRIP` | Extra keys silently removed from output |
+| `ALLOW` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.withDefault()` accepts any value of the correct type. Expressions like `System.getProperty("user.dir")` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy supplier defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```java
+var configSchema = object_(
+    Map.of(
+        "profile", string().withDefault("default"),
+        "appDir", optional(string())
+    ),
+    Set.of("profile"),
+    UnknownKeyMode.STRIP
+);
+
+Map<String, Object> config = configSchema.parse(data);
+config.putIfAbsent("appDir", System.getProperty("user.dir"));
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

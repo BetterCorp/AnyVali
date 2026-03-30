@@ -899,21 +899,25 @@ Without `"strip"`, parse would fail with `unknown_key` issues for every other va
 | `"strip"` | Extra keys silently removed from output |
 | `"allow"` | Extra keys passed through to output |
 
-### Function-Based Defaults
+### Eagerly Evaluated vs Lazy Defaults
 
-AnyVali v1 only supports static data defaults (for portability). If you need a computed default like `process.cwd()`, apply it after parsing:
+`.default()` accepts any value of the correct type. Expressions like `process.cwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine:
 
 ```typescript
 const ConfigSchema = object({
   profile: optional(string()).default("default"),
-  appDir: optional(string()),
+  appDir: optional(string()).default(process.cwd()), // evaluated once, stored as e.g. "/home/user/app"
 }, { unknownKeys: "strip" });
-
-const config = ConfigSchema.parse(process.env);
-config.appDir ??= process.cwd(); // apply function-based default manually
 ```
 
-This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
+What AnyVali does **not** support is lazy function defaults that re-evaluate on each parse call (like Zod's `.default(() => crypto.randomUUID())`). AnyVali defaults are always a single stored value, not a callback. If you need a fresh value on every parse, apply it after:
+
+```typescript
+const config = ConfigSchema.parse(input);
+config.requestId ??= crypto.randomUUID(); // different on each call
+```
+
+Eagerly evaluated defaults export portably -- the stored string travels in the JSON document. Lazy defaults cannot be serialized.
 
 ## Forms
 

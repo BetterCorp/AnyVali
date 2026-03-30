@@ -760,6 +760,54 @@ v.UNSUPPORTED_SCHEMA_KIND
 | `unsupported_extension` | Unknown extension namespace in an imported document |
 | `unsupported_schema_kind` | Unknown schema kind in an imported document |
 
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `unknown_keys="strip"` when parsing dicts that contain many extra keys you don't care about, like `os.environ`:
+
+```python
+import os
+import anyvali as v
+
+env_schema = v.object_({
+    "NODE_ENV": v.optional(v.string()).default("development"),
+    "PORT": v.optional(v.int_().coerce(to_int=True)).default(3000),
+    "DATABASE_URL": v.string(),
+}, unknown_keys="strip")
+
+env = env_schema.parse(dict(os.environ))
+# Returns only { "NODE_ENV", "PORT", "DATABASE_URL" } -- all other env vars are stripped
+```
+
+Without `"strip"`, parse would raise with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `"reject"`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `"reject"` (default) | Parse fails with `unknown_key` issues |
+| `"strip"` | Extra keys silently removed from output |
+| `"allow"` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.default()` accepts any value of the correct type. Expressions like `os.getcwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy callable defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```python
+import os
+import anyvali as v
+
+config_schema = v.object_({
+    "profile": v.optional(v.string()).default("default"),
+    "app_dir": v.optional(v.string()),
+}, unknown_keys="strip")
+
+config = config_schema.parse(data)
+if config.get("app_dir") is None:
+    config["app_dir"] = os.getcwd()
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, JavaScript, or any other SDK without relying on language-specific function calls.
+
 ## API Reference
 
 ### Builder Functions
