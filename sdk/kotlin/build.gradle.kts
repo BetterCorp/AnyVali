@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.3.20"
     kotlin("plugin.serialization") version "2.3.20"
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 group = "com.anyvali"
@@ -24,4 +25,37 @@ tasks.test {
 
 kotlin {
     jvmToolchain(21)
+}
+
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates("com.anyvali", "anyvali-kotlin", version.toString())
+
+    pom {
+        name.set("AnyVali Kotlin SDK")
+        description.set("Portable schema validation for Kotlin")
+        url.set("https://anyvali.com")
+
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+
+        developers {
+            developer {
+                name.set("AnyVali Contributors")
+                email.set("hello@anyvali.com")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:https://github.com/BetterCorp/AnyVali.git")
+            developerConnection.set("scm:git:ssh://git@github.com/BetterCorp/AnyVali.git")
+            url.set("https://github.com/BetterCorp/AnyVali")
+        }
+    }
 }

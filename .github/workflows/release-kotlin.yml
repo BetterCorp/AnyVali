@@ -22,12 +22,7 @@ jobs:
           cache: gradle
       - uses: gradle/actions/setup-gradle@v6
       - name: Publish to Maven Central
-        run: |
-          if [[ -x ./gradlew ]]; then
-            ./gradlew --no-daemon publishToMavenCentral
-          else
-            gradle --no-daemon publishToMavenCentral
-          fi
+        run: ./gradlew --no-daemon publishAndReleaseToMavenCentral
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
