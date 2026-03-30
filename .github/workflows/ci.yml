@@ -34,7 +34,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci js
       - run: ./runner.sh coverage js
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.node-version == 20
         with:
           directory: sdk/js/coverage
@@ -61,7 +61,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci python
       - run: ./runner.sh coverage python
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.python-version == '3.12'
         with:
           files: sdk/python/coverage.xml
@@ -86,7 +86,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci go
       - run: ./runner.sh coverage go
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.go-version == '1.22'
         with:
           files: sdk/go/coverage.out
@@ -112,7 +112,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci java
       - run: ./runner.sh coverage java
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.java-version == '17'
         with:
           directory: sdk/java/target/site/jacoco
@@ -138,7 +138,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci csharp
       - run: ./runner.sh coverage csharp
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push'
         with:
           directory: sdk/csharp
@@ -170,7 +170,7 @@ jobs:
           cargo install cargo-llvm-cov --locked 2>/dev/null || true
           ./runner.sh coverage rust
         continue-on-error: true
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.toolchain == 'stable'
         with:
           files: sdk/rust/lcov.info
@@ -202,7 +202,7 @@ jobs:
       - run: ./runner.sh ci php
       - run: ./runner.sh coverage php
         if: matrix.php-version == '8.3'
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.php-version == '8.3'
         with:
           files: sdk/php/coverage.xml
@@ -229,7 +229,7 @@ jobs:
       - run: ./runner.sh ci ruby
       - run: ./runner.sh coverage ruby
         if: matrix.ruby-version == '3.3'
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.ruby-version == '3.3'
         with:
           directory: sdk/ruby/coverage
@@ -253,7 +253,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci kotlin
       - run: ./runner.sh coverage kotlin
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         if: github.event_name == 'push'
         with:
           directory: sdk/kotlin/build/reports/jacoco
