@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.0.5...csharp-v0.1.0) (2026-03-30)
+
+
+### Features
+
+* add static type inference to all 10 SDKs ([f2902ec](https://github.com/BetterCorp/AnyVali/commit/f2902ecf9cdd1153da355b8e27fae07c36486138))
+
 ## [0.0.5](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.0.4...csharp-v0.0.5) (2026-03-30)
 
 

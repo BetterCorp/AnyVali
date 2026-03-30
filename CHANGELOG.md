@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.8...anyvali-v0.2.0) (2026-03-30)
+
+
+### Features
+
+* add static type inference to all 10 SDKs ([f2902ec](https://github.com/BetterCorp/AnyVali/commit/f2902ecf9cdd1153da355b8e27fae07c36486138))
+
+
+### Bug Fixes
+
+* ensure CI runs on PRs targeting master ([2b950c2](https://github.com/BetterCorp/AnyVali/commit/2b950c2e7ed632834be0689ee67c7614605b6750))
+* **java,kotlin:** handle numeric type conversion in typed parse ([6273111](https://github.com/BetterCorp/AnyVali/commit/6273111c893296cb12c90d4096e7329403dcac6b))
+* **kotlin:** use gradle instead of ./gradlew (no wrapper in repo) ([32e41fa](https://github.com/BetterCorp/AnyVali/commit/32e41fa287f49d5a8d0b5ebc8111a25999467bb4))
+
 ## [0.1.8](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.7...anyvali-v0.1.8) (2026-03-30)
 
 
