@@ -10,7 +10,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  actions: write
 
 jobs:
   release-please:
@@ -24,38 +23,62 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  publish:
+  publish-npm:
     needs: release-please
     if: needs.release-please.outputs.releases_created == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dispatch all publish workflows
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const workflows = [
-              'release-npm.yml',
-              'release-pypi.yml',
-              'release-go.yml',
-              'release-maven.yml',
-              'release-crates.yml',
-              'release-php.yml',
-              'release-rubygems.yml',
-              'release-kotlin.yml',
-              'release-nuget.yml',
-              'release-cli.yml',
-            ];
+    uses: ./.github/workflows/release-npm.yml
+    secrets: inherit
 
-            for (const workflow of workflows) {
-              try {
-                console.log(`Dispatching ${workflow}`);
-                await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: workflow,
-                  ref: 'master',
-                });
-              } catch (err) {
-                console.log(`Warning: failed to dispatch ${workflow}: ${err.message}`);
-              }
-            }
+  publish-pypi:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-pypi.yml
+    secrets: inherit
+
+  publish-go:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-go.yml
+    secrets: inherit
+
+  publish-crates:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-crates.yml
+    secrets: inherit
+
+  publish-maven:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-maven.yml
+    secrets: inherit
+
+  publish-nuget:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-nuget.yml
+    secrets: inherit
+
+  publish-rubygems:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-rubygems.yml
+    secrets: inherit
+
+  publish-kotlin:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-kotlin.yml
+    secrets: inherit
+
+  publish-php:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-php.yml
+    secrets: inherit
+
+  publish-cli:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/release-cli.yml
+    secrets: inherit

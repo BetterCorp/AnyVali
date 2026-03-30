@@ -1,6 +1,7 @@
 name: Publish Go
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:

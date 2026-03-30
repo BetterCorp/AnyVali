@@ -1,6 +1,7 @@
 name: Release CLI Binaries
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
