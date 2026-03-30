@@ -5,6 +5,9 @@ import com.anyvali.schemas.*
 import com.anyvali.interchange.Importer
 import kotlinx.serialization.json.*
 
+/** Any AnyVali schema. Use as a generic constraint. Equivalent to Zod's ZodTypeAny. */
+typealias SchemaAny = Schema<*>
+
 // Top-level builder functions
 
 fun string() = StringSchema()

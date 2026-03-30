@@ -149,7 +149,13 @@ val minimal = obj(
 )
 ```
 
-Control how unknown keys are handled:
+Control how unknown keys are handled. The `unknownKeys` parameter controls how keys not declared in the properties are handled:
+
+| Mode | Behavior |
+|---|---|
+| `UnknownKeyMode.REJECT` (default) | Produces an `unknown_key` issue for each extra key |
+| `UnknownKeyMode.STRIP` | Silently removes extra keys from the output |
+| `UnknownKeyMode.ALLOW` | Passes extra keys through to the output |
 
 ```kotlin
 // Strip unknown keys silently
@@ -326,12 +332,19 @@ val issues: List<ValidationIssue> = result.issuesOrEmpty()
 
 ### Defaults
 
-Set a default value that is materialized when input is absent.
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `.default(value)` on any schema.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
 
 ```kotlin
 val role = string().default("user")
+role.parse(null)     // => "user" (absent value filled)
+role.parse("admin")  // => "admin"
+
 val count = int_().default(0L)
 ```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
 
 ### Coercion
 
@@ -517,6 +530,50 @@ if (result is ParseResult.Failure) {
 | `coercion_failed` | Coercion could not convert the value |
 | `default_invalid` | Default value failed schema validation |
 | `custom_validation_not_portable` | Schema uses non-portable custom validators |
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `UnknownKeyMode.STRIP` when parsing maps that contain many extra keys you don't care about, like environment variables:
+
+```kotlin
+val envSchema = obj(
+    mapOf("DATABASE_URL" to string()),
+    required = setOf("DATABASE_URL"),
+    unknownKeys = UnknownKeyMode.STRIP
+)
+```
+
+Without `STRIP`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `REJECT`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `REJECT` (default) | Parse fails with `unknown_key` issues |
+| `STRIP` | Extra keys silently removed from output |
+| `ALLOW` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.default()` accepts any value of the correct type. Expressions like `System.getProperty("user.dir")` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy lambda defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```kotlin
+val configSchema = obj(
+    mapOf(
+        "profile" to string().default("default"),
+        "appDir" to optional(string())
+    ),
+    required = setOf("profile"),
+    unknownKeys = UnknownKeyMode.STRIP
+)
+
+val config = configSchema.parse(data).toMutableMap()
+if (config["appDir"] == null) {
+    config["appDir"] = System.getProperty("user.dir")
+}
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

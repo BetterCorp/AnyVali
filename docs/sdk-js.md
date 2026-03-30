@@ -869,6 +869,56 @@ import { ISSUE_CODES } from "@anyvali/js";
 | `unsupported_extension` | Unknown extension namespace in an imported document |
 | `unsupported_schema_kind` | Unknown schema kind in an imported document |
 
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `unknownKeys: "strip"` when parsing objects that contain many extra keys you don't care about, like `process.env`:
+
+```typescript
+import { object, string, int, optional, type Infer } from "@anyvali/js";
+
+const EnvSchema = object({
+  NODE_ENV: optional(string()).default("development"),
+  PORT: optional(int().coerce({ from: "string" })).default(3000),
+  DATABASE_URL: string(),
+}, { unknownKeys: "strip" });
+
+type Env = Infer<typeof EnvSchema>;
+// => { NODE_ENV?: string | undefined; PORT?: number | undefined; DATABASE_URL: string }
+
+const env = EnvSchema.parse(process.env);
+// Returns only { NODE_ENV, PORT, DATABASE_URL } -- all other env vars are stripped
+```
+
+Without `"strip"`, parse would fail with `unknown_key` issues for every other variable in `process.env` (PATH, HOME, etc.) because the default mode is `"reject"`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `"reject"` (default) | Parse fails with `unknown_key` issues |
+| `"strip"` | Extra keys silently removed from output |
+| `"allow"` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.default()` accepts any value of the correct type. Expressions like `process.cwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine:
+
+```typescript
+const ConfigSchema = object({
+  profile: optional(string()).default("default"),
+  appDir: optional(string()).default(process.cwd()), // evaluated once, stored as e.g. "/home/user/app"
+}, { unknownKeys: "strip" });
+```
+
+What AnyVali does **not** support is lazy function defaults that re-evaluate on each parse call (like Zod's `.default(() => crypto.randomUUID())`). AnyVali defaults are always a single stored value, not a callback. If you need a fresh value on every parse, apply it after:
+
+```typescript
+const config = ConfigSchema.parse(input);
+config.requestId ??= crypto.randomUUID(); // different on each call
+```
+
+Eagerly evaluated defaults export portably -- the stored string travels in the JSON document. Lazy defaults cannot be serialized.
+
 ## Forms
 
 The `@anyvali/js/forms` entry point provides a browser-side forms integration layer that connects AnyVali schemas to HTML forms, including native constraint validation and htmx support.

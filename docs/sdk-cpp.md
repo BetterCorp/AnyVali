@@ -294,6 +294,88 @@ auto tags = array(string_())
     ->max_items(10);    // at most 10 elements
 ```
 
+## Coercion
+
+Coercion transforms the input value before validation. It runs only when the value is present. Call `->coerce(config)` on any schema to enable coercion.
+
+### Available Coercions
+
+#### String to Integer
+
+```cpp
+auto age = int_()->coerce({{"from", "string"}});
+age->parse("42");   // => 42 (string coerced to integer)
+age->parse(42);     // => 42 (already an integer, no coercion needed)
+```
+
+#### String to Number
+
+```cpp
+auto price = number()->coerce({{"from", "string"}});
+price->parse("3.14");  // => 3.14
+```
+
+#### String to Boolean
+
+```cpp
+auto flag = bool_()->coerce({{"from", "string"}});
+flag->parse("true");   // => true
+flag->parse("false");  // => false
+flag->parse("1");      // => true
+flag->parse("0");      // => false
+```
+
+#### Trim Whitespace
+
+```cpp
+auto trimmed = string_()->coerce({{"trim", true}});
+trimmed->parse("  hello  ");  // => "hello"
+```
+
+#### Lowercase / Uppercase
+
+```cpp
+auto lower = string_()->coerce({{"lower", true}});
+lower->parse("HELLO");  // => "hello"
+
+auto upper = string_()->coerce({{"upper", true}});
+upper->parse("hello");  // => "HELLO"
+```
+
+Transformations can be combined:
+
+```cpp
+auto normalized = string_()->coerce({{"trim", true}, {"lower", true}});
+normalized->parse("  Hello World  ");  // => "hello world"
+```
+
+## Defaults
+
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `->default_(value)` on any schema, passing a `nlohmann::json` value.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
+
+```cpp
+auto role = string_()->default_("user");
+role->parse(nullptr);   // => "user" (absent value filled)
+role->parse("admin");   // => "admin"
+
+auto tags = array(string_())->default_(json::array());
+```
+
+Defaults work with optional fields in objects:
+
+```cpp
+auto config = object()
+    ->prop("theme", optional_(string_()->default_("light")))
+    ->prop("language", optional_(string_()->default_("en")));
+
+config->parse(json::object());
+// => {"theme": "light", "language": "en"}
+```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
+
 ## Parsing
 
 ### Throwing Parse
@@ -665,6 +747,45 @@ int main() {
     return 0;
 }
 ```
+
+## Common Patterns
+
+### Validating Configuration Files
+
+Use `UnknownKeyMode::Strip` when parsing JSON objects that contain many extra keys you don't care about, like configuration files with additional entries:
+
+```cpp
+auto env_schema = anyvali::object()
+    ->prop("DATABASE_URL", anyvali::string_())
+    ->required({"DATABASE_URL"})
+    ->unknown_keys(anyvali::UnknownKeyMode::Strip);
+```
+
+Without `Strip`, parse would fail with `unknown_key` issues for every extra key because the default mode is `Reject`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `Reject` (default) | Parse fails with `unknown_key` issues |
+| `Strip` | Extra keys silently removed from output |
+| `Allow` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`->default_()` accepts any `nlohmann::json` value. Expressions like `std::filesystem::current_path()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy `std::function` defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```cpp
+auto config_schema = object()
+    ->prop("profile", optional_(string_()->default_("default")))
+    ->prop("appDir", optional_(string_()))
+    ->unknown_keys(UnknownKeyMode::Strip);
+
+json config = config_schema->parse(input);
+if (!config.contains("appDir") || config["appDir"].is_null()) {
+    config["appDir"] = std::filesystem::current_path().string();
+}
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

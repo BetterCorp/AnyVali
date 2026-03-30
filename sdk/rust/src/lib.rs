@@ -11,6 +11,9 @@ pub mod types;
 pub use schema::{ParseContext, Schema};
 pub use schemas::*;
 pub use typed::{parse_as, TypedSchema};
+
+/// Any AnyVali schema. Use as a generic constraint. Equivalent to Zod's ZodTypeAny.
+pub type SchemaAny = Box<dyn Schema>;
 pub use types::{
     AnyValiDocument, ExportMode, ParseResult, PathSegment, UnknownKeyMode, ValidationError,
     ValidationIssue,

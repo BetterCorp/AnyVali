@@ -15,7 +15,7 @@ export type {
 export { ISSUE_CODES } from "./issue-codes.js";
 export type { IssueCode } from "./issue-codes.js";
 
-export type { Infer, InferInput } from "./infer.js";
+export type { SchemaAny, Infer, InferInput } from "./infer.js";
 
 export { ValidationError } from "./errors.js";
 

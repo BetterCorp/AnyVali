@@ -238,6 +238,33 @@ Constraints are declarative and data-only. No executable code is serialized.
 - **Array**: `minItems`, `maxItems`
 - **Object**: required/optional fields, unknown key mode (`reject`, `strip`, `allow`)
 
+#### Unknown Key Modes
+
+Object schemas control how undeclared keys in the input are handled:
+
+| Mode | Behavior |
+|---|---|
+| `reject` (default) | Parse fails with `unknown_key` issues for each extra key |
+| `strip` | Extra keys are silently removed from the parsed output |
+| `allow` | Extra keys are passed through to the parsed output |
+
+Use `strip` when parsing objects that may contain extra keys you want to ignore, such as environment variables or API responses with evolving fields. Use `allow` when you need to preserve all input data while still validating your declared fields.
+
+### Defaults: Eager vs Lazy
+
+`.default()` accepts any value of the correct type. Expressions like `process.cwd()` or `os.getcwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine and exports portably.
+
+What AnyVali does **not** support is lazy/deferred defaults (callbacks that re-evaluate on each parse call). If you need a fresh value on every parse, apply it after:
+
+```typescript
+// Eager default -- works fine, evaluated once at schema creation
+const schema = object({ appDir: optional(string()).default(process.cwd()) });
+
+// Lazy default -- not supported, apply manually
+const result = schema.parse(input);
+result.requestId ??= crypto.randomUUID(); // different value each time
+```
+
 ### Parse Pipeline
 
 Every SDK follows the same five-step parse pipeline:

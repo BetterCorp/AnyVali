@@ -270,6 +270,89 @@ $tags = AnyVali::array(AnyVali::string())
     ->maxItems(10);    // at most 10 elements
 ```
 
+## Coercion
+
+Coercion transforms the input value before validation. It runs only when the value is present. Call `->coerce($config)` on any schema to enable coercion.
+
+### Available Coercions
+
+#### String to Integer
+
+```php
+$age = AnyVali::int()->coerce(['from' => 'string']);
+$age->parse("42");   // => 42 (string coerced to integer)
+$age->parse(42);     // => 42 (already an integer, no coercion needed)
+```
+
+#### String to Number
+
+```php
+$price = AnyVali::number()->coerce(['from' => 'string']);
+$price->parse("3.14");  // => 3.14
+```
+
+#### String to Boolean
+
+```php
+$flag = AnyVali::bool()->coerce(['from' => 'string']);
+$flag->parse("true");   // => true
+$flag->parse("false");  // => false
+$flag->parse("1");      // => true
+$flag->parse("0");      // => false
+```
+
+#### Trim Whitespace
+
+```php
+$trimmed = AnyVali::string()->coerce(['trim' => true]);
+$trimmed->parse("  hello  ");  // => "hello"
+```
+
+#### Lowercase / Uppercase
+
+```php
+$lower = AnyVali::string()->coerce(['lower' => true]);
+$lower->parse("HELLO");  // => "hello"
+
+$upper = AnyVali::string()->coerce(['upper' => true]);
+$upper->parse("hello");  // => "HELLO"
+```
+
+Transformations can be combined:
+
+```php
+$normalized = AnyVali::string()->coerce(['trim' => true, 'lower' => true]);
+$normalized->parse("  Hello World  ");  // => "hello world"
+```
+
+## Defaults
+
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `->default($value)` on any schema.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
+
+```php
+$role = AnyVali::string()->default('user');
+$role->parse(null);     // => "user" (absent value filled)
+$role->parse('admin');  // => "admin"
+
+$tags = AnyVali::array(AnyVali::string())->default([]);
+```
+
+Defaults work with optional fields in objects:
+
+```php
+$config = AnyVali::object([
+    'theme'    => AnyVali::optional(AnyVali::string()->default('light')),
+    'language' => AnyVali::optional(AnyVali::string()->default('en')),
+], required: []);
+
+$config->parse([]);
+// => ['theme' => 'light', 'language' => 'en']
+```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
+
 ## Parsing
 
 ### Throwing Parse
@@ -513,6 +596,50 @@ $auditEvent = AnyVali::object([
 $exportedDoc = $auditEvent->export();
 // Send $exportedDoc to a schema registry for other services to consume
 ```
+
+## Common Patterns
+
+### Validating Configuration Files
+
+Use `UnknownKeyMode::Strip` when parsing arrays that contain many extra keys you don't care about, like config files with additional entries:
+
+```php
+$envSchema = AnyVali::object(
+    ['DATABASE_URL' => AnyVali::string()],
+    ['DATABASE_URL'],
+    UnknownKeyMode::Strip
+);
+```
+
+Without `Strip`, parse would fail with `unknown_key` issues for every extra key because the default mode is `Reject`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `Reject` (default) | Parse fails with `unknown_key` issues |
+| `Strip` | Extra keys silently removed from output |
+| `Allow` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`->default()` accepts any value of the correct type. Expressions like `getcwd()` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy callable defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```php
+$configSchema = AnyVali::object(
+    [
+        'profile' => AnyVali::optional(AnyVali::string()->default('default')),
+        'appDir'  => AnyVali::optional(AnyVali::string()),
+    ],
+    ['profile'],
+    UnknownKeyMode::Strip
+);
+
+$config = $configSchema->parse($data);
+if (!isset($config['appDir'])) {
+    $config['appDir'] = getcwd();
+}
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 

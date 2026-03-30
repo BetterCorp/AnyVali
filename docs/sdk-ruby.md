@@ -282,6 +282,92 @@ tags = AnyVali.array(AnyVali.string)
   .max_items(10)     # at most 10 elements
 ```
 
+## Coercion
+
+Coercion transforms the input value before validation. It runs only when the value is present. Call `.coerce(config)` on any schema to enable coercion.
+
+### Available Coercions
+
+#### String to Integer
+
+```ruby
+age = AnyVali.int_.coerce(from: "string")
+age.parse("42")   # => 42 (string coerced to integer)
+age.parse(42)     # => 42 (already an integer, no coercion needed)
+```
+
+#### String to Number
+
+```ruby
+price = AnyVali.number.coerce(from: "string")
+price.parse("3.14")  # => 3.14
+```
+
+#### String to Boolean
+
+```ruby
+flag = AnyVali.bool.coerce(from: "string")
+flag.parse("true")   # => true
+flag.parse("false")  # => false
+flag.parse("1")      # => true
+flag.parse("0")      # => false
+```
+
+#### Trim Whitespace
+
+```ruby
+trimmed = AnyVali.string.coerce(trim: true)
+trimmed.parse("  hello  ")  # => "hello"
+```
+
+#### Lowercase / Uppercase
+
+```ruby
+lower = AnyVali.string.coerce(lower: true)
+lower.parse("HELLO")  # => "hello"
+
+upper = AnyVali.string.coerce(upper: true)
+upper.parse("hello")  # => "HELLO"
+```
+
+Transformations can be combined:
+
+```ruby
+normalized = AnyVali.string.coerce(trim: true, lower: true)
+normalized.parse("  Hello World  ")  # => "hello world"
+```
+
+## Defaults
+
+Defaults fill in missing (absent) values. They run after coercion and before validation. Call `.default(value)` on any schema.
+
+The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
+
+```ruby
+role = AnyVali.string.default("user")
+role.parse(nil)      # => "user" (absent value filled)
+role.parse("admin")  # => "admin"
+
+tags = AnyVali.array(AnyVali.string).default([])
+```
+
+Defaults work with optional fields in objects:
+
+```ruby
+config = AnyVali.object(
+  properties: {
+    theme:    AnyVali.optional(AnyVali.string.default("light")),
+    language: AnyVali.optional(AnyVali.string.default("en")),
+  },
+  required: []
+)
+
+config.parse({})
+# => { "theme" => "light", "language" => "en" }
+```
+
+If the default value itself fails validation, a `default_invalid` issue is produced.
+
 ## Parsing
 
 ### Throwing Parse
@@ -559,6 +645,48 @@ audit_log = AnyVali.object(
 exported = AnyVali.export(audit_log, mode: :portable)
 # Store in a schema registry or send to other services
 ```
+
+## Common Patterns
+
+### Validating Environment Variables
+
+Use `unknown_keys: "strip"` when parsing hashes that contain many extra keys you don't care about, like `ENV`:
+
+```ruby
+env_schema = AnyVali.object(
+  properties: { "DATABASE_URL" => AnyVali.string },
+  required: ["DATABASE_URL"],
+  unknown_keys: "strip"
+)
+```
+
+Without `"strip"`, parse would raise with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `"reject"`.
+
+| Mode | What happens with extra keys |
+|---|---|
+| `"reject"` (default) | Parse fails with `unknown_key` issues |
+| `"strip"` | Extra keys silently removed from output |
+| `"allow"` | Extra keys passed through to output |
+
+### Eagerly Evaluated vs Lazy Defaults
+
+`.default()` accepts any value of the correct type. Expressions like `Dir.pwd` are evaluated immediately when the schema is created and stored as a static value -- this works fine. What AnyVali does not support is lazy proc/lambda defaults that re-evaluate on each parse call. If you need a fresh value on every parse, apply it after:
+
+```ruby
+config_schema = AnyVali.object(
+  properties: {
+    "profile" => AnyVali.optional(AnyVali.string.default("default")),
+    "app_dir" => AnyVali.optional(AnyVali.string),
+  },
+  required: ["profile"],
+  unknown_keys: "strip"
+)
+
+config = config_schema.parse(data)
+config["app_dir"] ||= Dir.pwd
+```
+
+This keeps the schema fully portable -- the same JSON document can be imported in Go, Python, or any other SDK without relying on language-specific function calls.
 
 ## API Reference
 
