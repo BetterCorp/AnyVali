@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/BetterCorp/AnyVali/compare/js-v0.2.0...js-v0.3.0) (2026-03-30)
+
+
+### Features
+
+* **js:** add SchemaAny type alias for generic constraints ([6c1dbe5](https://github.com/BetterCorp/AnyVali/commit/6c1dbe5e4ed1ddfc71e92657ab44a1177857d6ac))
+
 ## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/js-v0.1.3...js-v0.2.0) (2026-03-30)
 
 
