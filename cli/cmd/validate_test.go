@@ -242,6 +242,91 @@ func TestValidateStdinInput(t *testing.T) {
 	}
 }
 
+func TestValidateStdinDashWithFlagsBeforePositional(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+
+	oldStdin := os.Stdin
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+
+	go func() {
+		w.Write([]byte(`{"name":"Eve","email":"eve@example.com"}`))
+		w.Close()
+	}()
+
+	// Flags before positional args: -f quiet schema.json -
+	code := RunValidate([]string{"-f", "quiet", schemaPath, "-"})
+	os.Stdin = oldStdin
+
+	if code != 0 {
+		t.Errorf("expected exit code 0, got %d", code)
+	}
+}
+
+func TestValidateStdinImplicit(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+
+	oldStdin := os.Stdin
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+
+	go func() {
+		w.Write([]byte(`{"name":"Dave","email":"dave@example.com"}`))
+		w.Close()
+	}()
+
+	// No input arg at all — should read from stdin implicitly
+	code := RunValidate([]string{schemaPath, "-f", "quiet"})
+	os.Stdin = oldStdin
+
+	if code != 0 {
+		t.Errorf("expected exit code 0, got %d", code)
+	}
+}
+
+func TestValidateUnknownFlag(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+	code := RunValidate([]string{schemaPath, "--bogus"})
+	if code != 2 {
+		t.Errorf("expected exit code 2 for unknown flag, got %d", code)
+	}
+}
+
+func TestValidateFormatEqualsStyle(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+	inputPath := writeTempInput(t, map[string]any{
+		"name":  "Alice",
+		"email": "alice@example.com",
+	})
+
+	code := RunValidate([]string{schemaPath, inputPath, "-f=quiet"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 with -f=quiet, got %d", code)
+	}
+}
+
+func TestValidateFormatLongEqualsStyle(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+	inputPath := writeTempInput(t, map[string]any{
+		"name":  "Alice",
+		"email": "alice@example.com",
+	})
+
+	code := RunValidate([]string{schemaPath, inputPath, "--format=quiet"})
+	if code != 0 {
+		t.Errorf("expected exit code 0 with --format=quiet, got %d", code)
+	}
+}
+
+func TestValidateFormatMissingValue(t *testing.T) {
+	schemaPath := writeTempSchema(t, testSchema())
+	// -f at end with no value
+	code := RunValidate([]string{schemaPath, `{}`, "-f"})
+	if code != 2 {
+		t.Errorf("expected exit code 2 when -f has no value, got %d", code)
+	}
+}
+
 func TestValidateBadSchemaFile(t *testing.T) {
 	code := RunValidate([]string{"/nonexistent/schema.json", `{}`, "-f", "quiet"})
 	if code != 2 {
