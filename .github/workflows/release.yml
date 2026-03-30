@@ -189,7 +189,7 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
       - name: Publish to Maven Central
         run: |
           if [[ -x ./gradlew ]]; then
