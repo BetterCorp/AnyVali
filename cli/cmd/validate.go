@@ -53,7 +53,7 @@ func RunValidate(args []string) int {
 				format = strings.TrimPrefix(arg, "-f=")
 			} else if strings.HasPrefix(arg, "--format=") {
 				format = strings.TrimPrefix(arg, "--format=")
-			} else if strings.HasPrefix(arg, "-") {
+			} else if arg != "-" && strings.HasPrefix(arg, "-") {
 				fmt.Fprintf(os.Stderr, "Error: unknown flag %s\n", arg)
 				return 2
 			} else {
