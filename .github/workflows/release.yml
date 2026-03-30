@@ -1,19 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "anyvali-v*"
-      - "js-v*"
-      - "python-v*"
-      - "go-v*"
-      - "java-v*"
-      - "rust-v*"
-      - "php-v*"
-      - "ruby*v*"
-      - "kotlin-v*"
-      - "csharp-v*"
-      - "cpp-v*"
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -22,7 +11,7 @@ permissions:
 
 jobs:
   publish-npm:
-    if: startsWith(github.ref, 'refs/tags/js-v')
+    if: startsWith(github.event.release.tag_name, 'js-v')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -42,7 +31,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM2_TOKEN_PUB }}
 
   publish-pypi:
-    if: startsWith(github.ref, 'refs/tags/python-v')
+    if: startsWith(github.event.release.tag_name, 'python-v')
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -63,7 +52,7 @@ jobs:
           packages-dir: sdk/python/dist/
 
   publish-go:
-    if: startsWith(github.ref, 'refs/tags/go-v')
+    if: startsWith(github.event.release.tag_name, 'go-v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -77,7 +66,7 @@ jobs:
           echo "Go module published via git tag: ${{ github.ref_name }}"
 
   publish-crates:
-    if: startsWith(github.ref, 'refs/tags/rust-v')
+    if: startsWith(github.event.release.tag_name, 'rust-v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -91,7 +80,7 @@ jobs:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
   publish-maven:
-    if: startsWith(github.ref, 'refs/tags/java-v')
+    if: startsWith(github.event.release.tag_name, 'java-v')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -115,7 +104,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   publish-nuget:
-    if: startsWith(github.ref, 'refs/tags/csharp-v')
+    if: startsWith(github.event.release.tag_name, 'csharp-v')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -133,7 +122,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-rubygems:
-    if: contains(github.ref, 'ruby') && contains(github.ref, '/v')
+    if: contains(github.event.release.tag_name, 'ruby')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -157,7 +146,7 @@ jobs:
           rm -f ~/.gem/credentials
 
   publish-kotlin:
-    if: startsWith(github.ref, 'refs/tags/kotlin-v')
+    if: startsWith(github.event.release.tag_name, 'kotlin-v')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -184,7 +173,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   split-php:
-    if: startsWith(github.ref, 'refs/tags/php-v')
+    if: startsWith(github.event.release.tag_name, 'php-v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
