@@ -5,19 +5,35 @@ This document describes how code gets from a developer's machine to published pa
 ## Flow
 
 ```
-feature/hotfix branch → PR → master → auto version bump → auto release → auto publish
+branch (develop/feature/hotfix)
+  │
+  └─ PR to master
+       │
+       ├─ CI runs all SDK tests
+       │
+       └─ Merge to master
+            │
+            ├─ CI runs again (verifies merge)
+            │
+            └─ CI passes → Build Release triggers
+                 │
+                 ├─ Version bump + changelog (committed directly, skips CI)
+                 ├─ GitHub Releases + tags created
+                 └─ Publish workflows dispatched to registries
 ```
 
-1. **Create a branch** off `master` (feature, bugfix, or hotfix)
+1. **Create a branch** off `master` (`develop`, `feature/*`, `hotfix/*`, or any branch)
 2. **Write code** using [conventional commits](#commit-messages)
 3. **Open a PR** targeting `master` — CI runs all SDK tests
-4. **Merge the PR** — everything else is automatic:
-   - Version bump based on commit types
-   - Changelog generation
-   - GitHub Release creation with tags
-   - Package publishing to all registries
+4. **Merge the PR** — CI runs again on master to verify the merge
+5. **CI passes** — Build Release triggers automatically:
+   - Calculates version bumps from conventional commits
+   - Generates changelogs
+   - Commits version/changelog updates directly to master (this commit skips CI)
+   - Creates GitHub Releases with tags
+   - Dispatches publish workflows to package registries
 
-There is no `develop` branch. Hotfixes follow the same flow as features.
+Hotfixes follow the same flow — branch off `master`, PR back to `master`.
 
 ## Commit Messages
 
@@ -71,19 +87,24 @@ The root package (`anyvali-v*`) tracks cross-cutting changes that don't belong t
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | Push to master, PRs | Run tests for all SDKs |
-| `build-release.yml` | Push to master | Version bump, changelog, create releases, publish |
-| `release-*.yml` | Called by build-release | Publish to individual registries |
+| `ci.yml` | Push to master/develop, PRs to master | Run tests for all SDKs |
+| `build-release.yml` | After CI passes on master (`workflow_run`) | Version bump, changelog, create releases, publish |
+| `release-*.yml` | Called by build-release (`workflow_call`) | Publish to individual registries |
 
 ### How Build Release Works
 
-The build-release workflow uses [Release Please](https://github.com/googleapis/release-please) under the hood:
+The build-release workflow uses [Release Please](https://github.com/googleapis/release-please) under the hood and triggers automatically after CI passes on master:
 
-1. **First push** (your merged PR): Release Please reads the new conventional commits, creates a release PR with version bumps and changelog updates, and auto-merges it immediately.
+1. **Your PR merges to master** — CI runs and passes.
+2. **Build Release triggers** — Release Please reads conventional commits, creates a release PR with version bumps and changelog updates, and auto-merges it immediately.
+3. **The release PR merge pushes to master** — CI detects the `chore: release` commit message and **skips** (no redundant test run).
+4. **Build Release triggers again** (from the push) — Release Please detects the merged release PR, creates GitHub Releases with tags, and dispatches the relevant publish workflows.
 
-2. **Second push** (the auto-merged release PR): Release Please detects the merged release PR, creates GitHub Releases with tags, and dispatches publish workflows to all registries.
+From a developer's perspective: merge your PR, packages appear on registries. No manual steps.
 
-This two-step process happens automatically. From a developer's perspective, you merge your PR and packages appear on registries.
+### Why CI Skips Release Commits
+
+When Build Release auto-merges its version bump PR, the commit message starts with `chore: release`. CI checks for this prefix and skips all test jobs to avoid a redundant build cycle. Build Release itself is not affected by this skip — it triggers independently via `workflow_run`.
 
 ### Configuration Files
 
