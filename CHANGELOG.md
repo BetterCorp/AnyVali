@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.0...anyvali-v0.1.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **java:** sync release-please manifest version ([afdedce](https://github.com/BetterCorp/AnyVali/commit/afdedcee2aed72751a7f61c14db7e057104e7b2f))
+* restore @anyvali/js scoped package name ([6875213](https://github.com/BetterCorp/AnyVali/commit/68752137d9de7079654f04fec7a1520601b06deb))
+* **ruby:** sync release-please manifest version ([afdedce](https://github.com/BetterCorp/AnyVali/commit/afdedcee2aed72751a7f61c14db7e057104e7b2f))
+
 ## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.0.1...anyvali-v0.1.0) (2026-03-30)
 
 
