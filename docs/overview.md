@@ -282,6 +282,29 @@ Issues follow a standard structure:
 }
 ```
 
+### Type Inference
+
+All 10 SDKs provide static type inference so that parsed output carries the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
+
+```typescript
+import { object, string, int, type Infer } from "@anyvali/js";
+
+const User = object({
+  name: string().minLength(1),
+  email: string().format('email'),
+  age: int().min(0).optional(),
+});
+
+type User = Infer<typeof User>;
+// => { name: string; email: string; age?: number | undefined }
+
+const user = User.parse(input); // fully typed, no cast needed
+```
+
+Each SDK provides type inference appropriate to its language: Python uses `Generic[T]` on `BaseSchema` and `ParseResult`, C#/Kotlin/Java use `Schema<T>` generic base classes, Go provides `TypedParse[T]()` generic helpers, Rust has a `TypedSchema` trait with an associated `Output` type, C++ offers template `parse_as<T>()` helpers, PHP uses `@template` phpDoc annotations, and Ruby ships RBS type signature files.
+
+Type inference is a language-specific ergonomic feature and is not part of the portable interchange contract.
+
 ### Portable JSON Document
 
 Schemas export to a versioned JSON document:
@@ -310,6 +333,7 @@ Zod is a TypeScript-first schema validation library. AnyVali shares Zod's builde
 - **Zod** schemas are not serializable. **AnyVali** schemas export to portable JSON.
 - **Zod** supports arbitrary transforms and refinements. **AnyVali** v1 limits transforms to portable coercions.
 - **Zod** has no cross-language interop story. **AnyVali** is built for it.
+- **Zod** provides `z.infer<T>` for TypeScript. **AnyVali** provides `Infer<T>` in TypeScript and equivalent type inference in all 10 SDKs.
 
 ### vs Valibot (JavaScript)
 

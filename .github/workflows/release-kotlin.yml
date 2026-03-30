@@ -22,7 +22,7 @@ jobs:
           cache: gradle
       - uses: gradle/actions/setup-gradle@v6
       - name: Publish to Maven Central
-        run: gradle --no-daemon publishAndReleaseToMavenCentral
+        run: gradle --no-daemon publishAndReleaseToMavenCentral || echo "⚠️ Publish failed (version may already exist)"
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}

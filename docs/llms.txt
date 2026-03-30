@@ -142,13 +142,19 @@ Extension types: **informational** (safe to ignore) and **semantic** (required f
 ### Schema Methods
 
 All schemas support:
-- `.parse(input)` — parse or throw/raise on failure
-- `.safeParse(input)` / `.safe_parse(input)` — returns `ParseResult` (success + value or failure + issues)
+- `.parse(input)` — parse or throw/raise on failure; returns typed output (`T`) in SDKs with generics
+- `.safeParse(input)` / `.safe_parse(input)` — returns `ParseResult<T>` (success + typed value or failure + issues)
 - `.export()` / `exportSchema(schema, mode)` / `export_schema(schema, mode)` — export to `AnyValiDocument`
 - `.default(value)` — set a default for absent values
 - `.coerce(config)` — enable coercion
 - `.optional()` — wrap as optional
 - `.nullable()` — wrap as nullable
+
+Type inference helpers (language-specific):
+- **JS/TS:** `type T = Infer<typeof schema>` — extracts the output type from a schema
+- **Go:** `TypedParse[T](schema, input)`, `TypedSafeParse[T](schema, input)` — generic typed parse functions
+- **Rust:** `parse_as::<T>(&schema, input)` — typed parse via `TypedSchema` trait
+- **C++:** `parse_as<T>(schema, input)`, `safe_parse_as<T>(schema, input)` — template typed parse
 
 ### String Constraint Methods
 
@@ -283,6 +289,23 @@ doc, _ := av.Export(userSchema, av.Portable)
 - Deterministic parsing: defaults run before validation
 - Custom validators are local-only and non-exportable in portable mode
 - The portable contract is synchronous and declarative
+
+## Type Inference
+
+All 10 SDKs provide static type inference so that `parse()` and `safeParse()` return correctly typed output.
+
+- **TypeScript** -- Full Zod-style `Infer<T>` utility type. `ObjectSchema` is generic over its shape. Array, tuple, union, intersection, optional, nullable, record, and enum all thread types through. `schema.parse(input)` returns the inferred type, not `unknown`.
+- **Python** -- `BaseSchema(ABC, Generic[T])`, `ParseResult(Generic[T])`. `StringSchema(BaseSchema[str])`, etc. `parse()` returns `T`, `safe_parse()` returns `ParseResult[T]`.
+- **C#** -- `Schema<T>` generic base class, `ParseResult<T>`. `StringSchema : Schema<string>`, etc. `SafeParseTyped()` returns `ParseResult<T>`.
+- **Kotlin** -- `Schema<out T>` generic base, generic sealed `ParseResult<T>`.
+- **Java** -- `Schema<T>` generic base, `ParseResult<T>` record.
+- **Go** -- `TypedParse[T]()` and `TypedSafeParse[T]()` generic helper functions, `TypedParseResult[T]` struct.
+- **Rust** -- `TypedSchema` trait with associated `Output` type, `parse_as<T>()` free function.
+- **C++** -- Template `parse_as<T>()` and `safe_parse_as<T>()` helpers.
+- **PHP** -- `@template` phpDoc annotations for PHPStan/Psalm static analysis.
+- **Ruby** -- RBS type signature file for Steep/Sorbet.
+
+Type inference is a language-specific ergonomic feature and is not part of the portable interchange contract.
 
 ## CLI & HTTP API
 

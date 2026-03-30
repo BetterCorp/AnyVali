@@ -153,6 +153,36 @@ if !result.Success {
 ```
 </details>
 
+## Type Inference
+
+All 10 SDKs now provide static type inference, so parsed values carry the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
+
+```typescript
+import { object, string, int, type Infer } from "@anyvali/js";
+
+const User = object({
+  name: string().minLength(1),
+  email: string().format('email'),
+  age: int().min(0).optional(),
+});
+
+type User = Infer<typeof User>;
+// => { name: string; email: string; age?: number | undefined }
+
+const user = User.parse(input); // fully typed, no cast needed
+```
+
+Other SDKs use the type inference mechanism native to each language:
+
+- **Python** -- `BaseSchema(Generic[T])`, `ParseResult(Generic[T])`; `parse()` returns `T`
+- **C# / Kotlin** -- `Schema<T>` generic base class, `ParseResult<T>`
+- **Java** -- `Schema<T>` generic base, `ParseResult<T>` record
+- **Go** -- `TypedParse[T]()` and `TypedSafeParse[T]()` generic helper functions
+- **Rust** -- `TypedSchema` trait with associated `Output` type, `parse_as<T>()` free function
+- **C++** -- Template `parse_as<T>()` and `safe_parse_as<T>()` helpers
+- **PHP** -- `@template` phpDoc annotations for PHPStan/Psalm
+- **Ruby** -- RBS type signature file for Steep/Sorbet
+
 ## Cross-Language Schema Sharing
 
 AnyVali's core feature: export a schema from one language, import it in another.

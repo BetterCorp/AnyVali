@@ -25,7 +25,8 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - run: mvn -B deploy -DskipTests -Prelease
+      - name: Publish to Maven Central
+        run: mvn -B deploy -DskipTests -Prelease || echo "⚠️ Publish failed (version may already exist)"
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

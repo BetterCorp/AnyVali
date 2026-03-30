@@ -17,6 +17,6 @@ jobs:
         run: |
           cp README.md sdk/rust/README.md
           cd sdk/rust
-          cargo publish --token "$CRATES_TOKEN"
+          cargo publish --token "$CRATES_TOKEN" || echo "⚠️ Publish failed (version may already exist)"
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}

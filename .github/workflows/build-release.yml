@@ -18,6 +18,15 @@ jobs:
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       pr: ${{ steps.release.outputs.pr }}
+      js_released: ${{ steps.release.outputs['js--release_created'] }}
+      python_released: ${{ steps.release.outputs['python--release_created'] }}
+      go_released: ${{ steps.release.outputs['go--release_created'] }}
+      rust_released: ${{ steps.release.outputs['rust--release_created'] }}
+      java_released: ${{ steps.release.outputs['java--release_created'] }}
+      kotlin_released: ${{ steps.release.outputs['kotlin--release_created'] }}
+      csharp_released: ${{ steps.release.outputs['csharp--release_created'] }}
+      ruby_released: ${{ steps.release.outputs['ruby--release_created'] }}
+      cli_released: ${{ steps.release.outputs['cli--release_created'] }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -26,9 +35,6 @@ jobs:
           manifest-file: .release-please-manifest.json
 
       # Auto-merge the release PR so developers never have to merge it manually.
-      # On the first push: Release Please creates/updates a PR (no releases yet).
-      # This step merges it immediately, which triggers a second push to master.
-      # On that second push: Release Please detects the merged PR and creates releases.
       - name: Auto-merge release PR
         if: steps.release.outputs.pr && steps.release.outputs.releases_created != 'true'
         uses: actions/github-script@v7
@@ -49,54 +55,54 @@ jobs:
 
   publish-npm:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.js_released == 'true'
     uses: ./.github/workflows/release-npm.yml
     secrets: inherit
 
   publish-pypi:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.python_released == 'true'
     uses: ./.github/workflows/release-pypi.yml
     secrets: inherit
 
   publish-go:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.go_released == 'true'
     uses: ./.github/workflows/release-go.yml
     secrets: inherit
 
   publish-crates:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.rust_released == 'true'
     uses: ./.github/workflows/release-crates.yml
     secrets: inherit
 
   publish-maven:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.java_released == 'true'
     uses: ./.github/workflows/release-maven.yml
     secrets: inherit
 
   publish-nuget:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.csharp_released == 'true'
     uses: ./.github/workflows/release-nuget.yml
     secrets: inherit
 
   publish-rubygems:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.ruby_released == 'true'
     uses: ./.github/workflows/release-rubygems.yml
     secrets: inherit
 
   publish-kotlin:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.kotlin_released == 'true'
     uses: ./.github/workflows/release-kotlin.yml
     secrets: inherit
 
   publish-cli:
     needs: build-release
-    if: needs.build-release.outputs.releases_created == 'true'
+    if: needs.build-release.outputs.cli_released == 'true'
     uses: ./.github/workflows/release-cli.yml
     secrets: inherit
