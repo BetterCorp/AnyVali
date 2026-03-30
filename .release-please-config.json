@@ -62,6 +62,12 @@
       "component": "cpp",
       "release-type": "simple",
       "changelog-path": "CHANGELOG.md"
+    },
+    "cli": {
+      "component": "cli",
+      "release-type": "go",
+      "package-name": "github.com/BetterCorp/AnyVali/cli",
+      "changelog-path": "CHANGELOG.md"
     }
   }
 }

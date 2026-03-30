@@ -9,5 +9,6 @@
   "sdk/ruby": "0.0.3",
   "sdk/kotlin": "0.0.2",
   "sdk/csharp": "0.0.2",
-  "sdk/cpp": "0.0.2"
+  "sdk/cpp": "0.0.2",
+  "cli": "0.0.1"
 }

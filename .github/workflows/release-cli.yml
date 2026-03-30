@@ -1,0 +1,92 @@
+name: Release CLI Binaries
+
+on:
+  push:
+    tags:
+      - "cli-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            name: anyvali-linux-amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            name: anyvali-linux-arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            name: anyvali-darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            name: anyvali-darwin-arm64
+          - os: ubuntu-latest
+            goos: windows
+            goarch: amd64
+            name: anyvali-windows-amd64.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: false
+
+      - name: Extract version
+        id: meta
+        run: echo "version=${GITHUB_REF#refs/tags/cli-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          cd cli
+          go build -ldflags="-s -w -X github.com/BetterCorp/AnyVali/cli/cmd.Version=${{ steps.meta.outputs.version }}" -o ../${{ matrix.name }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          merge-multiple: true
+
+      - name: Make binaries executable
+        run: chmod +x binaries/anyvali-linux-* binaries/anyvali-darwin-*
+
+      - name: Generate checksums
+        run: |
+          cd binaries
+          sha256sum * > checksums-sha256.txt
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            binaries/anyvali-linux-amd64
+            binaries/anyvali-linux-arm64
+            binaries/anyvali-darwin-amd64
+            binaries/anyvali-darwin-arm64
+            binaries/anyvali-windows-amd64.exe
+            binaries/checksums-sha256.txt
