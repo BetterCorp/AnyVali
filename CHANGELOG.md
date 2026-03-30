@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.0...anyvali-v0.2.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* auto-merge release PRs and document release process ([ed464a8](https://github.com/BetterCorp/AnyVali/commit/ed464a8091329860de6949b0dbf7eb941046b4ce))
+
 ## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.8...anyvali-v0.2.0) (2026-03-30)
 
 
