@@ -1,0 +1,6 @@
+# Workflow files and CI configuration require owner review.
+# These files have access to secrets and should never be merged without scrutiny.
+.github/                    @BetterCorp/core-team
+.release-please-config.json @BetterCorp/core-team
+.release-please-manifest.json @BetterCorp/core-team
+codecov.yml                 @BetterCorp/core-team
