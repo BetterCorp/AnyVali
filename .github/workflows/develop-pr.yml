@@ -1,0 +1,39 @@
+name: Develop → Master PR
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create or update PR from develop to master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if a PR from develop → master already exists
+          existing=$(gh pr list --base master --head develop --state open --json number --jq '.[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already exists (develop → master). Nothing to do."
+          else
+            gh pr create \
+              --base master \
+              --head develop \
+              --title "Merge develop into master" \
+              --body "$(cat <<'EOF'
+          Automated PR to merge \`develop\` into \`master\`.
+
+          This PR is created automatically when changes are pushed to the \`develop\` branch.
+          EOF
+          )"
+            echo "Created new PR from develop → master."
+          fi
