@@ -1,9 +1,10 @@
 name: Build Release
 
 on:
-  push:
-    branches:
-      - master
+  workflow_run:
+    workflows: ["CI"]
+    branches: [master]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -14,10 +15,14 @@ permissions:
 
 jobs:
   build-release:
+    # Only run after successful CI on master (not on skipped CI from release commits)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      pr: ${{ steps.release.outputs.pr }}
       js_released: ${{ steps.release.outputs['js--release_created'] }}
       python_released: ${{ steps.release.outputs['python--release_created'] }}
       go_released: ${{ steps.release.outputs['go--release_created'] }}
@@ -34,7 +39,9 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # Auto-merge the release PR so developers never have to merge it manually.
+      # Auto-merge the release PR immediately.
+      # Release Please creates a PR with version bumps + changelogs.
+      # We merge it with "chore: release" prefix so CI skips on the next push.
       - name: Auto-merge release PR
         if: steps.release.outputs.pr && steps.release.outputs.releases_created != 'true'
         uses: actions/github-script@v7
@@ -50,8 +57,11 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: pr.number,
                 merge_method: 'squash',
+                commit_title: `chore: release ${pr.title}`,
               });
             }
+
+  # --- Publish jobs: only run when releases are actually created ---
 
   publish-npm:
     needs: build-release

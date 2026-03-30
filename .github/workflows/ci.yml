@@ -20,7 +20,25 @@ permissions:
   contents: read
 
 jobs:
+  # Skip CI for release commits (changelog/version bumps committed by build-release)
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          if [[ "${{ github.event_name }}" == "push" && "$MSG" == "chore: release"* ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping CI for release commit"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   js:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,6 +65,8 @@ jobs:
         continue-on-error: true
 
   python:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -74,6 +94,8 @@ jobs:
         continue-on-error: true
 
   go:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -99,6 +121,8 @@ jobs:
         continue-on-error: true
 
   java:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -125,6 +149,8 @@ jobs:
         continue-on-error: true
 
   csharp:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -152,6 +178,8 @@ jobs:
         continue-on-error: true
 
   rust:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -184,6 +212,8 @@ jobs:
         continue-on-error: true
 
   php:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -216,6 +246,8 @@ jobs:
         continue-on-error: true
 
   ruby:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -243,6 +275,8 @@ jobs:
         continue-on-error: true
 
   kotlin:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -267,6 +301,8 @@ jobs:
         continue-on-error: true
 
   cpp:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -289,6 +325,8 @@ jobs:
       - run: ./runner.sh ci cpp
 
   cli:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -311,8 +349,8 @@ jobs:
 
   conformance:
     runs-on: ubuntu-latest
-    needs: [js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, cli]
-    if: always()
+    needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, cli]
+    if: always() && needs.check.outputs.should_run == 'true'
     defaults:
       run:
         shell: bash
