@@ -518,6 +518,34 @@ public class ImportTests
     }
 
     [Fact]
+    public void ImportMissingKindThrows()
+    {
+        var doc = new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1",
+            Root = new Dictionary<string, object?> { },
+            Definitions = new(),
+            Extensions = new(),
+        };
+        Assert.ThrowsAny<Exception>(() => V.Import(doc));
+    }
+
+    [Fact]
+    public void ImportNullEmptyRootThrows()
+    {
+        var doc = new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1",
+            Root = null!,
+            Definitions = new(),
+            Extensions = new(),
+        };
+        Assert.ThrowsAny<Exception>(() => V.Import(doc));
+    }
+
+    [Fact]
     public void RoundTripExportImport()
     {
         var original = V.Object(new Dictionary<string, Schema>

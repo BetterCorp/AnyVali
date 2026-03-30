@@ -384,6 +384,71 @@ TEST("import: strip unknown keys") {
     ASSERT_JSON_EQ(result.value, json::object({{"name", "Alice"}}));
 }
 
+TEST("import: unsupported schema kind") {
+    json doc = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", {{"kind", "bogus_xyz"}}},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    bool threw = false;
+    try {
+        import_schema(doc);
+    } catch (...) {
+        threw = true;
+    }
+    ASSERT(threw);
+}
+
+TEST("import: missing kind field") {
+    json doc = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", json::object()},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    bool threw = false;
+    try {
+        import_schema(doc);
+    } catch (...) {
+        threw = true;
+    }
+    ASSERT(threw);
+}
+
+TEST("import: null empty root") {
+    json doc_empty = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    bool threw1 = false;
+    try {
+        import_schema(doc_empty);
+    } catch (...) {
+        threw1 = true;
+    }
+    ASSERT(threw1);
+
+    json doc_null = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", nullptr},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    bool threw2 = false;
+    try {
+        import_schema(doc_null);
+    } catch (...) {
+        threw2 = true;
+    }
+    ASSERT(threw2);
+}
+
 TEST("import: default unknown keys is reject") {
     json doc = {
         {"anyvaliVersion", "1.0"},

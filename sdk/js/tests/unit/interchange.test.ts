@@ -89,4 +89,24 @@ describe("Import", () => {
     const imported = importSchema(doc);
     expect(imported.parse("42")).toBe(42);
   });
+
+  it("throws on missing kind field", () => {
+    const doc = {
+      anyvaliVersion: "1.0",
+      schemaVersion: "1",
+      root: {},
+      definitions: {},
+      extensions: {},
+    };
+    expect(() => importSchema(doc as any)).toThrow();
+  });
+
+  it("throws on null/empty root", () => {
+    expect(() =>
+      importSchema({ anyvaliVersion: "1.0", schemaVersion: "1", root: null } as any)
+    ).toThrow();
+    expect(() =>
+      importSchema({ anyvaliVersion: "1.0", schemaVersion: "1" } as any)
+    ).toThrow();
+  });
 });

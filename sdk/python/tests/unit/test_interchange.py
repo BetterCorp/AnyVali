@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 import anyvali as v
 
 
@@ -83,6 +85,22 @@ class TestImport:
         })
         schema = v.import_schema(doc)
         assert schema.safe_parse(True).success
+
+    def test_import_unsupported_kind(self):
+        doc = {"root": {"kind": "bogus_xyz"}}
+        with pytest.raises(Exception):
+            v.import_schema(doc)
+
+    def test_import_missing_kind(self):
+        doc = {"root": {}}
+        with pytest.raises(Exception):
+            v.import_schema(doc)
+
+    def test_import_null_empty_root(self):
+        with pytest.raises(Exception):
+            v.import_schema({})
+        with pytest.raises(Exception):
+            v.import_schema({"root": None})
 
 
 class TestRoundTrip:

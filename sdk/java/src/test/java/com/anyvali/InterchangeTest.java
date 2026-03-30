@@ -549,5 +549,31 @@ class InterchangeTest {
             assertThrows(IllegalArgumentException.class,
                     () -> Importer.importSchema(map));
         }
+
+        @Test
+        void missingKindThrows() {
+            var map = new LinkedHashMap<String, Object>();
+            map.put("anyvaliVersion", "1.0");
+            map.put("schemaVersion", "1");
+            map.put("root", Map.of());
+            assertThrows(Exception.class,
+                    () -> Importer.importSchema(map));
+        }
+
+        @Test
+        void nullEmptyRootThrows() {
+            var emptyDoc = new LinkedHashMap<String, Object>();
+            emptyDoc.put("anyvaliVersion", "1.0");
+            emptyDoc.put("schemaVersion", "1");
+            assertThrows(Exception.class,
+                    () -> Importer.importSchema(emptyDoc));
+
+            var nullRoot = new LinkedHashMap<String, Object>();
+            nullRoot.put("anyvaliVersion", "1.0");
+            nullRoot.put("schemaVersion", "1");
+            nullRoot.put("root", null);
+            assertThrows(Exception.class,
+                    () -> Importer.importSchema(nullRoot));
+        }
     }
 }

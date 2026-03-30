@@ -667,6 +667,44 @@ class InterchangeTest {
     }
 
     @Test
+    fun `import missing kind field fails`() {
+        val jsonStr = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {},
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        assertThrows<Exception> { Importer.importFromJson(jsonStr) }
+    }
+
+    @Test
+    fun `import null empty root fails`() {
+        val emptyRoot = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        assertThrows<Exception> { Importer.importFromJson(emptyRoot) }
+
+        val nullRoot = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": null,
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        assertThrows<Exception> { Importer.importFromJson(nullRoot) }
+    }
+
+    @Test
     fun `import string with coercion`() {
         val jsonStr = """
         {

@@ -346,6 +346,22 @@ class TestInterchange < Minitest::Test
     assert_raises(AnyVali::ValidationError) { AnyVali.import_schema(doc) }
   end
 
+  def test_import_missing_kind
+    doc = {
+      "anyvaliVersion" => "1.0",
+      "schemaVersion" => "1",
+      "root" => {},
+      "definitions" => {},
+      "extensions" => {}
+    }
+    assert_raises(StandardError) { AnyVali.import_schema(doc) }
+  end
+
+  def test_import_null_empty_root
+    assert_raises(StandardError) { AnyVali.import_schema({}) }
+    assert_raises(StandardError) { AnyVali.import_schema({ "root" => nil }) }
+  end
+
   def test_import_width_types
     %w[int8 int16 int32 int64 uint8 uint16 uint32 uint64 float32 float64].each do |kind|
       doc = {

@@ -354,6 +354,17 @@ func TestValidateBadSchema(t *testing.T) {
 	}
 }
 
+func TestValidateEmptyRootSchema(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty_root.json")
+	os.WriteFile(path, []byte(`{}`), 0644)
+
+	code := RunValidate([]string{path, `{}`, "-f", "quiet"})
+	if code != 2 {
+		t.Errorf("expected exit code 2 for schema with no root, got %d", code)
+	}
+}
+
 func TestValidateNoArgs(t *testing.T) {
 	code := RunValidate([]string{})
 	if code != 2 {
