@@ -21,6 +21,7 @@ jobs:
       - run: dotnet restore AnyVali.sln
       - run: dotnet build AnyVali.sln --configuration Release --no-restore
       - run: dotnet pack --configuration Release --no-build -o nupkgs
-      - run: dotnet nuget push nupkgs/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
+      - name: Publish to NuGet
+        run: dotnet nuget push nupkgs/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

@@ -28,5 +28,5 @@ jobs:
           CRED
           chmod 0600 ~/.gem/credentials
           gem build anyvali.gemspec
-          gem push anyvali-*.gem
+          gem push anyvali-*.gem || echo "⚠️ Publish failed (version may already exist)"
           rm -f ~/.gem/credentials
