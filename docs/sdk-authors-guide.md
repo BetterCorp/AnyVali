@@ -645,28 +645,99 @@ Each SDK should adapt API names to the conventions of its language. The spec req
 
 ### Type Inference and Generics
 
-Where possible, SDKs should provide type-level output inference:
+All SDKs should provide static type inference so that `parse()` and `safeParse()` return correctly typed output without manual casts. The implementation approach varies by language capability and falls into three tiers.
+
+#### Tier 1 -- Full Inference (TypeScript, C#, Kotlin)
+
+These languages can infer the full output type from the schema definition at compile time.
+
+**TypeScript** -- `Infer<T>` utility type. `ObjectSchema` is generic over its shape. Array, tuple, union, intersection, optional, nullable, record, and enum all thread types through.
 
 ```typescript
-// TypeScript: inferred output type
-const UserSchema = v.object({
-  name: v.string(),
-  age: v.int(),
+import { object, string, int, type Infer } from "@anyvali/js";
+
+const UserSchema = object({
+  name: string(),
+  age: int(),
 });
-type User = v.Infer<typeof UserSchema>;
+type User = Infer<typeof UserSchema>;
 // => { name: string; age: number }
+
+const user = UserSchema.parse(input); // returns { name: string; age: number }
 ```
+
+**C#** -- `Schema<T>` generic base class and `ParseResult<T>`. `StringSchema : Schema<string>`, `IntSchema : Schema<long>`, etc. `SafeParseTyped()` returns `ParseResult<T>`.
+
+```csharp
+var schema = V.Object(new { Name = V.String(), Age = V.Int() });
+// schema.Parse(input) returns a typed result
+// schema.SafeParseTyped(input) returns ParseResult<T>
+```
+
+**Kotlin** -- `Schema<out T>` generic base, generic sealed `ParseResult<T>`. Same pattern as C#.
+
+```kotlin
+val schema = V.obj(mapOf("name" to V.string(), "age" to V.int()))
+// schema.parse(input) returns typed output
+```
+
+#### Tier 2 -- Generic Parse (Python, Java, Go, Rust)
+
+These languages provide generic base classes or helper functions that carry the output type.
+
+**Python** -- `BaseSchema(ABC, Generic[T])`, `ParseResult(Generic[T])`. Each concrete schema binds `T`: `StringSchema(BaseSchema[str])`, etc. `parse()` returns `T`, `safe_parse()` returns `ParseResult[T]`.
+
+```python
+schema = v.string()  # StringSchema(BaseSchema[str])
+result: str = schema.parse("hello")  # type checkers know this is str
+```
+
+**Java** -- `Schema<T>` generic base, `ParseResult<T>` record. `StringSchema extends Schema<String>`, etc.
+
+```java
+Schema<String> schema = V.string();
+String result = schema.parse("hello"); // no cast needed
+```
+
+**Go** -- `TypedParse[T]()` and `TypedSafeParse[T]()` generic helper functions, `TypedParseResult[T]` struct.
+
+```go
+result, err := av.TypedParse[string](av.String(), input)
+// result is string, not any
+```
+
+**Rust** -- `TypedSchema` trait with associated `Output` type, `parse_as<T>()` free function.
 
 ```rust
-// Rust: derive output type
-let user_schema = v::object(fields![
-    "name" => v::string(),
-    "age" => v::int(),
-]);
-// user_schema.parse(input) returns a typed struct or map
+let result: String = v::parse_as::<String>(&v::string(), input)?;
 ```
 
-This is a language-specific ergonomic feature and is not part of the portable contract.
+#### Tier 3 -- Tooling-Based (C++, PHP, Ruby)
+
+These languages rely on external type-checking tools rather than built-in generics.
+
+**C++** -- Template `parse_as<T>()` and `safe_parse_as<T>()` helpers.
+
+```cpp
+auto result = v::parse_as<std::string>(v::string(), input);
+```
+
+**PHP** -- `@template` phpDoc annotations for PHPStan/Psalm static analysis.
+
+```php
+/** @var StringSchema $schema */
+$schema = V::string();
+// PHPStan/Psalm infer that $schema->parse() returns string
+```
+
+**Ruby** -- RBS type signature file for Steep/Sorbet.
+
+```ruby
+schema = AnyVali.string
+result = schema.parse("hello") # Steep/Sorbet know this is String
+```
+
+Type inference is a language-specific ergonomic feature and is not part of the portable contract.
 
 ## Implementation Checklist
 

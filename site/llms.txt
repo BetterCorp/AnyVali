@@ -36,6 +36,10 @@ composer require anyvali/anyvali # PHP
 gem install anyvali              # Ruby
 ```
 
+## Type Inference
+
+All 10 SDKs provide static type inference. In TypeScript, use `Infer<T>` to extract the output type from a schema (similar to Zod's `z.infer`). Other SDKs use generics (`Schema<T>` in C#/Kotlin/Java, `Generic[T]` in Python), generic helpers (`TypedParse[T]()` in Go, `parse_as<T>()` in Rust/C++), or tooling annotations (`@template` phpDoc in PHP, RBS signatures in Ruby).
+
 ## Quick Example (TypeScript)
 
 ```typescript
