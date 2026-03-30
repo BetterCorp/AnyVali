@@ -68,6 +68,21 @@ resolve_targets() {
   fi
 }
 
+# Copy root README.md into an SDK directory (for pack/publish).
+# Usage: prepare_readme <sdk_dir>
+prepare_readme() {
+  local sdk_dir="$1"
+  if [[ -f "$ROOT_DIR/README.md" ]]; then
+    cp "$ROOT_DIR/README.md" "$sdk_dir/README.md"
+  fi
+}
+
+# Remove copied README from an SDK directory (post-pack cleanup).
+cleanup_readme() {
+  local sdk_dir="$1"
+  rm -f "$sdk_dir/README.md"
+}
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
@@ -188,7 +203,9 @@ run_python() {
       (cd "$ROOT_DIR/sdk/python" && "$py_cmd" -m pip install --upgrade pip && "$py_cmd" -m pip install build -e ".[dev]")
       ;;
     build)
+      prepare_readme "$ROOT_DIR/sdk/python"
       (cd "$ROOT_DIR/sdk/python" && "$py_cmd" -m build)
+      cleanup_readme "$ROOT_DIR/sdk/python"
       ;;
     test)
       (cd "$ROOT_DIR/sdk/python" && "$py_cmd" -m pytest)
@@ -328,7 +345,9 @@ run_rust() {
       (cd "$ROOT_DIR/sdk/rust" && cargo fetch)
       ;;
     build)
+      prepare_readme "$ROOT_DIR/sdk/rust"
       (cd "$ROOT_DIR/sdk/rust" && cargo build --all-targets)
+      cleanup_readme "$ROOT_DIR/sdk/rust"
       ;;
     test)
       (cd "$ROOT_DIR/sdk/rust" && cargo test)
@@ -410,7 +429,9 @@ run_ruby() {
       ;;
     build)
       if has_cmd gem; then
+        prepare_readme "$ROOT_DIR/sdk/ruby"
         (cd "$ROOT_DIR/sdk/ruby" && gem build anyvali.gemspec)
+        cleanup_readme "$ROOT_DIR/sdk/ruby"
       else
         log_skip "ruby:build" "gem not found"
       fi

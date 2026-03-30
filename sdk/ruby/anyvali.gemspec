@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 3.0.0"
 
-  s.files = Dir["lib/**/*.rb"]
+  s.files = Dir["lib/**/*.rb"] + ["README.md"]
 
   s.add_development_dependency "minitest", "~> 5.0"
   s.add_development_dependency "rake", "~> 13.0"

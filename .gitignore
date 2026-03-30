@@ -9,3 +9,16 @@ dist-release/
 **/*.egg-info/
 **/coverage/
 **/build/
+**/target/
+**/bin/
+**/obj/
+**/.gradle/
+sdk/js/dist/
+*.gem
+Gemfile.lock
+**/vendor/
+composer.lock
+**/.phpunit.result.cache
+Cargo.lock
+# Copied READMEs (originals live at repo root, copied at pack/publish time)
+sdk/*/README.md
