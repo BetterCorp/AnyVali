@@ -62,12 +62,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Find CLI release
         id: find
         run: |
           tag=$(git tag --sort=-v:refname | grep '^cli-v' | head -1)
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Found tag: $tag"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
