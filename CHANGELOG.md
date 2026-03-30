@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.0.1...anyvali-v0.1.0) (2026-03-30)
+
+
+### Features
+
+* **js:** add forms bindings and DOM enhancement tests ([1cb7fa1](https://github.com/BetterCorp/AnyVali/commit/1cb7fa1493282c5db3207f1e552d86ac3c57b4b0))
+
+
+### Bug Fixes
+
+* **cli:** treat bare "-" as stdin positional arg, not a flag ([e3fb7ec](https://github.com/BetterCorp/AnyVali/commit/e3fb7ec8869c47c95fbd59f558b7eca77048c221))
+* **cpp:** add missing stdexcept include in types.hpp ([ca9b706](https://github.com/BetterCorp/AnyVali/commit/ca9b706c1a1a70eeaa3270e0c578a43a5494d59e))
+* **cpp:** reject unsupported schema kinds in string_to_kind ([4948b74](https://github.com/BetterCorp/AnyVali/commit/4948b74de35058e9c9f6ab147a910c62c5eef885))
+* resolve build and test failures across all 10 SDKs ([ea46c39](https://github.com/BetterCorp/AnyVali/commit/ea46c39a36b24e6babb1d78013005463badda03e))
+* update CI for Node 22/24 and fix CLI test runner ([43938a4](https://github.com/BetterCorp/AnyVali/commit/43938a4fb8f2e4867784b6729b71581e9e0dc8bf))
+* update Dockerfiles to match current project structure ([2ac8c9f](https://github.com/BetterCorp/AnyVali/commit/2ac8c9ffb99fb67908618c3388a0c8861d5201ff))
+
 ## [Unreleased] - 2026-03-30
 
 ### Features

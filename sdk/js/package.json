@@ -1,6 +1,6 @@
 {
   "name": "@anyvali/js",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Native validation with portable schema interchange",
   "homepage": "https://anyvali.com",
   "repository": {
