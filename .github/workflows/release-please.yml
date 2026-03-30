@@ -71,12 +71,6 @@ jobs:
     uses: ./.github/workflows/release-kotlin.yml
     secrets: inherit
 
-  publish-php:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
-    uses: ./.github/workflows/release-php.yml
-    secrets: inherit
-
   publish-cli:
     needs: release-please
     if: needs.release-please.outputs.releases_created == 'true'
