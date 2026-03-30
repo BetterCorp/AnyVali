@@ -12,57 +12,56 @@
       "component": "js",
       "release-type": "node",
       "package-name": "@anyvali/js",
-      "changelog-path": "sdk/js/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/python": {
       "component": "python",
       "release-type": "python",
       "package-name": "anyvali",
-      "changelog-path": "sdk/python/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/go": {
       "component": "go",
       "release-type": "go",
       "package-name": "github.com/BetterCorp/AnyVali/sdk/go",
-      "changelog-path": "sdk/go/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/java": {
       "component": "java",
-      "release-type": "java",
-      "package-name": "com.anyvali:anyvali",
-      "changelog-path": "sdk/java/CHANGELOG.md"
+      "release-type": "simple",
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/rust": {
       "component": "rust",
       "release-type": "rust",
       "package-name": "anyvali",
-      "changelog-path": "sdk/rust/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/php": {
       "component": "php",
       "release-type": "simple",
-      "changelog-path": "sdk/php/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/ruby": {
       "component": "ruby",
       "release-type": "ruby",
       "package-name": "anyvali",
-      "changelog-path": "sdk/ruby/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/kotlin": {
       "component": "kotlin",
       "release-type": "simple",
-      "changelog-path": "sdk/kotlin/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/csharp": {
       "component": "csharp",
       "release-type": "simple",
-      "changelog-path": "sdk/csharp/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/cpp": {
       "component": "cpp",
       "release-type": "simple",
-      "changelog-path": "sdk/cpp/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     }
   }
 }
