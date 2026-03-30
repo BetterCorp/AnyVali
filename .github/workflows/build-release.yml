@@ -1,4 +1,4 @@
-name: Release Please
+name: Build Release
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 jobs:
-  release-please:
+  build-release:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
@@ -25,55 +25,55 @@ jobs:
           manifest-file: .release-please-manifest.json
 
   publish-npm:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-npm.yml
     secrets: inherit
 
   publish-pypi:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-pypi.yml
     secrets: inherit
 
   publish-go:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-go.yml
     secrets: inherit
 
   publish-crates:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-crates.yml
     secrets: inherit
 
   publish-maven:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-maven.yml
     secrets: inherit
 
   publish-nuget:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-nuget.yml
     secrets: inherit
 
   publish-rubygems:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-rubygems.yml
     secrets: inherit
 
   publish-kotlin:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-kotlin.yml
     secrets: inherit
 
   publish-cli:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: build-release
+    if: needs.build-release.outputs.releases_created == 'true'
     uses: ./.github/workflows/release-cli.yml
     secrets: inherit
