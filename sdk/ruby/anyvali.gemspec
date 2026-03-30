@@ -17,4 +17,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "minitest", "~> 5.0"
   s.add_development_dependency "rake", "~> 13.0"
+  s.add_development_dependency "simplecov", "~> 0.22"
+  s.add_development_dependency "simplecov-cobertura", "~> 2.1"
 end

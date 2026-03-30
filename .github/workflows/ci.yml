@@ -118,7 +118,7 @@ jobs:
       - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.java-version == '17'
         with:
-          directory: sdk/java/target/site/jacoco
+          files: sdk/java/target/site/jacoco/jacoco.xml
           flags: java
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
@@ -146,6 +146,7 @@ jobs:
         with:
           directory: sdk/csharp
           flags: csharp
+          files: "**/*cobertura*.xml"
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
 
@@ -235,7 +236,7 @@ jobs:
       - uses: codecov/codecov-action@v6
         if: github.event_name == 'push' && matrix.ruby-version == '3.3'
         with:
-          directory: sdk/ruby/coverage
+          files: sdk/ruby/coverage/coverage.xml
           flags: ruby
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
@@ -259,7 +260,7 @@ jobs:
       - uses: codecov/codecov-action@v6
         if: github.event_name == 'push'
         with:
-          directory: sdk/kotlin/build/reports/jacoco
+          files: sdk/kotlin/build/reports/jacoco/test/jacocoTestReport.xml
           flags: kotlin
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
