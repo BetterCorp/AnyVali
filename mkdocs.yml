@@ -45,6 +45,17 @@ nav:
       - Numeric Semantics: docs/numeric-semantics.md
       - Portability Guide: docs/portability-guide.md
       - SDK Authors Guide: docs/sdk-authors-guide.md
+  - SDK Reference:
+      - JavaScript / TypeScript: docs/sdk-js.md
+      - Python: docs/sdk-python.md
+      - Go: docs/sdk-go.md
+      - Rust: docs/sdk-rust.md
+      - "C#": docs/sdk-csharp.md
+      - Java: docs/sdk-java.md
+      - Kotlin: docs/sdk-kotlin.md
+      - PHP: docs/sdk-php.md
+      - Ruby: docs/sdk-ruby.md
+      - "C++": docs/sdk-cpp.md
   - Specification:
       - Normative Spec: spec/spec.md
       - JSON Interchange Format: spec/json-format.md
