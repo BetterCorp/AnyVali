@@ -3,9 +3,20 @@
 if ENV["COVERAGE"]
   require "simplecov"
   require "simplecov-cobertura"
+  # Wrap the Cobertura formatter so a DTD / XML generation error
+  # does not turn a passing test run into a CI failure.
+  safe_formatter = Class.new(SimpleCov::Formatter::CoberturaFormatter) do
+    def format(result)
+      super
+    rescue StandardError => e
+      $stderr.puts "[simplecov] Cobertura XML generation failed: #{e.message}"
+    end
+  end
+
   SimpleCov.start do
     add_filter "/test/"
-    formatter SimpleCov::Formatter::CoberturaFormatter
+    add_filter "/sig/"
+    formatter safe_formatter
   end
 end
 

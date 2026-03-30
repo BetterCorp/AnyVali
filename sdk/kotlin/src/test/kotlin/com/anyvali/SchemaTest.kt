@@ -1030,7 +1030,7 @@ class SchemaTest {
     fun `union first matching wins`() {
         val u = union(number(), int_())
         val result = u.parse(5)
-        assertEquals(5, result)
+        assertEquals(5.0, result)
     }
 
     @Test
@@ -1069,7 +1069,7 @@ class SchemaTest {
             number().min(0),
             number().max(100)
         )
-        assertEquals(50, i.parse(50))
+        assertEquals(50.0, i.parse(50))
     }
 
     @Test
