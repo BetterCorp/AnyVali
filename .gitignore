@@ -9,6 +9,7 @@ dist-release/
 **/*.egg-info/
 **/coverage/
 **/build/
+**/build_test/
 **/target/
 **/bin/
 **/obj/
