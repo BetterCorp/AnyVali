@@ -192,6 +192,19 @@ Need a specific size? Use explicit types:
 | `float32` | ~7 decimal digits precision |
 | `float64` | ~15 decimal digits precision |
 
+Signed vs unsigned:
+
+- `int`, `int8`, `int16`, `int32`, `int64` can be negative or positive
+- `uint8`, `uint16`, `uint32`, `uint64` are unsigned and only allow `0` or greater
+- `int` is an alias for `int64`
+- `number` is an alias for `float64`
+
+Rule of thumb:
+
+- use `number` for decimal / floating-point values
+- use `int` for normal whole numbers
+- use `uint64` only when negatives are impossible and you explicitly want the larger positive range
+
 ```typescript
 int8()    // JS
 v.int8()  // Python

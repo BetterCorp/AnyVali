@@ -143,6 +143,40 @@ Ruby has arbitrary-precision `Integer` and float64 `Float`.
 
 ## Available Numeric Types
 
+## Quick Choice Guide
+
+Use this first:
+
+- `number` for decimal values and general floating-point math
+- `int` for ordinary whole numbers
+- `uint64` only when the value can never be negative and you need the unsigned 64-bit range
+
+Aliases:
+
+- `number` = `float64`
+- `int` = `int64`
+
+Signed vs unsigned:
+
+- signed integers can represent both negative and positive values
+- unsigned integers can represent `0` and positive values only
+- unsigned types trade away negative values in exchange for a larger positive maximum at the same bit width
+
+Examples at the same width:
+
+| Kind | Signed? | Range |
+|---|---|---|
+| `int64` | Yes | -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 |
+| `uint64` | No | 0 to 18,446,744,073,709,551,615 |
+| `float64` / `number` | N/A | fractional values, about 15-17 significant digits |
+
+Practical guidance:
+
+- use `int64` for IDs, counters, timestamps, and most integer business values
+- use `uint64` for values that are inherently non-negative, such as byte counts or monotonic counters
+- avoid `number` for identifiers or exact integer values
+- be cautious with `int64` and `uint64` in JavaScript because large values may require `BigInt`
+
 ### Integer Types
 
 | Kind | Width | Signed | Minimum | Maximum |
