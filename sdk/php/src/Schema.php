@@ -7,6 +7,9 @@ namespace AnyVali;
 use AnyVali\Interchange\Exporter;
 use AnyVali\Parse\Coercion;
 
+/**
+ * @template TOutput
+ */
 abstract class Schema
 {
     protected mixed $defaultValue = null;
@@ -33,6 +36,8 @@ abstract class Schema
 
     /**
      * Throwing parse.
+     *
+     * @return TOutput
      */
     public function parse(mixed $input): mixed
     {
@@ -45,6 +50,8 @@ abstract class Schema
 
     /**
      * Non-throwing parse.
+     *
+     * @return ParseResult<TOutput>
      */
     public function safeParse(mixed $input, ?ValidationContext $ctx = null): ParseResult
     {

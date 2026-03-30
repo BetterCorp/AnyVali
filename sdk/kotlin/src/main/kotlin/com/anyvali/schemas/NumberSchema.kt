@@ -13,7 +13,7 @@ data class NumberSchema(
     val multipleOf: Double? = null,
     val defaultValue: Any? = UNSET,
     val coerce: String? = null
-) : Schema() {
+) : Schema<Double>() {
     override val kind: String = schemaKind
 
     fun min(n: Number) = copy(min = n.toDouble())
@@ -24,7 +24,8 @@ data class NumberSchema(
     fun default(v: Number) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    @Suppress("UNCHECKED_CAST")
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Double> {
         var value = input
 
         // Apply coercion
@@ -48,7 +49,7 @@ data class NumberSchema(
 
         val issues = validateValue(value, ctx)
         return if (issues.isEmpty()) {
-            ParseResult.Success(value)
+            ParseResult.Success(value as Double)
         } else {
             ParseResult.Failure(issues)
         }

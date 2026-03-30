@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Schema that accepts any value (semantically different from any).
  */
-public class UnknownSchema extends Schema {
+public class UnknownSchema extends Schema<Object> {
 
     public UnknownSchema() {}
 
@@ -35,7 +35,7 @@ public class UnknownSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new UnknownSchema(this);
     }
 }

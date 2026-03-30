@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext
 
 
-class RefSchema(BaseSchema):
+class RefSchema(BaseSchema[Any]):
     """Schema that references a named definition."""
 
     def __init__(self, ref: str) -> None:

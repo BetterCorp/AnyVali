@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class ArraySchema : Schema
+public sealed class ArraySchema : Schema<List<object?>>
 {
     private readonly Schema _items;
     private int? _minItems;

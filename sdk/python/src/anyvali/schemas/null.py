@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class NullSchema(BaseSchema):
+class NullSchema(BaseSchema[None]):
     """Schema that only accepts None/null."""
 
     def __init__(self) -> None:

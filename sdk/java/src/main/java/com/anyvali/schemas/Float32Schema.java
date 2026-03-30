@@ -33,7 +33,7 @@ public class Float32Schema extends NumberSchema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Double> copy() {
         return new Float32Schema(this);
     }
 }

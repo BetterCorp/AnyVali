@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class TupleSchema(
-    val elements: List<Schema>
-) : Schema() {
+    val elements: List<Schema<*>>
+) : Schema<List<Any?>>() {
     override val kind: String = "tuple"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<List<Any?>> {
         if (input !is List<*>) {
             return ParseResult.Failure(
                 listOf(

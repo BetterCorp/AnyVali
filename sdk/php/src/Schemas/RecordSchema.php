@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<array<string, mixed>>
+ */
 final class RecordSchema extends Schema
 {
     public function __construct(

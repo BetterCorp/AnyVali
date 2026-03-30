@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class RefSchema : Schema
+public sealed class RefSchema : Schema<object?>
 {
     private readonly string _ref;
     private readonly Func<Schema>? _resolver;

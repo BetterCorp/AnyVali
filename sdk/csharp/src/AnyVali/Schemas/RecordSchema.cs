@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class RecordSchema : Schema
+public sealed class RecordSchema : Schema<Dictionary<string, object?>>
 {
     private readonly Schema _valueSchema;
 

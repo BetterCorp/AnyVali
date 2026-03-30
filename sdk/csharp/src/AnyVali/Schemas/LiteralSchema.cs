@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class LiteralSchema : Schema
+public sealed class LiteralSchema : Schema<object?>
 {
     private readonly object? _value;
 

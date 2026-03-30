@@ -21,7 +21,7 @@ public class Float64Schema extends NumberSchema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Double> copy() {
         return new Float64Schema(this);
     }
 }

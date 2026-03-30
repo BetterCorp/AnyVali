@@ -1,12 +1,27 @@
 import type { ParseContext, SchemaNode } from "../types.js";
 import { BaseSchema } from "./base.js";
 
-export class IntersectionSchema extends BaseSchema<unknown, unknown> {
-  private _schemas: BaseSchema[];
+/** Convert a union of types to an intersection. */
+type UnionToIntersection<U> = (
+  U extends any ? (x: U) => void : never
+) extends (x: infer I) => void
+  ? I
+  : never;
 
-  constructor(schemas: BaseSchema[]) {
+/** Flatten an intersection into a clean single-level type. */
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+export class IntersectionSchema<
+  T extends BaseSchema<any, any>[] = BaseSchema[],
+> extends BaseSchema<
+  unknown,
+  Prettify<UnionToIntersection<T[number]["_output"]>>
+> {
+  private _schemas: T;
+
+  constructor(schemas: [...T]) {
     super();
-    this._schemas = schemas;
+    this._schemas = schemas as T;
   }
 
   _validate(input: unknown, ctx: ParseContext): unknown {

@@ -158,7 +158,7 @@ class InterchangeTest {
         void stringSchema() {
             var schema = string().minLength(1).maxLength(100);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello").success());
             assertFalse(imported.safeParse("").success());
         }
@@ -167,7 +167,7 @@ class InterchangeTest {
         void numberSchema() {
             var schema = number().min(0).max(100);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(50.0).success());
             assertFalse(imported.safeParse(-1.0).success());
         }
@@ -176,7 +176,7 @@ class InterchangeTest {
         void intSchema() {
             var schema = int_().min(0).max(100);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(50).success());
             assertFalse(imported.safeParse(-1).success());
         }
@@ -184,7 +184,7 @@ class InterchangeTest {
         @Test
         void int8Schema() {
             var doc = Exporter.exportSchema(int8());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(127).success());
             assertFalse(imported.safeParse(128).success());
         }
@@ -192,7 +192,7 @@ class InterchangeTest {
         @Test
         void uint32Schema() {
             var doc = Exporter.exportSchema(uint32());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(0).success());
             assertFalse(imported.safeParse(-1).success());
         }
@@ -200,21 +200,21 @@ class InterchangeTest {
         @Test
         void float32Schema() {
             var doc = Exporter.exportSchema(float32());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(1.0).success());
         }
 
         @Test
         void float64Schema() {
             var doc = Exporter.exportSchema(float64());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(3.14).success());
         }
 
         @Test
         void boolSchema() {
             var doc = Exporter.exportSchema(bool_());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(true).success());
             assertFalse(imported.safeParse("true").success());
         }
@@ -222,7 +222,7 @@ class InterchangeTest {
         @Test
         void nullSchema() {
             var doc = Exporter.exportSchema(null_());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(null).success());
             assertFalse(imported.safeParse("null").success());
         }
@@ -230,7 +230,7 @@ class InterchangeTest {
         @Test
         void anySchema() {
             var doc = Exporter.exportSchema(any_());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("anything").success());
             assertTrue(imported.safeParse(null).success());
         }
@@ -238,21 +238,21 @@ class InterchangeTest {
         @Test
         void unknownSchema() {
             var doc = Exporter.exportSchema(unknown());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("anything").success());
         }
 
         @Test
         void neverSchema() {
             var doc = Exporter.exportSchema(never());
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertFalse(imported.safeParse("anything").success());
         }
 
         @Test
         void literalSchema() {
             var doc = Exporter.exportSchema(literal("hello"));
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello").success());
             assertFalse(imported.safeParse("world").success());
         }
@@ -260,7 +260,7 @@ class InterchangeTest {
         @Test
         void enumSchema() {
             var doc = Exporter.exportSchema(enum_(List.of("a", "b", "c")));
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("a").success());
             assertFalse(imported.safeParse("d").success());
         }
@@ -269,7 +269,7 @@ class InterchangeTest {
         void arraySchema() {
             var schema = array(string()).minItems(1).maxItems(3);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(List.of("a")).success());
             assertFalse(imported.safeParse(List.of()).success());
         }
@@ -278,7 +278,7 @@ class InterchangeTest {
         void tupleSchema() {
             var schema = tuple_(List.of(string(), int_()));
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(List.of("hello", 42)).success());
             assertFalse(imported.safeParse(List.of("hello")).success());
         }
@@ -287,7 +287,7 @@ class InterchangeTest {
         void objectSchema() {
             var schema = object_(Map.of("name", string(), "age", int_()));
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30)).success());
             assertFalse(imported.safeParse(Map.of("name", "Alice")).success());
         }
@@ -296,7 +296,7 @@ class InterchangeTest {
         void recordSchema() {
             var schema = record(int_());
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(Map.of("a", 1, "b", 2)).success());
         }
 
@@ -304,7 +304,7 @@ class InterchangeTest {
         void unionSchema() {
             var schema = union(List.of(string(), int_()));
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello").success());
             assertTrue(imported.safeParse(42).success());
             assertFalse(imported.safeParse(true).success());
@@ -316,7 +316,7 @@ class InterchangeTest {
             var s2 = object_(Map.of("b", int_()), null, UnknownKeyMode.STRIP);
             var schema = intersection(List.of(s1, s2));
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(Map.of("a", "hello", "b", 42)).success());
         }
 
@@ -324,7 +324,7 @@ class InterchangeTest {
         void optionalSchema() {
             var schema = optional(string());
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello").success());
         }
 
@@ -332,7 +332,7 @@ class InterchangeTest {
         void nullableSchema() {
             var schema = nullable(string());
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello").success());
             assertTrue(imported.safeParse(null).success());
         }
@@ -354,7 +354,7 @@ class InterchangeTest {
         void exportAndImportJson() {
             var schema = string().minLength(1);
             String json = Exporter.exportSchemaJson(schema);
-            Schema imported = Importer.importSchema(json);
+            Schema<?> imported = Importer.importSchema(json);
             assertTrue(imported.safeParse("hello").success());
             assertFalse(imported.safeParse("").success());
         }
@@ -366,7 +366,7 @@ class InterchangeTest {
                     "age", int_().min(0)
             ));
             String json = Exporter.exportSchemaJson(schema);
-            Schema imported = Importer.importSchema(json);
+            Schema<?> imported = Importer.importSchema(json);
             assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30)).success());
         }
     }
@@ -377,13 +377,13 @@ class InterchangeTest {
         @Test
         void exportWithDefinitions() {
             var nameSchema = string().minLength(1);
-            Map<String, Schema> defs = Map.of("Name", nameSchema);
+            Map<String, Schema<?>> defs = Map.of("Name", nameSchema);
             var rootSchema = object_(Map.of("name", ref("#/definitions/Name")));
 
             var doc = Exporter.exportSchema(rootSchema, ExportMode.PORTABLE, defs, null);
             assertNotNull(doc.get("definitions"));
 
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(Map.of("name", "Alice")).success());
             assertFalse(imported.safeParse(Map.of("name", "")).success());
         }
@@ -420,7 +420,7 @@ class InterchangeTest {
         void coercionExportImport() {
             var schema = string().coerce(CoercionConfig.builder().trim(true).lower(true).build());
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertEquals("hello", imported.parse("  HELLO  "));
         }
 
@@ -428,7 +428,7 @@ class InterchangeTest {
         void coercionToIntRoundTrip() {
             var schema = int_().coerce(CoercionConfig.builder().toInt(true).build());
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertEquals(42L, imported.parse("42"));
         }
     }
@@ -440,7 +440,7 @@ class InterchangeTest {
         void defaultExportImport() {
             var schema = string().withDefault("hello");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.hasDefault);
         }
     }
@@ -475,7 +475,7 @@ class InterchangeTest {
         void patternRoundTrip() {
             var schema = string().pattern("^[a-z]+$");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("abc").success());
             assertFalse(imported.safeParse("ABC").success());
         }
@@ -484,7 +484,7 @@ class InterchangeTest {
         void startsWithRoundTrip() {
             var schema = string().startsWith("hello");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello world").success());
             assertFalse(imported.safeParse("world").success());
         }
@@ -493,7 +493,7 @@ class InterchangeTest {
         void endsWithRoundTrip() {
             var schema = string().endsWith("world");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("hello world").success());
         }
 
@@ -501,7 +501,7 @@ class InterchangeTest {
         void includesRoundTrip() {
             var schema = string().includes("mid");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("in middle").success());
         }
 
@@ -509,7 +509,7 @@ class InterchangeTest {
         void formatRoundTrip() {
             var schema = string().format("email");
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse("test@example.com").success());
         }
     }
@@ -521,7 +521,7 @@ class InterchangeTest {
         void exclusiveMinMaxRoundTrip() {
             var schema = number().exclusiveMin(0).exclusiveMax(100);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(50.0).success());
             assertFalse(imported.safeParse(0.0).success());
             assertFalse(imported.safeParse(100.0).success());
@@ -531,7 +531,7 @@ class InterchangeTest {
         void multipleOfRoundTrip() {
             var schema = number().multipleOf(5);
             var doc = Exporter.exportSchema(schema);
-            Schema imported = Importer.importSchema(doc);
+            Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(15.0).success());
             assertFalse(imported.safeParse(7.0).success());
         }

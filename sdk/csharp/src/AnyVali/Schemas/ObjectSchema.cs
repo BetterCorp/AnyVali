@@ -2,7 +2,7 @@ using AnyVali.Parse;
 
 namespace AnyVali.Schemas;
 
-public sealed class ObjectSchema : Schema
+public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
 {
     internal sealed class PropertyDef
     {

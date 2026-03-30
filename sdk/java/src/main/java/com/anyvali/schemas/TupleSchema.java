@@ -12,10 +12,10 @@ import java.util.Map;
 /**
  * Schema for fixed-length tuples with positional element schemas.
  */
-public class TupleSchema extends Schema {
-    private final List<Schema> items;
+public class TupleSchema extends Schema<List<Object>> {
+    private final List<Schema<?>> items;
 
-    public TupleSchema(List<Schema> items) {
+    public TupleSchema(List<? extends Schema<?>> items) {
         this.items = new ArrayList<>(items);
     }
 
@@ -55,7 +55,7 @@ public class TupleSchema extends Schema {
     @Override
     protected Map<String, Object> toNode() {
         var elements = new ArrayList<Map<String, Object>>();
-        for (Schema item : items) {
+        for (Schema<?> item : items) {
             elements.add(item.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
@@ -65,11 +65,11 @@ public class TupleSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<List<Object>> copy() {
         return new TupleSchema(this);
     }
 
-    public List<Schema> getItems() {
+    public List<Schema<?>> getItems() {
         return items;
     }
 }

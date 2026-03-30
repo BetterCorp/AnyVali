@@ -16,15 +16,15 @@ public final class Exporter {
     /**
      * Export a schema to an AnyVali document map.
      */
-    public static Map<String, Object> exportSchema(Schema schema) {
+    public static Map<String, Object> exportSchema(Schema<?> schema) {
         return exportSchema(schema, ExportMode.PORTABLE, null, null);
     }
 
     /**
      * Export a schema to an AnyVali document map.
      */
-    public static Map<String, Object> exportSchema(Schema schema, ExportMode mode,
-                                                    Map<String, Schema> definitions,
+    public static Map<String, Object> exportSchema(Schema<?> schema, ExportMode mode,
+                                                    Map<String, ? extends Schema<?>> definitions,
                                                     Map<String, Object> extensions) {
         Map<String, Object> rootNode = schema.toPortableNode();
 
@@ -47,15 +47,15 @@ public final class Exporter {
     /**
      * Export a schema to a JSON string.
      */
-    public static String exportSchemaJson(Schema schema) {
+    public static String exportSchemaJson(Schema<?> schema) {
         return exportSchemaJson(schema, ExportMode.PORTABLE, null, null);
     }
 
     /**
      * Export a schema to a JSON string.
      */
-    public static String exportSchemaJson(Schema schema, ExportMode mode,
-                                          Map<String, Schema> definitions,
+    public static String exportSchemaJson(Schema<?> schema, ExportMode mode,
+                                          Map<String, ? extends Schema<?>> definitions,
                                           Map<String, Object> extensions) {
         Map<String, Object> doc = exportSchema(schema, mode, definitions, extensions);
         return JsonHelper.toJson(doc);

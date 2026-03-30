@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<bool>
+ */
 final class BoolSchema extends Schema
 {
     public function getKind(): string

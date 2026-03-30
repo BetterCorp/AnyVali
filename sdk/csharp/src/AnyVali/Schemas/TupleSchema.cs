@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class TupleSchema : Schema
+public sealed class TupleSchema : Schema<List<object?>>
 {
     private readonly List<Schema> _items;
 

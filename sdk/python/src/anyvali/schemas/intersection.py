@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext
 
 
-class IntersectionSchema(BaseSchema):
+class IntersectionSchema(BaseSchema[Any]):
     """Schema that requires input to match all given schemas."""
 
     def __init__(self, schemas: list[BaseSchema]) -> None:

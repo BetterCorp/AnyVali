@@ -9,7 +9,7 @@ from ..types import UnknownKeyMode
 from .base import BaseSchema, ValidationContext, _SENTINEL, _anyvali_type_name
 
 
-class ObjectSchema(BaseSchema):
+class ObjectSchema(BaseSchema[dict[str, Any]]):
     """Schema for objects/dicts with named properties."""
 
     def __init__(

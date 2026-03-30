@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class AnySchema : Schema
+public sealed class AnySchema : Schema<object?>
 {
     internal override object? Validate(object? input, ValidationContext ctx) => input;
 

@@ -270,3 +270,38 @@ public abstract class Schema
         };
     }
 }
+
+/// <summary>
+/// Generic base for schemas that provides typed Parse and SafeParse methods.
+/// </summary>
+public abstract class Schema<T> : Schema
+{
+    /// <summary>
+    /// Parse input with strong typing. Throws ValidationError on failure.
+    /// </summary>
+    public new T Parse(object? input)
+    {
+        var result = base.SafeParse(input);
+        if (result.Success) return CastData(result.Data)!;
+        throw new ValidationError(result.Issues);
+    }
+
+    /// <summary>
+    /// Parse input with strong typing. Returns ParseResult&lt;T&gt; with success/failure.
+    /// </summary>
+    public ParseResult<T> SafeParseTyped(object? input)
+    {
+        var result = base.SafeParse(input);
+        if (result.Success)
+            return ParseResult<T>.Ok(CastData(result.Data));
+        return ParseResult<T>.Fail(result.Issues);
+    }
+
+    private static T? CastData(object? data)
+    {
+        if (data is null) return default;
+        if (data is T typed) return typed;
+        // Handle numeric type conversions (e.g., long -> double for IntSchema via NumberSchema)
+        return (T)Convert.ChangeType(data, Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
+    }
+}

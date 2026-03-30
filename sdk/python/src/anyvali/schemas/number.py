@@ -9,7 +9,7 @@ from ..issue_codes import INVALID_NUMBER, INVALID_TYPE, TOO_LARGE, TOO_SMALL
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class _BaseNumberSchema(BaseSchema):
+class _BaseNumberSchema(BaseSchema[float]):
     """Base for numeric schemas with constraints."""
 
     _kind: str = "float64"

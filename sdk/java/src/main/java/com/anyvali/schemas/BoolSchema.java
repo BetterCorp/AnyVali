@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Schema for boolean values.
  */
-public class BoolSchema extends Schema {
+public class BoolSchema extends Schema<Boolean> {
 
     public BoolSchema() {}
 
@@ -37,7 +37,7 @@ public class BoolSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Boolean> copy() {
         return new BoolSchema(this);
     }
 }

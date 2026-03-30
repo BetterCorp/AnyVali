@@ -9,10 +9,10 @@ import java.util.Map;
 /**
  * Wraps a schema to allow null values.
  */
-public class NullableSchema extends Schema {
-    private final Schema inner;
+public class NullableSchema extends Schema<Object> {
+    private final Schema<?> inner;
 
-    public NullableSchema(Schema inner) {
+    public NullableSchema(Schema<?> inner) {
         this.inner = inner;
     }
 
@@ -53,11 +53,11 @@ public class NullableSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new NullableSchema(this);
     }
 
-    public Schema getInner() {
+    public Schema<?> getInner() {
         return inner;
     }
 }

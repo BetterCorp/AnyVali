@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 
 data class LiteralSchema(
     val value: Any?
-) : Schema() {
+) : Schema<Any?>() {
     override val kind: String = "literal"
 
     override fun validateValue(input: Any?, ctx: ValidationContext): List<ValidationIssue> {

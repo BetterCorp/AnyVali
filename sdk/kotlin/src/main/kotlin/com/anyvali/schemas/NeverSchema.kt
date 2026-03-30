@@ -3,7 +3,7 @@ package com.anyvali.schemas
 import com.anyvali.*
 import kotlinx.serialization.json.*
 
-class NeverSchema : Schema() {
+class NeverSchema : Schema<Nothing>() {
     override val kind: String = "never"
 
     override fun validateValue(value: Any?, ctx: ValidationContext): List<ValidationIssue> {

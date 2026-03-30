@@ -4,11 +4,13 @@ pub mod issue_codes;
 pub mod parse;
 pub mod schema;
 pub mod schemas;
+pub mod typed;
 pub mod types;
 
 // Re-export key types
 pub use schema::{ParseContext, Schema};
 pub use schemas::*;
+pub use typed::{parse_as, TypedSchema};
 pub use types::{
     AnyValiDocument, ExportMode, ParseResult, PathSegment, UnknownKeyMode, ValidationError,
     ValidationIssue,

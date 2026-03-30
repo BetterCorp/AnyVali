@@ -3,13 +3,12 @@ import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
 
-export class RecordSchema extends BaseSchema<
-  Record<string, unknown>,
-  Record<string, unknown>
-> {
-  private _valueSchema: BaseSchema;
+export class RecordSchema<
+  T extends BaseSchema<any, any> = BaseSchema,
+> extends BaseSchema<Record<string, unknown>, Record<string, T["_output"]>> {
+  private _valueSchema: T;
 
-  constructor(valueSchema: BaseSchema) {
+  constructor(valueSchema: T) {
     super();
     this._valueSchema = valueSchema;
   }

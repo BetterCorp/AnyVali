@@ -11,10 +11,10 @@ import java.util.Map;
 /**
  * Schema that requires input to match all given schemas.
  */
-public class IntersectionSchema extends Schema {
-    private final List<Schema> schemas;
+public class IntersectionSchema extends Schema<Object> {
+    private final List<Schema<?>> schemas;
 
-    public IntersectionSchema(List<Schema> schemas) {
+    public IntersectionSchema(List<? extends Schema<?>> schemas) {
         this.schemas = new ArrayList<>(schemas);
     }
 
@@ -36,7 +36,7 @@ public class IntersectionSchema extends Schema {
         List<Object> results = new ArrayList<>();
         boolean hasFailure = false;
 
-        for (Schema schema : schemas) {
+        for (Schema<?> schema : schemas) {
             var trialCtx = new ValidationContext(
                     new ArrayList<>(ctx.getPath()),
                     new ArrayList<>(),
@@ -70,7 +70,7 @@ public class IntersectionSchema extends Schema {
     @Override
     protected Map<String, Object> toNode() {
         var allOf = new ArrayList<Map<String, Object>>();
-        for (Schema s : schemas) {
+        for (Schema<?> s : schemas) {
             allOf.add(s.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
@@ -80,11 +80,11 @@ public class IntersectionSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new IntersectionSchema(this);
     }
 
-    public List<Schema> getSchemas() {
+    public List<Schema<?>> getSchemas() {
         return schemas;
     }
 }

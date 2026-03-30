@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class BoolSchema(BaseSchema):
+class BoolSchema(BaseSchema[bool]):
     """Schema for boolean values."""
 
     def __init__(self) -> None:

@@ -39,6 +39,9 @@
 // Format validators
 #include "format/validators.hpp"
 
+// Typed parse helpers
+#include "typed_parse.hpp"
+
 // Interchange
 #include "interchange/importer.hpp"
 #include "interchange/exporter.hpp"

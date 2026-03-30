@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class RecordSchema(BaseSchema):
+class RecordSchema(BaseSchema[dict[str, Any]]):
     """Schema for record/dict with string keys and uniform value schema."""
 
     def __init__(self, value_schema: BaseSchema) -> None:

@@ -5,7 +5,13 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from .nullable import NullableSchema
+    from .optional import OptionalSchema
+
+T = TypeVar("T")
 
 from ..issue_codes import COERCION_FAILED, DEFAULT_INVALID
 from ..types import (
@@ -88,7 +94,7 @@ class ValidationContext:
 _SENTINEL = object()
 
 
-class BaseSchema(ABC):
+class BaseSchema(ABC, Generic[T]):
     """Abstract base for all schema types."""
 
     _coercion: CoercionConfig | None
@@ -100,19 +106,19 @@ class BaseSchema(ABC):
         self._default_value = _SENTINEL
         self._has_default = False
 
-    def _copy(self) -> BaseSchema:
+    def _copy(self) -> BaseSchema[T]:
         return copy.deepcopy(self)
 
     # ── Public parse API ──────────────────────────────────────────
 
-    def parse(self, input: Any) -> Any:
+    def parse(self, input: Any) -> T:
         """Parse input, raising ValidationError on failure."""
         result = self.safe_parse(input)
         if not result.success:
             raise ValidationError(result.issues)
-        return result.data
+        return result.data  # type: ignore[return-value]
 
-    def safe_parse(self, input: Any) -> ParseResult:
+    def safe_parse(self, input: Any) -> ParseResult[T]:
         """Parse input, returning a ParseResult."""
         ctx = ValidationContext()
         value = self._run_pipeline(input, ctx)
@@ -198,17 +204,17 @@ class BaseSchema(ABC):
 
     # ── Modifier methods (return new instances) ───────────────────
 
-    def optional(self) -> BaseSchema:
+    def optional(self) -> OptionalSchema[T]:
         from .optional import OptionalSchema
 
         return OptionalSchema(self)
 
-    def nullable(self) -> BaseSchema:
+    def nullable(self) -> NullableSchema[T]:
         from .nullable import NullableSchema
 
         return NullableSchema(self)
 
-    def default(self, value: Any) -> BaseSchema:
+    def default(self, value: Any) -> BaseSchema[T]:
         new = self._copy()
         new._default_value = value
         new._has_default = True
@@ -223,7 +229,7 @@ class BaseSchema(ABC):
         trim: bool = False,
         lower: bool = False,
         upper: bool = False,
-    ) -> BaseSchema:
+    ) -> BaseSchema[T]:
         new = self._copy()
         new._coercion = CoercionConfig(
             to_int=to_int,

@@ -15,7 +15,7 @@ data class StringSchema(
     val format: String? = null,
     val defaultValue: Any? = UNSET,
     val coerce: List<String> = emptyList()
-) : Schema() {
+) : Schema<String>() {
     override val kind: String = "string"
 
     fun minLength(n: Int) = copy(minLength = n)
@@ -28,7 +28,7 @@ data class StringSchema(
     fun default(v: String) = copy(defaultValue = v)
     fun coerce(vararg c: String) = copy(coerce = c.toList())
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<String> {
         var value = input
 
         // Apply coercions
@@ -45,7 +45,7 @@ data class StringSchema(
 
         val issues = validateValue(value, ctx)
         return if (issues.isEmpty()) {
-            ParseResult.Success(value)
+            ParseResult.Success(value as String)
         } else {
             ParseResult.Failure(issues)
         }

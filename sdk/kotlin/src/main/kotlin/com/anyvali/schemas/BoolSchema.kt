@@ -6,13 +6,14 @@ import kotlinx.serialization.json.*
 data class BoolSchema(
     val defaultValue: Any? = UNSET,
     val coerce: String? = null
-) : Schema() {
+) : Schema<Boolean>() {
     override val kind: String = "bool"
 
     fun default(v: Boolean) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    @Suppress("UNCHECKED_CAST")
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Boolean> {
         var value = input
 
         if (coerce == "string->bool" && value is String) {
@@ -37,7 +38,7 @@ data class BoolSchema(
 
         val issues = validateValue(value, ctx)
         return if (issues.isEmpty()) {
-            ParseResult.Success(value)
+            ParseResult.Success(value as Boolean)
         } else {
             ParseResult.Failure(issues)
         }

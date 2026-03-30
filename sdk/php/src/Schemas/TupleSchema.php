@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<list<mixed>>
+ */
 final class TupleSchema extends Schema
 {
     /** @var Schema[] */

@@ -19,6 +19,8 @@ export const ABSENT = Symbol.for("anyvali.absent");
 export type Absent = typeof ABSENT;
 
 export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
+  /** Type-level brand for Infer<T>. Never assigned at runtime. */
+  declare readonly _output: TOutput;
   /** @internal */ _defaultValue: TOutput | Absent = ABSENT;
   /** @internal */ _coercionConfig: CoercionConfig | undefined = undefined;
   /** @internal */ _isPortable: boolean = true;

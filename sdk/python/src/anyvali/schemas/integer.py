@@ -21,7 +21,7 @@ _INT_RANGES: dict[str, tuple[int, int]] = {
 }
 
 
-class _BaseIntSchema(BaseSchema):
+class _BaseIntSchema(BaseSchema[int]):
     """Base integer schema with range checking and constraints."""
 
     _kind: str = "int64"

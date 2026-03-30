@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class UnionSchema(
-    val variants: List<Schema>
-) : Schema() {
+    val variants: List<Schema<*>>
+) : Schema<Any?>() {
     override val kind: String = "union"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         for (variant in variants) {
             val result = variant.safeParseWithContext(input, ctx)
             if (result.isSuccess) return result

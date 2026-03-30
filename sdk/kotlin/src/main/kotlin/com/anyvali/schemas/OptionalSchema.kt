@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class OptionalSchema(
-    val inner: Schema
-) : Schema() {
+    val inner: Schema<*>
+) : Schema<Any?>() {
     override val kind: String = "optional"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         // OptionalSchema should not be called directly with absent values;
         // absent handling is done in ObjectSchema.
         // If called, it delegates to inner.

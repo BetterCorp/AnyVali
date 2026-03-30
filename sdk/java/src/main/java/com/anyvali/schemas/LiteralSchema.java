@@ -11,7 +11,7 @@ import java.util.Objects;
 /**
  * Schema that accepts only a specific literal value.
  */
-public class LiteralSchema extends Schema {
+public class LiteralSchema extends Schema<Object> {
     private final Object value;
 
     public LiteralSchema(Object value) {
@@ -69,7 +69,7 @@ public class LiteralSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new LiteralSchema(this);
     }
 

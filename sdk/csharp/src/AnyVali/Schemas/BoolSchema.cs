@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class BoolSchema : Schema
+public sealed class BoolSchema : Schema<bool>
 {
     internal override string GetCoercionTarget() => "bool";
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Generic, Literal, TypeVar
+
+T = TypeVar("T")
 
 ExportMode = Literal["portable", "extended"]
 UnknownKeyMode = Literal["reject", "strip", "allow"]
@@ -22,11 +24,11 @@ class ValidationIssue:
 
 
 @dataclass(frozen=True)
-class ParseResult:
+class ParseResult(Generic[T]):
     """Result of a safe_parse call."""
 
     success: bool
-    data: Any = None
+    data: T | None = None
     issues: list[ValidationIssue] = field(default_factory=list)
 
 

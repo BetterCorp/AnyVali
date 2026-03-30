@@ -5,17 +5,17 @@ import kotlinx.serialization.json.*
 
 data class RefSchema(
     val ref: String
-) : Schema() {
+) : Schema<Any?>() {
     override val kind: String = "ref"
 
-    private fun resolveRef(ctx: ValidationContext): Schema {
+    private fun resolveRef(ctx: ValidationContext): Schema<*> {
         // ref format: "#/definitions/Name"
         val defName = ref.removePrefix("#/definitions/")
         return ctx.definitions[defName]
             ?: throw IllegalStateException("Unresolved ref: $ref")
     }
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         val resolved = resolveRef(ctx)
         return resolved.safeParseWithContext(input, ctx)
     }

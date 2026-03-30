@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext
 
 
-class NeverSchema(BaseSchema):
+class NeverSchema(BaseSchema[Any]):
     """Schema that rejects all values."""
 
     def __init__(self) -> None:

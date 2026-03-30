@@ -2,8 +2,8 @@ import type { ParseContext, SchemaNode } from "../types.js";
 import { BaseSchema, ABSENT } from "./base.js";
 
 export class OptionalSchema<
-  T extends BaseSchema = BaseSchema,
-> extends BaseSchema<unknown, unknown> {
+  T extends BaseSchema<any, any> = BaseSchema,
+> extends BaseSchema<unknown, T["_output"] | undefined> {
   /** @internal */ _inner: T;
   /** @internal */ _isOptionalWrapper = true;
 

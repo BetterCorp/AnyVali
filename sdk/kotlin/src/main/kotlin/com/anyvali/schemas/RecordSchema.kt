@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class RecordSchema(
-    val values: Schema
-) : Schema() {
+    val values: Schema<*>
+) : Schema<Map<String, Any?>>() {
     override val kind: String = "record"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Map<String, Any?>> {
         if (input !is Map<*, *>) {
             return ParseResult.Failure(
                 listOf(

@@ -18,7 +18,7 @@ public final class Importer {
      * Import a schema from an AnyVali document map or JSON string.
      * Returns the root schema.
      */
-    public static Schema importSchema(Object source) {
+    public static Schema<?> importSchema(Object source) {
         Map<String, Object> map;
         if (source instanceof String json) {
             map = JsonHelper.parseJsonObject(json);
@@ -33,7 +33,7 @@ public final class Importer {
         AnyValiDocument doc = AnyValiDocument.fromMap(map);
 
         // Build definitions
-        Map<String, Schema> definitions = new LinkedHashMap<>();
+        Map<String, Schema<?>> definitions = new LinkedHashMap<>();
         @SuppressWarnings("unchecked")
         Map<String, Object> defNodes = doc.definitions();
         for (var entry : defNodes.entrySet()) {
@@ -42,10 +42,10 @@ public final class Importer {
             definitions.put(entry.getKey(), importNode(node, definitions));
         }
 
-        Schema root = importNode(doc.root(), definitions);
+        Schema<?> root = importNode(doc.root(), definitions);
 
         // Resolve all refs
-        for (Schema defSchema : definitions.values()) {
+        for (Schema<?> defSchema : definitions.values()) {
             resolveRefs(defSchema, definitions);
         }
         resolveRefs(root, definitions);
@@ -54,9 +54,9 @@ public final class Importer {
     }
 
     @SuppressWarnings("unchecked")
-    private static Schema importNode(Map<String, Object> node, Map<String, Schema> definitions) {
+    private static Schema<?> importNode(Map<String, Object> node, Map<String, Schema<?>> definitions) {
         String kind = (String) node.getOrDefault("kind", "");
-        Schema schema = buildSchema(kind, node, definitions);
+        Schema<?> schema = buildSchema(kind, node, definitions);
 
         // Apply common fields
         if (node.containsKey("default")) {
@@ -114,8 +114,8 @@ public final class Importer {
     }
 
     @SuppressWarnings("unchecked")
-    private static Schema buildSchema(String kind, Map<String, Object> node,
-                                       Map<String, Schema> definitions) {
+    private static Schema<?> buildSchema(String kind, Map<String, Object> node,
+                                       Map<String, Schema<?>> definitions) {
         return switch (kind) {
             case "string" -> {
                 var s = new StringSchema();
@@ -155,7 +155,7 @@ public final class Importer {
             case "literal" -> new LiteralSchema(node.get("value"));
             case "enum" -> new EnumSchema((List<Object>) node.get("values"));
             case "array" -> {
-                Schema items = importNode((Map<String, Object>) node.get("items"), definitions);
+                Schema<?> items = importNode((Map<String, Object>) node.get("items"), definitions);
                 Integer minItems = node.containsKey("minItems") ? toInt(node.get("minItems")) : null;
                 Integer maxItems = node.containsKey("maxItems") ? toInt(node.get("maxItems")) : null;
                 yield new ArraySchema(items, minItems, maxItems);
@@ -163,7 +163,7 @@ public final class Importer {
             case "tuple" -> {
                 List<Map<String, Object>> elements = (List<Map<String, Object>>) node.getOrDefault("elements",
                         node.getOrDefault("items", List.of()));
-                List<Schema> items = new ArrayList<>();
+                List<Schema<?>> items = new ArrayList<>();
                 for (Map<String, Object> elem : elements) {
                     items.add(importNode(elem, definitions));
                 }
@@ -171,7 +171,7 @@ public final class Importer {
             }
             case "object" -> {
                 Map<String, Object> propsRaw = (Map<String, Object>) node.getOrDefault("properties", Map.of());
-                Map<String, Schema> props = new LinkedHashMap<>();
+                Map<String, Schema<?>> props = new LinkedHashMap<>();
                 for (var entry : propsRaw.entrySet()) {
                     props.put(entry.getKey(), importNode((Map<String, Object>) entry.getValue(), definitions));
                 }
@@ -184,13 +184,13 @@ public final class Importer {
                 yield new ObjectSchema(props, required, ukm);
             }
             case "record" -> {
-                Schema valueSchema = importNode((Map<String, Object>) node.get("values"), definitions);
+                Schema<?> valueSchema = importNode((Map<String, Object>) node.get("values"), definitions);
                 yield new RecordSchema(valueSchema);
             }
             case "union" -> {
                 List<Map<String, Object>> variants = (List<Map<String, Object>>) node.getOrDefault("variants",
                         node.getOrDefault("schemas", List.of()));
-                List<Schema> schemas = new ArrayList<>();
+                List<Schema<?>> schemas = new ArrayList<>();
                 for (Map<String, Object> v : variants) {
                     schemas.add(importNode(v, definitions));
                 }
@@ -199,18 +199,18 @@ public final class Importer {
             case "intersection" -> {
                 List<Map<String, Object>> allOf = (List<Map<String, Object>>) node.getOrDefault("allOf",
                         node.getOrDefault("schemas", List.of()));
-                List<Schema> schemas = new ArrayList<>();
+                List<Schema<?>> schemas = new ArrayList<>();
                 for (Map<String, Object> s : allOf) {
                     schemas.add(importNode(s, definitions));
                 }
                 yield new IntersectionSchema(schemas);
             }
             case "optional" -> {
-                Schema inner = importNode((Map<String, Object>) node.get("schema"), definitions);
+                Schema<?> inner = importNode((Map<String, Object>) node.get("schema"), definitions);
                 yield new OptionalSchema(inner);
             }
             case "nullable" -> {
-                Schema inner = importNode((Map<String, Object>) node.get("schema"), definitions);
+                Schema<?> inner = importNode((Map<String, Object>) node.get("schema"), definitions);
                 yield new NullableSchema(inner);
             }
             case "ref" -> new RefSchema((String) node.get("ref"));
@@ -238,7 +238,7 @@ public final class Importer {
         return s;
     }
 
-    private static void resolveRefs(Schema schema, Map<String, Schema> definitions) {
+    private static void resolveRefs(Schema<?> schema, Map<String, Schema<?>> definitions) {
         if (schema instanceof RefSchema ref) {
             ref.setDefinitions(definitions);
             String refName = ref.getRef();
@@ -255,21 +255,21 @@ public final class Importer {
         } else if (schema instanceof ArraySchema arr) {
             resolveRefs(arr.getItems(), definitions);
         } else if (schema instanceof TupleSchema tup) {
-            for (Schema item : tup.getItems()) {
+            for (Schema<?> item : tup.getItems()) {
                 resolveRefs(item, definitions);
             }
         } else if (schema instanceof ObjectSchema obj) {
-            for (Schema propSchema : obj.getProperties().values()) {
+            for (Schema<?> propSchema : obj.getProperties().values()) {
                 resolveRefs(propSchema, definitions);
             }
         } else if (schema instanceof RecordSchema rec) {
             resolveRefs(rec.getValueSchema(), definitions);
         } else if (schema instanceof UnionSchema u) {
-            for (Schema s : u.getSchemas()) {
+            for (Schema<?> s : u.getSchemas()) {
                 resolveRefs(s, definitions);
             }
         } else if (schema instanceof IntersectionSchema i) {
-            for (Schema s : i.getSchemas()) {
+            for (Schema<?> s : i.getSchemas()) {
                 resolveRefs(s, definitions);
             }
         }

@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Schema that only accepts null.
  */
-public class NullSchema extends Schema {
+public class NullSchema extends Schema<Object> {
 
     public NullSchema() {}
 
@@ -42,7 +42,7 @@ public class NullSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new NullSchema(this);
     }
 }

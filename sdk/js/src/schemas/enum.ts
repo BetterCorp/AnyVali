@@ -2,10 +2,12 @@ import type { ParseContext, SchemaNode } from "../types.js";
 import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 
-export class EnumSchema extends BaseSchema<string | number, string | number> {
-  private _values: (string | number)[];
+export class EnumSchema<
+  T extends readonly (string | number)[] = (string | number)[],
+> extends BaseSchema<T[number], T[number]> {
+  private _values: T;
 
-  constructor(values: (string | number)[]) {
+  constructor(values: T) {
     super();
     this._values = values;
   }

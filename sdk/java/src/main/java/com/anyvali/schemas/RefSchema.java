@@ -10,10 +10,10 @@ import java.util.Map;
 /**
  * Schema that references a named definition.
  */
-public class RefSchema extends Schema {
+public class RefSchema extends Schema<Object> {
     private final String ref;
-    private Schema resolved;
-    private Map<String, Schema> definitions;
+    private Schema<?> resolved;
+    private Map<String, Schema<?>> definitions;
 
     public RefSchema(String ref) {
         this.ref = ref;
@@ -28,15 +28,15 @@ public class RefSchema extends Schema {
         this.definitions = other.definitions;
     }
 
-    public void resolve(Schema schema) {
+    public void resolve(Schema<?> schema) {
         this.resolved = schema;
     }
 
-    public void setDefinitions(Map<String, Schema> definitions) {
+    public void setDefinitions(Map<String, Schema<?>> definitions) {
         this.definitions = definitions;
     }
 
-    private Schema getResolved() {
+    private Schema<?> getResolved() {
         if (resolved != null) return resolved;
         if (definitions != null) {
             String refName = ref;
@@ -52,13 +52,13 @@ public class RefSchema extends Schema {
 
     @Override
     protected boolean acceptsNull() {
-        Schema r = getResolved();
+        Schema<?> r = getResolved();
         return r != null && r.acceptsNullValue();
     }
 
     @Override
     public Object runPipeline(Object input, ValidationContext ctx) {
-        Schema r = getResolved();
+        Schema<?> r = getResolved();
         if (r != null) {
             return r.runPipeline(input, ctx);
         }
@@ -77,7 +77,7 @@ public class RefSchema extends Schema {
 
     @Override
     protected Object validate(Object input, ValidationContext ctx) {
-        Schema r = getResolved();
+        Schema<?> r = getResolved();
         if (r != null) {
             return r.validateValue(input, ctx);
         }
@@ -95,7 +95,7 @@ public class RefSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new RefSchema(this);
     }
 

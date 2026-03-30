@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class UnionSchema : Schema
+public sealed class UnionSchema : Schema<object?>
 {
     private readonly List<Schema> _variants;
 

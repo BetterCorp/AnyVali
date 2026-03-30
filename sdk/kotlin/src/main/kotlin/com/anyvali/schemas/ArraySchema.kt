@@ -4,16 +4,16 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class ArraySchema(
-    val items: Schema,
+    val items: Schema<*>,
     val minItems: Int? = null,
     val maxItems: Int? = null
-) : Schema() {
+) : Schema<List<Any?>>() {
     override val kind: String = "array"
 
     fun minItems(n: Int) = copy(minItems = n)
     fun maxItems(n: Int) = copy(maxItems = n)
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<List<Any?>> {
         if (input !is List<*>) {
             return ParseResult.Failure(
                 listOf(

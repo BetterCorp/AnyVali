@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class IntersectionSchema : Schema
+public sealed class IntersectionSchema : Schema<object?>
 {
     private readonly List<Schema> _schemas;
 

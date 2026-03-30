@@ -3,10 +3,9 @@ import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
 
-export class ArraySchema<T extends BaseSchema = BaseSchema> extends BaseSchema<
-  unknown[],
-  unknown[]
-> {
+export class ArraySchema<
+  T extends BaseSchema<any, any> = BaseSchema,
+> extends BaseSchema<unknown[], T["_output"][]> {
   private _items: T;
   private _minItems?: number;
   private _maxItems?: number;

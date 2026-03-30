@@ -11,6 +11,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<string>
+ */
 final class StringSchema extends Schema
 {
     private ?int $minLength = null;

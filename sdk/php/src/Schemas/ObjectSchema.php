@@ -11,6 +11,9 @@ use AnyVali\UnknownKeyMode;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<array<string, mixed>>
+ */
 final class ObjectSchema extends Schema
 {
     /** @var array<string, Schema> */

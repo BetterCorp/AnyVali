@@ -2,7 +2,7 @@ using AnyVali.Parse;
 
 namespace AnyVali.Schemas;
 
-public sealed class OptionalSchema : Schema
+public sealed class OptionalSchema : Schema<object?>
 {
     internal Schema Inner { get; }
 

@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Schema that rejects all values.
  */
-public class NeverSchema extends Schema {
+public class NeverSchema extends Schema<Object> {
 
     public NeverSchema() {}
 
@@ -34,7 +34,7 @@ public class NeverSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new NeverSchema(this);
     }
 }

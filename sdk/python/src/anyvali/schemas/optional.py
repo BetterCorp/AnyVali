@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from .base import BaseSchema, ValidationContext, _SENTINEL
 
+T = TypeVar("T")
 
-class OptionalSchema(BaseSchema):
+
+class OptionalSchema(BaseSchema[T | None], Generic[T]):
     """Wraps a schema to make it optional (accepts absent/undefined values)."""
 
-    def __init__(self, inner: BaseSchema) -> None:
+    def __init__(self, inner: BaseSchema[T]) -> None:
         super().__init__()
         self._inner = inner
         # Inherit defaults from inner

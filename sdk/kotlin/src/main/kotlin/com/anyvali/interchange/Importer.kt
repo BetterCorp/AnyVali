@@ -8,14 +8,14 @@ object Importer {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun importFromJson(jsonStr: String): Pair<Schema, Map<String, Schema>> {
+    fun importFromJson(jsonStr: String): Pair<Schema<*>, Map<String, Schema<*>>> {
         val element = json.parseToJsonElement(jsonStr).jsonObject
         return importFromJsonObject(element)
     }
 
-    fun importFromJsonObject(obj: JsonObject): Pair<Schema, Map<String, Schema>> {
+    fun importFromJsonObject(obj: JsonObject): Pair<Schema<*>, Map<String, Schema<*>>> {
         val defsObj = obj["definitions"]?.jsonObject ?: JsonObject(emptyMap())
-        val definitions = mutableMapOf<String, Schema>()
+        val definitions = mutableMapOf<String, Schema<*>>()
 
         // First pass: create placeholder refs for all definitions
         for (key in defsObj.keys) {
@@ -31,7 +31,7 @@ object Importer {
         return root to definitions
     }
 
-    fun importNode(node: JsonObject, definitions: Map<String, Schema> = emptyMap()): Schema {
+    fun importNode(node: JsonObject, definitions: Map<String, Schema<*>> = emptyMap()): Schema<*> {
         val kind = node["kind"]?.jsonPrimitive?.content
             ?: throw IllegalArgumentException("Schema node missing 'kind'")
 
@@ -171,7 +171,7 @@ object Importer {
         return EnumSchema(values)
     }
 
-    private fun importArraySchema(node: JsonObject, definitions: Map<String, Schema>): ArraySchema {
+    private fun importArraySchema(node: JsonObject, definitions: Map<String, Schema<*>>): ArraySchema {
         val items = importNode(node["items"]!!.jsonObject, definitions)
         var schema = ArraySchema(items)
         node["minItems"]?.jsonPrimitive?.int?.let { schema = schema.copy(minItems = it) }
@@ -179,12 +179,12 @@ object Importer {
         return schema
     }
 
-    private fun importTupleSchema(node: JsonObject, definitions: Map<String, Schema>): TupleSchema {
+    private fun importTupleSchema(node: JsonObject, definitions: Map<String, Schema<*>>): TupleSchema {
         val elements = node["elements"]!!.jsonArray.map { importNode(it.jsonObject, definitions) }
         return TupleSchema(elements)
     }
 
-    private fun importObjectSchema(node: JsonObject, definitions: Map<String, Schema>): ObjectSchema {
+    private fun importObjectSchema(node: JsonObject, definitions: Map<String, Schema<*>>): ObjectSchema {
         val props = node["properties"]?.jsonObject?.mapValues { importNode(it.value.jsonObject, definitions) } ?: emptyMap()
         val required = node["required"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet() ?: emptySet()
         val unknownKeysStr = node["unknownKeys"]?.jsonPrimitive?.content ?: "reject"
@@ -192,27 +192,27 @@ object Importer {
         return ObjectSchema(props, required, unknownKeys)
     }
 
-    private fun importRecordSchema(node: JsonObject, definitions: Map<String, Schema>): RecordSchema {
+    private fun importRecordSchema(node: JsonObject, definitions: Map<String, Schema<*>>): RecordSchema {
         val values = importNode(node["values"]!!.jsonObject, definitions)
         return RecordSchema(values)
     }
 
-    private fun importUnionSchema(node: JsonObject, definitions: Map<String, Schema>): UnionSchema {
+    private fun importUnionSchema(node: JsonObject, definitions: Map<String, Schema<*>>): UnionSchema {
         val variants = node["variants"]!!.jsonArray.map { importNode(it.jsonObject, definitions) }
         return UnionSchema(variants)
     }
 
-    private fun importIntersectionSchema(node: JsonObject, definitions: Map<String, Schema>): IntersectionSchema {
+    private fun importIntersectionSchema(node: JsonObject, definitions: Map<String, Schema<*>>): IntersectionSchema {
         val allOf = node["allOf"]!!.jsonArray.map { importNode(it.jsonObject, definitions) }
         return IntersectionSchema(allOf)
     }
 
-    private fun importOptionalSchema(node: JsonObject, definitions: Map<String, Schema>): OptionalSchema {
+    private fun importOptionalSchema(node: JsonObject, definitions: Map<String, Schema<*>>): OptionalSchema {
         val inner = importNode(node["schema"]!!.jsonObject, definitions)
         return OptionalSchema(inner)
     }
 
-    private fun importNullableSchema(node: JsonObject, definitions: Map<String, Schema>): NullableSchema {
+    private fun importNullableSchema(node: JsonObject, definitions: Map<String, Schema<*>>): NullableSchema {
         val inner = importNode(node["schema"]!!.jsonObject, definitions)
         // Check for default on the nullable wrapper
         val defaultEl = node["default"]

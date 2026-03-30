@@ -9,7 +9,7 @@ from ..issue_codes import INVALID_STRING, INVALID_TYPE, TOO_LARGE, TOO_SMALL
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class StringSchema(BaseSchema):
+class StringSchema(BaseSchema[str]):
     """Schema for string values with optional constraints."""
 
     def __init__(

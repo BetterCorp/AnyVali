@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Schema that accepts any value.
  */
-public class AnySchema extends Schema {
+public class AnySchema extends Schema<Object> {
 
     public AnySchema() {}
 
@@ -35,7 +35,7 @@ public class AnySchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new AnySchema(this);
     }
 }

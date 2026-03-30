@@ -15,12 +15,12 @@ import java.util.Set;
  * <pre>
  *     import static com.anyvali.AnyVali.*;
  *
- *     Schema schema = object_(Map.of(
+ *     ObjectSchema schema = object_(Map.of(
  *         "name", string().minLength(1),
  *         "age", int_().min(0)
  *     ));
  *
- *     ParseResult result = schema.safeParse(Map.of("name", "Alice", "age", 30));
+ *     ParseResult&lt;Map&lt;String, Object&gt;&gt; result = schema.safeParse(Map.of("name", "Alice", "age", 30));
  *     assert result.success();
  * </pre>
  */
@@ -111,44 +111,44 @@ public final class AnyVali {
         return new EnumSchema(values);
     }
 
-    public static ArraySchema array(Schema items) {
+    public static ArraySchema array(Schema<?> items) {
         return new ArraySchema(items);
     }
 
-    public static TupleSchema tuple_(List<Schema> items) {
+    public static TupleSchema tuple_(List<? extends Schema<?>> items) {
         return new TupleSchema(items);
     }
 
-    public static ObjectSchema object_(Map<String, Schema> properties) {
+    public static ObjectSchema object_(Map<String, ? extends Schema<?>> properties) {
         return new ObjectSchema(properties);
     }
 
-    public static ObjectSchema object_(Map<String, Schema> properties, Set<String> required) {
+    public static ObjectSchema object_(Map<String, ? extends Schema<?>> properties, Set<String> required) {
         return new ObjectSchema(properties, required);
     }
 
-    public static ObjectSchema object_(Map<String, Schema> properties, Set<String> required,
+    public static ObjectSchema object_(Map<String, ? extends Schema<?>> properties, Set<String> required,
                                        UnknownKeyMode unknownKeys) {
         return new ObjectSchema(properties, required, unknownKeys);
     }
 
-    public static RecordSchema record(Schema valueSchema) {
+    public static RecordSchema record(Schema<?> valueSchema) {
         return new RecordSchema(valueSchema);
     }
 
-    public static UnionSchema union(List<Schema> schemas) {
+    public static UnionSchema union(List<? extends Schema<?>> schemas) {
         return new UnionSchema(schemas);
     }
 
-    public static IntersectionSchema intersection(List<Schema> schemas) {
+    public static IntersectionSchema intersection(List<? extends Schema<?>> schemas) {
         return new IntersectionSchema(schemas);
     }
 
-    public static OptionalSchema optional(Schema schema) {
+    public static OptionalSchema optional(Schema<?> schema) {
         return new OptionalSchema(schema);
     }
 
-    public static NullableSchema nullable(Schema schema) {
+    public static NullableSchema nullable(Schema<?> schema) {
         return new NullableSchema(schema);
     }
 
@@ -158,21 +158,21 @@ public final class AnyVali {
 
     // ---- Interchange ----
 
-    public static Map<String, Object> exportSchema(Schema schema) {
+    public static Map<String, Object> exportSchema(Schema<?> schema) {
         return Exporter.exportSchema(schema);
     }
 
-    public static Map<String, Object> exportSchema(Schema schema, ExportMode mode,
-                                                    Map<String, Schema> definitions,
+    public static Map<String, Object> exportSchema(Schema<?> schema, ExportMode mode,
+                                                    Map<String, ? extends Schema<?>> definitions,
                                                     Map<String, Object> extensions) {
         return Exporter.exportSchema(schema, mode, definitions, extensions);
     }
 
-    public static String exportSchemaJson(Schema schema) {
+    public static String exportSchemaJson(Schema<?> schema) {
         return Exporter.exportSchemaJson(schema);
     }
 
-    public static Schema importSchema(Object source) {
+    public static Schema<?> importSchema(Object source) {
         return Importer.importSchema(source);
     }
 }

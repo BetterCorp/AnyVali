@@ -2,7 +2,7 @@ package com.anyvali
 
 import kotlinx.serialization.json.JsonObject
 
-abstract class Schema {
+abstract class Schema<out T> {
     abstract val kind: String
     open val hasCustomValidators: Boolean get() = false
 
@@ -10,29 +10,30 @@ abstract class Schema {
 
     abstract fun exportNode(): JsonObject
 
-    fun parse(input: Any?): Any? {
+    fun parse(input: Any?): T {
         val result = safeParse(input)
         return result.getOrThrow()
     }
 
-    fun parse(input: Any?, definitions: Map<String, Schema>): Any? {
+    fun parse(input: Any?, definitions: Map<String, Schema<*>>): T {
         val result = safeParse(input, definitions)
         return result.getOrThrow()
     }
 
-    fun safeParse(input: Any?): ParseResult {
+    fun safeParse(input: Any?): ParseResult<T> {
         return safeParse(input, emptyMap())
     }
 
-    fun safeParse(input: Any?, definitions: Map<String, Schema>): ParseResult {
+    fun safeParse(input: Any?, definitions: Map<String, Schema<*>>): ParseResult<T> {
         val ctx = ValidationContext(definitions = definitions)
         return safeParseWithContext(input, ctx)
     }
 
-    open fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    @Suppress("UNCHECKED_CAST")
+    open fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<T> {
         val issues = validateValue(input, ctx)
         return if (issues.isEmpty()) {
-            ParseResult.Success(input)
+            ParseResult.Success(input as T)
         } else {
             ParseResult.Failure(issues)
         }

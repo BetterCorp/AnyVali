@@ -257,7 +257,7 @@ class InterchangeTest {
 
     @Test
     fun `export with custom validator in portable mode fails`() {
-        val schema = object : Schema() {
+        val schema = object : Schema<Any?>() {
             override val kind = "custom"
             override val hasCustomValidators = true
             override fun validateValue(value: Any?, ctx: ValidationContext) = emptyList<ValidationIssue>()
@@ -268,7 +268,7 @@ class InterchangeTest {
 
     @Test
     fun `export with custom validator in extended mode succeeds`() {
-        val schema = object : Schema() {
+        val schema = object : Schema<Any?>() {
             override val kind = "custom"
             override val hasCustomValidators = true
             override fun validateValue(value: Any?, ctx: ValidationContext) = emptyList<ValidationIssue>()
@@ -449,7 +449,7 @@ class InterchangeTest {
 
         // Validate with definitions
         val result = schema.safeParse(mapOf("user" to mapOf("name" to "Alice")), defs)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     @Test
@@ -827,7 +827,7 @@ class InterchangeTest {
 
     @Test
     fun `Exporter exportDocument custom validator portable fails`() {
-        val schema = object : Schema() {
+        val schema = object : Schema<Any?>() {
             override val kind = "custom"
             override val hasCustomValidators = true
             override fun validateValue(value: Any?, ctx: ValidationContext) = emptyList<ValidationIssue>()
@@ -840,7 +840,7 @@ class InterchangeTest {
 
     @Test
     fun `Exporter exportDocument custom validator extended succeeds`() {
-        val schema = object : Schema() {
+        val schema = object : Schema<Any?>() {
             override val kind = "custom"
             override val hasCustomValidators = true
             override fun validateValue(value: Any?, ctx: ValidationContext) = emptyList<ValidationIssue>()

@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE, TOO_LARGE, TOO_SMALL
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class ArraySchema(BaseSchema):
+class ArraySchema(BaseSchema[list[Any]]):
     """Schema for arrays/lists with element validation."""
 
     def __init__(

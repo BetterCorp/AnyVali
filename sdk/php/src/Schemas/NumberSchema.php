@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<float>
+ */
 final class NumberSchema extends Schema
 {
     private ?float $min = null;

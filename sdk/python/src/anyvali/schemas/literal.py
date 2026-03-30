@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_LITERAL
 from .base import BaseSchema, ValidationContext
 
 
-class LiteralSchema(BaseSchema):
+class LiteralSchema(BaseSchema[Any]):
     """Schema that accepts only a specific literal value."""
 
     def __init__(self, value: Any) -> None:

@@ -12,10 +12,10 @@ import java.util.Map;
 /**
  * Schema that accepts any of the given schemas (first match wins).
  */
-public class UnionSchema extends Schema {
-    private final List<Schema> schemas;
+public class UnionSchema extends Schema<Object> {
+    private final List<Schema<?>> schemas;
 
-    public UnionSchema(List<Schema> schemas) {
+    public UnionSchema(List<? extends Schema<?>> schemas) {
         this.schemas = new ArrayList<>(schemas);
     }
 
@@ -33,7 +33,7 @@ public class UnionSchema extends Schema {
 
     @Override
     protected Object validate(Object input, ValidationContext ctx) {
-        for (Schema schema : schemas) {
+        for (Schema<?> schema : schemas) {
             var trialCtx = new ValidationContext(
                     new ArrayList<>(ctx.getPath()),
                     new ArrayList<>(),
@@ -55,7 +55,7 @@ public class UnionSchema extends Schema {
     @Override
     protected Map<String, Object> toNode() {
         var variants = new ArrayList<Map<String, Object>>();
-        for (Schema s : schemas) {
+        for (Schema<?> s : schemas) {
             variants.add(s.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
@@ -65,11 +65,11 @@ public class UnionSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new UnionSchema(this);
     }
 
-    public List<Schema> getSchemas() {
+    public List<Schema<?>> getSchemas() {
         return schemas;
     }
 }

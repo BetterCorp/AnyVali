@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class NullSchema : Schema
+public sealed class NullSchema : Schema<object?>
 {
     internal override object? Validate(object? input, ValidationContext ctx)
     {

@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class NullableSchema(
-    val inner: Schema
-) : Schema() {
+    val inner: Schema<*>
+) : Schema<Any?>() {
     override val kind: String = "nullable"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         if (input == null) return ParseResult.Success(null)
         return inner.safeParseWithContext(input, ctx)
     }

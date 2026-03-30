@@ -11,14 +11,14 @@ import java.util.Map;
 public class ValidationContext {
     private final List<Object> path;
     private final List<ValidationIssue> issues;
-    private final Map<String, Schema> definitions;
+    private final Map<String, Schema<?>> definitions;
 
     public ValidationContext() {
         this(new ArrayList<>(), new ArrayList<>(), new HashMap<>());
     }
 
     public ValidationContext(List<Object> path, List<ValidationIssue> issues,
-                             Map<String, Schema> definitions) {
+                             Map<String, Schema<?>> definitions) {
         this.path = path;
         this.issues = issues;
         this.definitions = definitions;
@@ -64,7 +64,7 @@ public class ValidationContext {
         return issues.size();
     }
 
-    public Map<String, Schema> getDefinitions() {
+    public Map<String, Schema<?>> getDefinitions() {
         return definitions;
     }
 }

@@ -12,17 +12,19 @@ This module provides top-level parse/safe_parse helpers.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeVar
 
 from ..schemas.base import BaseSchema
 from ..types import ParseResult, ValidationError
 
+T = TypeVar("T")
 
-def parse(schema: BaseSchema, input: Any) -> Any:
+
+def parse(schema: BaseSchema[T], input: Any) -> T:
     """Parse input against a schema, raising ValidationError on failure."""
     return schema.parse(input)
 
 
-def safe_parse(schema: BaseSchema, input: Any) -> ParseResult:
+def safe_parse(schema: BaseSchema[T], input: Any) -> ParseResult[T]:
     """Parse input against a schema, returning a ParseResult."""
     return schema.safe_parse(input)

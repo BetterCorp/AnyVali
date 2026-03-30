@@ -951,7 +951,7 @@ class SchemaTest {
         @Test
         void lazyResolution() {
             var ref = ref("#/definitions/Name");
-            Map<String, Schema> defs = new HashMap<>();
+            Map<String, Schema<?>> defs = new HashMap<>();
             defs.put("Name", string());
             ref.setDefinitions(defs);
             assertEquals("hello", ref.parse("hello"));

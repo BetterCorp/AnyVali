@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from .base import BaseSchema, ValidationContext
 
+T = TypeVar("T")
 
-class NullableSchema(BaseSchema):
+
+class NullableSchema(BaseSchema[T | None], Generic[T]):
     """Wraps a schema to allow None/null values."""
 
-    def __init__(self, inner: BaseSchema) -> None:
+    def __init__(self, inner: BaseSchema[T]) -> None:
         super().__init__()
         self._inner = inner
 

@@ -8,6 +8,9 @@ use AnyVali\ParseResult;
 use AnyVali\Schema;
 use AnyVali\ValidationContext;
 
+/**
+ * @extends Schema<mixed>
+ */
 final class IntersectionSchema extends Schema
 {
     /** @var Schema[] */

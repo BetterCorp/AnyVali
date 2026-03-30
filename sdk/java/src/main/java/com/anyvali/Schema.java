@@ -13,8 +13,10 @@ import java.util.Map;
  * <p>
  * Schemas are immutable: modifier methods return new instances.
  * parse() throws ValidationError; safeParse() returns ParseResult.
+ *
+ * @param <T> the Java type that this schema parses to
  */
-public abstract class Schema {
+public abstract class Schema<T> {
 
     /** Sentinel value representing an absent field. */
     public static final Object ABSENT = new Object() {
@@ -36,8 +38,9 @@ public abstract class Schema {
     /**
      * Parse input, throwing ValidationError on failure.
      */
-    public Object parse(Object input) {
-        ParseResult result = safeParse(input);
+    @SuppressWarnings("unchecked")
+    public T parse(Object input) {
+        ParseResult<T> result = safeParse(input);
         if (!result.success()) {
             throw new ValidationError(result.issues());
         }
@@ -47,13 +50,14 @@ public abstract class Schema {
     /**
      * Parse input, returning a ParseResult.
      */
-    public ParseResult safeParse(Object input) {
+    @SuppressWarnings("unchecked")
+    public ParseResult<T> safeParse(Object input) {
         ValidationContext ctx = new ValidationContext();
         Object value = runPipeline(input, ctx);
         if (ctx.hasIssues()) {
             return ParseResult.failure(ctx.getIssues());
         }
-        return ParseResult.success(value);
+        return ParseResult.success((T) value);
     }
 
     // ---- 5-step pipeline ----
@@ -160,8 +164,8 @@ public abstract class Schema {
     /**
      * Set a default value, returning a new schema instance.
      */
-    public Schema withDefault(Object value) {
-        Schema copy = copy();
+    public Schema<T> withDefault(Object value) {
+        Schema<T> copy = copy();
         copy.defaultValue = value;
         copy.hasDefault = true;
         return copy;
@@ -170,8 +174,8 @@ public abstract class Schema {
     /**
      * Enable coercion with the given config, returning a new schema instance.
      */
-    public Schema coerce(CoercionConfig config) {
-        Schema copy = copy();
+    public Schema<T> coerce(CoercionConfig config) {
+        Schema<T> copy = copy();
         copy.coercion = config;
         return copy;
     }
@@ -219,7 +223,7 @@ public abstract class Schema {
     /**
      * Create a deep copy of this schema (subclasses must implement).
      */
-    protected abstract Schema copy();
+    protected abstract Schema<T> copy();
 
     public boolean hasDefaultValue() {
         return hasDefault;

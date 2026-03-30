@@ -82,7 +82,7 @@ class ConformanceTest {
         boolean expectedValid = (Boolean) testCase.get("valid");
         List<Map<String, Object>> expectedIssues = (List<Map<String, Object>>) testCase.get("issues");
 
-        Schema schema;
+        Schema<?> schema;
         try {
             schema = Importer.importSchema(schemaDoc);
         } catch (Exception e) {
@@ -94,7 +94,7 @@ class ConformanceTest {
             return;
         }
 
-        ParseResult result = schema.safeParse(input);
+        ParseResult<?> result = schema.safeParse(input);
 
         assertEquals(expectedValid, result.success(),
                 "Expected valid=" + expectedValid + " but got " + result.success()

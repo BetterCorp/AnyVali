@@ -17,43 +17,43 @@ export class StringSchema extends BaseSchema<string, string> {
     return "string";
   }
 
-  minLength(n: number): StringSchema {
+  minLength(n: number): this {
     const clone = this._clone();
     clone._minLength = n;
     return clone;
   }
 
-  maxLength(n: number): StringSchema {
+  maxLength(n: number): this {
     const clone = this._clone();
     clone._maxLength = n;
     return clone;
   }
 
-  pattern(p: string): StringSchema {
+  pattern(p: string): this {
     const clone = this._clone();
     clone._pattern = p;
     return clone;
   }
 
-  startsWith(s: string): StringSchema {
+  startsWith(s: string): this {
     const clone = this._clone();
     clone._startsWith = s;
     return clone;
   }
 
-  endsWith(s: string): StringSchema {
+  endsWith(s: string): this {
     const clone = this._clone();
     clone._endsWith = s;
     return clone;
   }
 
-  includes(s: string): StringSchema {
+  includes(s: string): this {
     const clone = this._clone();
     clone._includes = s;
     return clone;
   }
 
-  format(f: StringFormat): StringSchema {
+  format(f: StringFormat): this {
     const clone = this._clone();
     clone._format = f;
     return clone;

@@ -27,19 +27,19 @@ fun unknown() = UnknownSchema()
 fun never() = NeverSchema()
 fun literal(value: Any?) = LiteralSchema(value)
 fun enum_(vararg values: Any?) = EnumSchema(values.toList())
-fun array(items: Schema) = ArraySchema(items)
-fun tuple(vararg elements: Schema) = TupleSchema(elements.toList())
-fun record(values: Schema) = RecordSchema(values)
-fun union(vararg variants: Schema) = UnionSchema(variants.toList())
-fun intersection(vararg schemas: Schema) = IntersectionSchema(schemas.toList())
-fun optional(schema: Schema) = OptionalSchema(schema)
-fun nullable(schema: Schema) = NullableSchema(schema)
+fun array(items: Schema<*>) = ArraySchema(items)
+fun tuple(vararg elements: Schema<*>) = TupleSchema(elements.toList())
+fun record(values: Schema<*>) = RecordSchema(values)
+fun union(vararg variants: Schema<*>) = UnionSchema(variants.toList())
+fun intersection(vararg schemas: Schema<*>) = IntersectionSchema(schemas.toList())
+fun optional(schema: Schema<*>) = OptionalSchema(schema)
+fun nullable(schema: Schema<*>) = NullableSchema(schema)
 fun ref(ref: String) = RefSchema(ref)
 
 fun obj(
-    properties: Map<String, Schema>,
+    properties: Map<String, Schema<*>>,
     required: Set<String> = emptySet(),
     unknownKeys: UnknownKeyMode = UnknownKeyMode.REJECT
 ) = ObjectSchema(properties, required, unknownKeys)
 
-fun import_(jsonStr: String): Pair<Schema, Map<String, Schema>> = Importer.importFromJson(jsonStr)
+fun import_(jsonStr: String): Pair<Schema<*>, Map<String, Schema<*>>> = Importer.importFromJson(jsonStr)

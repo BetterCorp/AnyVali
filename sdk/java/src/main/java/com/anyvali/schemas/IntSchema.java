@@ -14,7 +14,7 @@ import java.util.Map;
  * Subclasses: Int8Schema, Int16Schema, Int32Schema, Int64Schema,
  *             Uint8Schema, Uint16Schema, Uint32Schema, Uint64Schema.
  */
-public class IntSchema extends Schema {
+public class IntSchema extends Schema<Long> {
     protected final String kind;
     protected final long rangeMin;
     protected final long rangeMax;
@@ -199,7 +199,7 @@ public class IntSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Long> copy() {
         return new IntSchema(this);
     }
 
@@ -243,55 +243,55 @@ public class IntSchema extends Schema {
         public Int8Schema() { super("int8", INT8_MIN, INT8_MAX, false); }
         private Int8Schema(Int8Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Int8Schema(this); }
-        @Override protected Schema copy() { return new Int8Schema(this); }
+        @Override protected Schema<Long> copy() { return new Int8Schema(this); }
     }
 
     public static class Int16Schema extends IntSchema {
         public Int16Schema() { super("int16", INT16_MIN, INT16_MAX, false); }
         private Int16Schema(Int16Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Int16Schema(this); }
-        @Override protected Schema copy() { return new Int16Schema(this); }
+        @Override protected Schema<Long> copy() { return new Int16Schema(this); }
     }
 
     public static class Int32Schema extends IntSchema {
         public Int32Schema() { super("int32", INT32_MIN, INT32_MAX, false); }
         private Int32Schema(Int32Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Int32Schema(this); }
-        @Override protected Schema copy() { return new Int32Schema(this); }
+        @Override protected Schema<Long> copy() { return new Int32Schema(this); }
     }
 
     public static class Int64Schema extends IntSchema {
         public Int64Schema() { super("int64", INT64_MIN, INT64_MAX, false); }
         private Int64Schema(Int64Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Int64Schema(this); }
-        @Override protected Schema copy() { return new Int64Schema(this); }
+        @Override protected Schema<Long> copy() { return new Int64Schema(this); }
     }
 
     public static class Uint8Schema extends IntSchema {
         public Uint8Schema() { super("uint8", UINT8_MIN, UINT8_MAX, false); }
         private Uint8Schema(Uint8Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Uint8Schema(this); }
-        @Override protected Schema copy() { return new Uint8Schema(this); }
+        @Override protected Schema<Long> copy() { return new Uint8Schema(this); }
     }
 
     public static class Uint16Schema extends IntSchema {
         public Uint16Schema() { super("uint16", UINT16_MIN, UINT16_MAX, false); }
         private Uint16Schema(Uint16Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Uint16Schema(this); }
-        @Override protected Schema copy() { return new Uint16Schema(this); }
+        @Override protected Schema<Long> copy() { return new Uint16Schema(this); }
     }
 
     public static class Uint32Schema extends IntSchema {
         public Uint32Schema() { super("uint32", UINT32_MIN, UINT32_MAX, false); }
         private Uint32Schema(Uint32Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Uint32Schema(this); }
-        @Override protected Schema copy() { return new Uint32Schema(this); }
+        @Override protected Schema<Long> copy() { return new Uint32Schema(this); }
     }
 
     public static class Uint64Schema extends IntSchema {
         public Uint64Schema() { super("uint64", 0, Long.MAX_VALUE, true); }
         private Uint64Schema(Uint64Schema other) { super(other); }
         @Override protected IntSchema copyAs() { return new Uint64Schema(this); }
-        @Override protected Schema copy() { return new Uint64Schema(this); }
+        @Override protected Schema<Long> copy() { return new Uint64Schema(this); }
     }
 }

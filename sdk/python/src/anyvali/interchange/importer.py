@@ -38,7 +38,7 @@ from ..schemas.unknown import UnknownSchema
 from ..types import AnyValiDocument
 
 
-def import_schema(source: dict[str, Any] | str) -> BaseSchema:
+def import_schema(source: dict[str, Any] | str) -> BaseSchema[Any]:
     """Import a schema from an AnyVali document dict or JSON string.
 
     Returns the root schema.

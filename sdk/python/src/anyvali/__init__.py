@@ -15,6 +15,8 @@ Usage::
 
 from __future__ import annotations
 
+from typing import TypeVar
+
 from .interchange.exporter import export_schema, export_schema_json
 from .interchange.importer import import_schema
 from .issue_codes import (
@@ -72,6 +74,8 @@ from .types import (
     ValidationError,
     ValidationIssue,
 )
+
+T = TypeVar("T")
 
 __version__ = "0.0.6"
 
@@ -214,12 +218,12 @@ def intersection(schemas: list[BaseSchema]) -> IntersectionSchema:
     return IntersectionSchema(schemas)
 
 
-def optional(schema: BaseSchema) -> OptionalSchema:
+def optional(schema: BaseSchema[T]) -> OptionalSchema[T]:
     """Create an optional schema wrapper."""
     return OptionalSchema(schema)
 
 
-def nullable(schema: BaseSchema) -> NullableSchema:
+def nullable(schema: BaseSchema[T]) -> NullableSchema[T]:
     """Create a nullable schema wrapper."""
     return NullableSchema(schema)
 

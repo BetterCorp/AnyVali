@@ -12,16 +12,16 @@ import java.util.Map;
 /**
  * Schema for arrays/lists with element validation.
  */
-public class ArraySchema extends Schema {
-    private final Schema items;
+public class ArraySchema extends Schema<List<Object>> {
+    private final Schema<?> items;
     private Integer minItems;
     private Integer maxItems;
 
-    public ArraySchema(Schema items) {
+    public ArraySchema(Schema<?> items) {
         this.items = items;
     }
 
-    public ArraySchema(Schema items, Integer minItems, Integer maxItems) {
+    public ArraySchema(Schema<?> items, Integer minItems, Integer maxItems) {
         this.items = items;
         this.minItems = minItems;
         this.maxItems = maxItems;
@@ -90,11 +90,11 @@ public class ArraySchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<List<Object>> copy() {
         return new ArraySchema(this);
     }
 
-    public Schema getItems() {
+    public Schema<?> getItems() {
         return items;
     }
 }

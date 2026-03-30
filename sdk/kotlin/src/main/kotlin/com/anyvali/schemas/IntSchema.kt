@@ -12,7 +12,7 @@ data class IntSchema(
     val multipleOf: Long? = null,
     val defaultValue: Any? = UNSET,
     val coerce: String? = null
-) : Schema() {
+) : Schema<Long>() {
     override val kind: String = schemaKind
 
     fun min(n: Long) = copy(min = n)
@@ -47,7 +47,8 @@ data class IntSchema(
         else -> Long.MAX_VALUE
     }
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    @Suppress("UNCHECKED_CAST")
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Long> {
         var value = input
 
         // Apply coercion
@@ -72,14 +73,14 @@ data class IntSchema(
         val issues = validateValue(value, ctx)
         return if (issues.isEmpty()) {
             // Normalize to Long
-            val longVal = when (value) {
+            val longVal: Long = when (value) {
                 is Long -> value
                 is Int -> value.toLong()
                 is Short -> value.toLong()
                 is Byte -> value.toLong()
                 is Double -> value.toLong()
                 is Float -> value.toLong()
-                else -> value
+                else -> value as Long
             }
             ParseResult.Success(longVal)
         } else {

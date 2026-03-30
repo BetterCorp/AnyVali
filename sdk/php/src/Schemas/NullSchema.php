@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<null>
+ */
 final class NullSchema extends Schema
 {
     public function getKind(): string

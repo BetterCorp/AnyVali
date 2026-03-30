@@ -3,12 +3,19 @@ import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
 
-export class TupleSchema extends BaseSchema<unknown[], unknown[]> {
-  private _items: BaseSchema[];
+/** Map a tuple of schemas to a tuple of their output types. */
+type InferTuple<T extends BaseSchema<any, any>[]> = {
+  [K in keyof T]: T[K]["_output"];
+};
 
-  constructor(items: BaseSchema[]) {
+export class TupleSchema<
+  T extends BaseSchema<any, any>[] = BaseSchema[],
+> extends BaseSchema<unknown[], InferTuple<T>> {
+  private _items: T;
+
+  constructor(items: [...T]) {
     super();
-    this._items = items;
+    this._items = items as T;
   }
 
   _validate(input: unknown, ctx: ParseContext): unknown {

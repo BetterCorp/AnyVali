@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_UNION
 from .base import BaseSchema, ValidationContext
 
 
-class UnionSchema(BaseSchema):
+class UnionSchema(BaseSchema[Any]):
     """Schema that accepts any of the given schemas (first match wins)."""
 
     def __init__(self, schemas: list[BaseSchema]) -> None:

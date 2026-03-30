@@ -7,7 +7,7 @@ from typing import Any
 from .base import BaseSchema, ValidationContext
 
 
-class AnySchema(BaseSchema):
+class AnySchema(BaseSchema[Any]):
     """Schema that accepts any value."""
 
     def __init__(self) -> None:

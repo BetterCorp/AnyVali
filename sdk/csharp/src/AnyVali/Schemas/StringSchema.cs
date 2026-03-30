@@ -3,7 +3,7 @@ using AnyVali.Format;
 
 namespace AnyVali.Schemas;
 
-public sealed class StringSchema : Schema
+public sealed class StringSchema : Schema<string>
 {
     private int? _minLength;
     private int? _maxLength;

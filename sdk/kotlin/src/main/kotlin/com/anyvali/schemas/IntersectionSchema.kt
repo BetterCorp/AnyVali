@@ -4,11 +4,11 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class IntersectionSchema(
-    val allOf: List<Schema>
-) : Schema() {
+    val allOf: List<Schema<*>>
+) : Schema<Any?>() {
     override val kind: String = "intersection"
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         val allIssues = mutableListOf<ValidationIssue>()
         var mergedResult: Any? = input
 

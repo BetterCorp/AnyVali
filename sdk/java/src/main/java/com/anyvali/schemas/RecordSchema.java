@@ -10,10 +10,10 @@ import java.util.Map;
 /**
  * Schema for record/map with string keys and uniform value schema.
  */
-public class RecordSchema extends Schema {
-    private final Schema valueSchema;
+public class RecordSchema extends Schema<Map<String, Object>> {
+    private final Schema<?> valueSchema;
 
-    public RecordSchema(Schema valueSchema) {
+    public RecordSchema(Schema<?> valueSchema) {
         this.valueSchema = valueSchema;
     }
 
@@ -59,11 +59,11 @@ public class RecordSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Map<String, Object>> copy() {
         return new RecordSchema(this);
     }
 
-    public Schema getValueSchema() {
+    public Schema<?> getValueSchema() {
         return valueSchema;
     }
 }

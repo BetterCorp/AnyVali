@@ -10,26 +10,26 @@ import java.util.*;
 /**
  * Schema for objects/maps with named properties.
  */
-public class ObjectSchema extends Schema {
-    private final Map<String, Schema> properties;
+public class ObjectSchema extends Schema<Map<String, Object>> {
+    private final Map<String, Schema<?>> properties;
     private final Set<String> required;
     private final UnknownKeyMode unknownKeys;
 
     /**
      * Create an object schema. If required is null, all properties are required by default.
      */
-    public ObjectSchema(Map<String, Schema> properties, Set<String> required,
+    public ObjectSchema(Map<String, ? extends Schema<?>> properties, Set<String> required,
                         UnknownKeyMode unknownKeys) {
         this.properties = new LinkedHashMap<>(properties);
         this.required = required != null ? new LinkedHashSet<>(required) : new LinkedHashSet<>(properties.keySet());
         this.unknownKeys = unknownKeys != null ? unknownKeys : UnknownKeyMode.REJECT;
     }
 
-    public ObjectSchema(Map<String, Schema> properties) {
+    public ObjectSchema(Map<String, ? extends Schema<?>> properties) {
         this(properties, null, UnknownKeyMode.REJECT);
     }
 
-    public ObjectSchema(Map<String, Schema> properties, Set<String> required) {
+    public ObjectSchema(Map<String, ? extends Schema<?>> properties, Set<String> required) {
         this(properties, required, UnknownKeyMode.REJECT);
     }
 
@@ -58,7 +58,7 @@ public class ObjectSchema extends Schema {
         // Validate known properties
         for (var entry : properties.entrySet()) {
             String key = entry.getKey();
-            Schema schema = entry.getValue();
+            Schema<?> schema = entry.getValue();
 
             if (map.containsKey(key)) {
                 var childCtx = ctx.child(key);
@@ -121,11 +121,11 @@ public class ObjectSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Map<String, Object>> copy() {
         return new ObjectSchema(this);
     }
 
-    public Map<String, Schema> getProperties() {
+    public Map<String, Schema<?>> getProperties() {
         return properties;
     }
 

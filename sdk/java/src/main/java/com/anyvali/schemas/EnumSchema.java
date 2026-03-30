@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * Schema that accepts one of a fixed set of values.
  */
-public class EnumSchema extends Schema {
+public class EnumSchema extends Schema<Object> {
     private final List<Object> values;
 
     public EnumSchema(List<Object> values) {
@@ -64,7 +64,7 @@ public class EnumSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new EnumSchema(this);
     }
 }

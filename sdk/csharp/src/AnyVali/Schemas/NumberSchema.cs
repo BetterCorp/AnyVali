@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public class NumberSchema : Schema
+public class NumberSchema : Schema<double>
 {
     protected string Kind;
     protected double? _min;

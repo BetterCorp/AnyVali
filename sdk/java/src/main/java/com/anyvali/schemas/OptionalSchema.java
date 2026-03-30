@@ -9,10 +9,10 @@ import java.util.Map;
 /**
  * Wraps a schema to make it optional (accepts absent/undefined values).
  */
-public class OptionalSchema extends Schema {
-    private final Schema inner;
+public class OptionalSchema extends Schema<Object> {
+    private final Schema<?> inner;
 
-    public OptionalSchema(Schema inner) {
+    public OptionalSchema(Schema<?> inner) {
         this.inner = inner;
         // Inherit defaults from inner
         if (inner.hasDefaultValue()) {
@@ -59,11 +59,11 @@ public class OptionalSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Object> copy() {
         return new OptionalSchema(this);
     }
 
-    public Schema getInner() {
+    public Schema<?> getInner() {
         return inner;
     }
 }

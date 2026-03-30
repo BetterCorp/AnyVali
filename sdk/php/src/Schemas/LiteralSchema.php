@@ -10,6 +10,9 @@ use AnyVali\Schema;
 use AnyVali\ValidationContext;
 use AnyVali\ValidationIssue;
 
+/**
+ * @extends Schema<mixed>
+ */
 final class LiteralSchema extends Schema
 {
     public function __construct(

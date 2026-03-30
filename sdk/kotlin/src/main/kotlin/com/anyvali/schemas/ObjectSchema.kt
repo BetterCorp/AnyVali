@@ -4,15 +4,15 @@ import com.anyvali.*
 import kotlinx.serialization.json.*
 
 data class ObjectSchema(
-    val properties: Map<String, Schema> = emptyMap(),
+    val properties: Map<String, Schema<*>> = emptyMap(),
     val required: Set<String> = emptySet(),
     val unknownKeys: UnknownKeyMode = UnknownKeyMode.REJECT
-) : Schema() {
+) : Schema<Map<String, Any?>>() {
     override val kind: String = "object"
 
     fun unknownKeys(mode: UnknownKeyMode) = copy(unknownKeys = mode)
 
-    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult {
+    override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Map<String, Any?>> {
         if (input !is Map<*, *>) {
             return ParseResult.Failure(
                 listOf(
@@ -124,7 +124,7 @@ data class ObjectSchema(
     }
 
     companion object {
-        fun getDefault(schema: Schema?): Pair<String, Any?>? {
+        fun getDefault(schema: Schema<*>?): Pair<String, Any?>? {
             if (schema == null) return null
             return when (schema) {
                 is StringSchema -> if (schema.defaultValue !== StringSchema.UNSET) "string" to schema.defaultValue else null

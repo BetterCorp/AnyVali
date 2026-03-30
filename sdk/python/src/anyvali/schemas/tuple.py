@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE, TOO_LARGE, TOO_SMALL
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
 
-class TupleSchema(BaseSchema):
+class TupleSchema(BaseSchema[list[Any]]):
     """Schema for fixed-length tuples with positional element schemas."""
 
     def __init__(self, items: list[BaseSchema]) -> None:

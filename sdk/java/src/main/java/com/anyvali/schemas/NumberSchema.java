@@ -11,7 +11,7 @@ import java.util.Map;
  * Base class for number/float schemas with numeric constraints.
  * NumberSchema is the number alias (= float64).
  */
-public class NumberSchema extends Schema {
+public class NumberSchema extends Schema<Double> {
     protected String kind;
     protected Double min;
     protected Double max;
@@ -149,7 +149,7 @@ public class NumberSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<Double> copy() {
         return new NumberSchema(this);
     }
 

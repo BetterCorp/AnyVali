@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class EnumSchema : Schema
+public sealed class EnumSchema : Schema<object?>
 {
     private readonly List<object> _values;
 

@@ -1,0 +1,251 @@
+module AnyVali
+  VERSION: String
+
+  class ValidationIssue
+    attr_reader code: String
+    attr_reader message: String?
+    attr_reader path: Array[String | Integer]
+    attr_reader expected: String?
+    attr_reader received: String?
+    attr_reader meta: untyped
+
+    def initialize: (code: String, ?message: String?, ?path: Array[String | Integer], ?expected: String?, ?received: String?, ?meta: untyped) -> void
+    def to_h: () -> Hash[String, untyped]
+  end
+
+  class ParseResult
+    attr_reader value: untyped
+    attr_reader issues: Array[ValidationIssue]
+
+    def initialize: (value: untyped, issues: Array[ValidationIssue]) -> void
+    def success?: () -> bool
+    def failure?: () -> bool
+  end
+
+  class ValidationError < StandardError
+    attr_reader issues: Array[ValidationIssue]
+
+    def initialize: (Array[ValidationIssue]) -> void
+  end
+
+  class ValidationContext
+    attr_reader definitions: Hash[String, untyped]
+
+    def initialize: (?definitions: Hash[String, untyped]) -> void
+  end
+
+  class Schema
+    attr_reader kind: String
+    attr_reader constraints: Hash[String, untyped]
+    attr_reader coerce_config: untyped
+    attr_reader default_value: untyped
+    attr_reader has_default: bool
+    attr_reader custom_validators: Array[untyped]
+
+    def initialize: (kind: String, ?constraints: Hash[String, untyped], ?coerce_config: untyped, ?default_value: untyped, ?has_default: bool, ?custom_validators: Array[untyped]) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+    def default: (untyped value) -> instance
+    def coerce: (untyped config) -> instance
+    def refine: () { (untyped, Array[String | Integer]) -> Array[ValidationIssue]? } -> instance
+    def portable?: () -> bool
+    def export: (?mode: Symbol) -> Hash[String, untyped]
+    def to_node: () -> Hash[String, untyped]
+
+    def self.type_name: (untyped value) -> String
+  end
+
+  class StringSchema < Schema
+    def initialize: (?constraints: Hash[String, untyped], **untyped) -> void
+    def parse: (untyped input) -> String
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+    def min_length: (Integer n) -> StringSchema
+    def max_length: (Integer n) -> StringSchema
+    def pattern: (String | Regexp re) -> StringSchema
+    def starts_with: (String prefix) -> StringSchema
+    def ends_with: (String suffix) -> StringSchema
+    def includes: (String substr) -> StringSchema
+    def format: (String fmt) -> StringSchema
+  end
+
+  class NumberSchema < Schema
+    FLOAT_KINDS: Array[String]
+    INT_KINDS: Array[String]
+    INT_RANGES: Hash[String, [Integer, Integer]]
+    FLOAT32_MAX: Float
+
+    def initialize: (?kind: String, ?constraints: Hash[String, untyped], **untyped) -> void
+    def parse: (untyped input) -> (Integer | Float)
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+    def min: (Numeric n) -> NumberSchema
+    def max: (Numeric n) -> NumberSchema
+    def exclusive_min: (Numeric n) -> NumberSchema
+    def exclusive_max: (Numeric n) -> NumberSchema
+    def multiple_of: (Numeric n) -> NumberSchema
+  end
+
+  class IntSchema < NumberSchema
+    def initialize: (?kind: String, **untyped) -> void
+    def parse: (untyped input) -> Integer
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class BoolSchema < Schema
+    def initialize: (**untyped) -> void
+    def parse: (untyped input) -> bool
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class NullSchema < Schema
+    def initialize: (**untyped) -> void
+    def parse: (untyped input) -> nil
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class AnySchema < Schema
+    def initialize: (**untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class UnknownSchema < Schema
+    def initialize: (**untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class NeverSchema < Schema
+    def initialize: (**untyped) -> void
+    def parse: (untyped input) -> bot
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class LiteralSchema < Schema
+    attr_reader literal_value: untyped
+
+    def initialize: (value: untyped, **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class EnumSchema < Schema
+    attr_reader values: Array[untyped]
+
+    def initialize: (values: Array[untyped], **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class ArraySchema < Schema
+    attr_reader items_schema: Schema
+
+    def initialize: (items: Schema, ?constraints: Hash[String, untyped], **untyped) -> void
+    def parse: (untyped input) -> Array[untyped]
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+    def min_items: (Integer n) -> ArraySchema
+    def max_items: (Integer n) -> ArraySchema
+  end
+
+  class TupleSchema < Schema
+    attr_reader element_schemas: Array[Schema]
+
+    def initialize: (elements: Array[Schema], **untyped) -> void
+    def parse: (untyped input) -> Array[untyped]
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class ObjectSchema < Schema
+    attr_reader properties: Hash[String, Schema]
+    attr_reader required_keys: Array[String]
+    attr_reader unknown_keys: String
+
+    def initialize: (properties: Hash[String, Schema], ?required: Array[String], ?unknown_keys: String, **untyped) -> void
+    def parse: (untyped input) -> Hash[String, untyped]
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+    def strict: () -> ObjectSchema
+    def strip_unknown: () -> ObjectSchema
+    def allow_unknown: () -> ObjectSchema
+  end
+
+  class RecordSchema < Schema
+    attr_reader values_schema: Schema
+
+    def initialize: (values: Schema, **untyped) -> void
+    def parse: (untyped input) -> Hash[String, untyped]
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class UnionSchema < Schema
+    attr_reader variant_schemas: Array[Schema]
+
+    def initialize: (variants: Array[Schema], **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class IntersectionSchema < Schema
+    attr_reader all_of_schemas: Array[Schema]
+
+    def initialize: (all_of: Array[Schema], **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class OptionalSchema < Schema
+    attr_reader inner_schema: Schema
+
+    def initialize: (schema: Schema, **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class NullableSchema < Schema
+    attr_reader inner_schema: Schema
+
+    def initialize: (schema: Schema, **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  class RefSchema < Schema
+    attr_reader ref: String
+
+    def initialize: (ref: String, **untyped) -> void
+    def parse: (untyped input) -> untyped
+    def safe_parse: (untyped input, ?path: Array[String | Integer], ?context: ValidationContext?) -> ParseResult
+  end
+
+  # Builder methods
+  def self.string: () -> StringSchema
+  def self.number: () -> NumberSchema
+  def self.float32: () -> NumberSchema
+  def self.float64: () -> NumberSchema
+  def self.int_: () -> IntSchema
+  def self.int8: () -> IntSchema
+  def self.int16: () -> IntSchema
+  def self.int32: () -> IntSchema
+  def self.int64: () -> IntSchema
+  def self.uint8: () -> IntSchema
+  def self.uint16: () -> IntSchema
+  def self.uint32: () -> IntSchema
+  def self.uint64: () -> IntSchema
+  def self.bool: () -> BoolSchema
+  def self.null: () -> NullSchema
+  def self.any: () -> AnySchema
+  def self.unknown: () -> UnknownSchema
+  def self.never: () -> NeverSchema
+  def self.literal: (untyped value) -> LiteralSchema
+  def self.enum_: (*untyped values) -> EnumSchema
+  def self.array: (Schema items) -> ArraySchema
+  def self.tuple: (*Schema elements) -> TupleSchema
+  def self.object: (properties: Hash[String, Schema], ?required: Array[String], ?unknown_keys: String) -> ObjectSchema
+  def self.record: (Schema values) -> RecordSchema
+  def self.union: (*Schema variants) -> UnionSchema
+  def self.intersection: (*Schema schemas) -> IntersectionSchema
+  def self.optional: (Schema schema) -> OptionalSchema
+  def self.nullable: (Schema schema) -> NullableSchema
+  def self.ref: (String ref_path) -> RefSchema
+  def self.export: (Schema schema, ?mode: Symbol, ?definitions: Hash[String, untyped]) -> Hash[String, untyped]
+  def self.import: (Hash[String, untyped] doc) -> untyped
+  def self.import_schema: (Hash[String, untyped] doc) -> Schema
+end

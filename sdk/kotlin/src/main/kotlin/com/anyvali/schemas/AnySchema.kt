@@ -3,7 +3,7 @@ package com.anyvali.schemas
 import com.anyvali.*
 import kotlinx.serialization.json.*
 
-class AnySchema : Schema() {
+class AnySchema : Schema<Any?>() {
     override val kind: String = "any"
 
     override fun validateValue(value: Any?, ctx: ValidationContext): List<ValidationIssue> {

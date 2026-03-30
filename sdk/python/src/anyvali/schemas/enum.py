@@ -8,7 +8,7 @@ from ..issue_codes import INVALID_TYPE
 from .base import BaseSchema, ValidationContext
 
 
-class EnumSchema(BaseSchema):
+class EnumSchema(BaseSchema[Any]):
     """Schema that accepts one of a fixed set of values."""
 
     def __init__(self, values: list[Any]) -> None:

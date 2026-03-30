@@ -6,7 +6,7 @@ import kotlinx.serialization.json.*
 
 object Exporter {
 
-    fun exportToJson(schema: Schema, mode: ExportMode = ExportMode.PORTABLE): String {
+    fun exportToJson(schema: Schema<*>, mode: ExportMode = ExportMode.PORTABLE): String {
         val doc = schema.export(mode)
         return toJsonString(doc)
     }
@@ -23,8 +23,8 @@ object Exporter {
     }
 
     fun exportDocument(
-        schema: Schema,
-        definitions: Map<String, Schema> = emptyMap(),
+        schema: Schema<*>,
+        definitions: Map<String, Schema<*>> = emptyMap(),
         extensions: Map<String, JsonElement> = emptyMap(),
         mode: ExportMode = ExportMode.PORTABLE
     ): AnyValiDocument {

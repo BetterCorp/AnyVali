@@ -2,8 +2,8 @@ import type { ParseContext, SchemaNode } from "../types.js";
 import { BaseSchema } from "./base.js";
 
 export class NullableSchema<
-  T extends BaseSchema = BaseSchema,
-> extends BaseSchema<unknown, unknown> {
+  T extends BaseSchema<any, any> = BaseSchema,
+> extends BaseSchema<unknown, T["_output"] | null> {
   /** @internal */ _inner: T;
 
   constructor(inner: T) {

@@ -3,12 +3,14 @@ import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
 
-export class UnionSchema extends BaseSchema<unknown, unknown> {
-  private _variants: BaseSchema[];
+export class UnionSchema<
+  T extends BaseSchema<any, any>[] = BaseSchema[],
+> extends BaseSchema<unknown, T[number]["_output"]> {
+  private _variants: T;
 
-  constructor(variants: BaseSchema[]) {
+  constructor(variants: [...T]) {
     super();
-    this._variants = variants;
+    this._variants = variants as T;
   }
 
   _validate(input: unknown, ctx: ParseContext): unknown {

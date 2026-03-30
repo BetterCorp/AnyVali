@@ -1,6 +1,6 @@
 namespace AnyVali.Schemas;
 
-public sealed class NullableSchema : Schema
+public sealed class NullableSchema : Schema<object?>
 {
     internal Schema Inner { get; }
 

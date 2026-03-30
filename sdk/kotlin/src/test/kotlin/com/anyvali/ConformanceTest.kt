@@ -118,7 +118,7 @@ class ConformanceTest {
         }
 
         if (expectedValid) {
-            assertIs<ParseResult.Success>(result)
+            assertIs<ParseResult.Success<*>>(result)
         }
     }
 

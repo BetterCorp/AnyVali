@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 
 data class EnumSchema(
     val values: List<Any?>
-) : Schema() {
+) : Schema<Any?>() {
     override val kind: String = "enum"
 
     override fun validateValue(input: Any?, ctx: ValidationContext): List<ValidationIssue> {

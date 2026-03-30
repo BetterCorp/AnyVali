@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 /**
  * Schema for string values with optional constraints.
  */
-public class StringSchema extends Schema {
+public class StringSchema extends Schema<String> {
     private Integer minLength;
     private Integer maxLength;
     private String pattern;
@@ -146,7 +146,7 @@ public class StringSchema extends Schema {
     }
 
     @Override
-    protected Schema copy() {
+    protected Schema<String> copy() {
         return new StringSchema(this);
     }
 }

@@ -2,22 +2,41 @@ import type { ParseContext, SchemaNode, UnknownKeyMode } from "../types.js";
 import { BaseSchema, ABSENT } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
+import type { OptionalSchema } from "./optional.js";
+
+/** Flatten an intersection into a clean single-level type. */
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+/** Map a shape record to its inferred output type, separating required from optional fields. */
+export type InferShape<
+  T extends Record<string, BaseSchema<any, any>>,
+> = Prettify<
+  {
+    [K in keyof T as T[K] extends OptionalSchema<any> ? never : K]: T[K]["_output"];
+  } & {
+    [K in keyof T as T[K] extends OptionalSchema<any>
+      ? K
+      : never]?: T[K]["_output"];
+  }
+>;
 
 interface PropertyDef {
   schema: BaseSchema;
   required: boolean;
 }
 
-export class ObjectSchema extends BaseSchema<
-  Record<string, unknown>,
-  Record<string, unknown>
-> {
+export class ObjectSchema<
+  TShape extends Record<string, BaseSchema<any, any>> = Record<
+    string,
+    BaseSchema
+  >,
+> extends BaseSchema<Record<string, unknown>, InferShape<TShape>> {
   private _properties: Map<string, PropertyDef>;
   private _unknownKeys: UnknownKeyMode;
 
   constructor(
-    shape: Record<string, BaseSchema>,
-    options?: { unknownKeys?: UnknownKeyMode }
+    shape: TShape,
+    options?: { unknownKeys?: UnknownKeyMode },
   ) {
     super();
     this._properties = new Map();
@@ -33,7 +52,7 @@ export class ObjectSchema extends BaseSchema<
     }
   }
 
-  unknownKeys(mode: UnknownKeyMode): ObjectSchema {
+  unknownKeys(mode: UnknownKeyMode): ObjectSchema<TShape> {
     const clone = this._clone();
     clone._unknownKeys = mode;
     return clone;

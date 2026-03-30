@@ -7,7 +7,7 @@ from typing import Any
 from .base import BaseSchema, ValidationContext
 
 
-class UnknownSchema(BaseSchema):
+class UnknownSchema(BaseSchema[Any]):
     """Schema that accepts any value (like any, but semantically different)."""
 
     def __init__(self) -> None:

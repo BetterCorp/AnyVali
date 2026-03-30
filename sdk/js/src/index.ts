@@ -15,6 +15,8 @@ export type {
 export { ISSUE_CODES } from "./issue-codes.js";
 export type { IssueCode } from "./issue-codes.js";
 
+export type { Infer, InferInput } from "./infer.js";
+
 export { ValidationError } from "./errors.js";
 
 // ---- Re-export schema classes ----
@@ -184,50 +186,66 @@ export function literal<T extends string | number | boolean | null>(
 }
 
 /** Create an enum schema. Named enum_ to avoid conflict with the enum keyword. */
-export function enum_(values: (string | number)[]): EnumSchema {
+export function enum_<T extends readonly (string | number)[]>(
+  values: T,
+): EnumSchema<T> {
   return new EnumSchema(values);
 }
 
 /** Create an array schema */
-export function array<T extends BaseSchema>(items: T): ArraySchema<T> {
+export function array<T extends BaseSchema<any, any>>(
+  items: T,
+): ArraySchema<T> {
   return new ArraySchema(items);
 }
 
 /** Create a tuple schema */
-export function tuple(items: BaseSchema[]): TupleSchema {
+export function tuple<T extends BaseSchema<any, any>[]>(
+  items: [...T],
+): TupleSchema<T> {
   return new TupleSchema(items);
 }
 
 /** Create an object schema */
-export function object(
-  shape: Record<string, BaseSchema>,
-  options?: { unknownKeys?: UnknownKeyMode }
-): ObjectSchema {
+export function object<T extends Record<string, BaseSchema<any, any>>>(
+  shape: T,
+  options?: { unknownKeys?: UnknownKeyMode },
+): ObjectSchema<T> {
   return new ObjectSchema(shape, options);
 }
 
 /** Create a record schema */
-export function record(valueSchema: BaseSchema): RecordSchema {
+export function record<T extends BaseSchema<any, any>>(
+  valueSchema: T,
+): RecordSchema<T> {
   return new RecordSchema(valueSchema);
 }
 
 /** Create a union schema */
-export function union(variants: BaseSchema[]): UnionSchema {
+export function union<T extends BaseSchema<any, any>[]>(
+  variants: [...T],
+): UnionSchema<T> {
   return new UnionSchema(variants);
 }
 
 /** Create an intersection schema */
-export function intersection(schemas: BaseSchema[]): IntersectionSchema {
+export function intersection<T extends BaseSchema<any, any>[]>(
+  schemas: [...T],
+): IntersectionSchema<T> {
   return new IntersectionSchema(schemas);
 }
 
 /** Wrap a schema as optional */
-export function optional<T extends BaseSchema>(schema: T): OptionalSchema<T> {
+export function optional<T extends BaseSchema<any, any>>(
+  schema: T,
+): OptionalSchema<T> {
   return new OptionalSchema(schema);
 }
 
 /** Wrap a schema as nullable */
-export function nullable<T extends BaseSchema>(schema: T): NullableSchema<T> {
+export function nullable<T extends BaseSchema<any, any>>(
+  schema: T,
+): NullableSchema<T> {
   return new NullableSchema(schema);
 }
 
