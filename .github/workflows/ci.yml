@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [22, 24]
     defaults:
       run:
         shell: bash
@@ -35,7 +35,7 @@ jobs:
       - run: ./runner.sh ci js
       - run: ./runner.sh coverage js
       - uses: codecov/codecov-action@v6
-        if: github.event_name == 'push' && matrix.node-version == 20
+        if: github.event_name == 'push' && matrix.node-version == 24
         with:
           directory: sdk/js/coverage
           flags: js
@@ -296,11 +296,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: cli/go.sum
+          cache: false
       - name: Build CLI
         run: cd cli && go build -o anyvali .
       - name: Test CLI
-        run: cd cli && go test ./...
+        run: cd cli && go test -v ./... 2>&1
       - name: Verify binary
         run: ./cli/anyvali version
 
