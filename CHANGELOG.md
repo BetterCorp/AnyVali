@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.5](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.4...anyvali-v0.1.5) (2026-03-30)
+
+
+### Bug Fixes
+
+* **cli:** add CLI to release-please and build workflow ([2682c44](https://github.com/BetterCorp/AnyVali/commit/2682c44ca71a8488271457722c952ee3ca3956e9))
+* match release workflow tags to release-please component tags ([af5d15b](https://github.com/BetterCorp/AnyVali/commit/af5d15b540e37437f731c6ff8110b8dca5954d8e))
+* resolve merge conflict in release-please manifest ([5c8098c](https://github.com/BetterCorp/AnyVali/commit/5c8098ce9ee5ab0891a830c4fa82f7db20e5d9cf))
+
 ## [0.1.4](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.3...anyvali-v0.1.4) (2026-03-30)
 
 

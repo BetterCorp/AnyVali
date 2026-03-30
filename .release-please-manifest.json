@@ -1,14 +1,14 @@
 {
-  ".": "0.1.4",
-  "sdk/js": "0.1.1",
-  "sdk/python": "0.0.4",
-  "sdk/go": "0.0.3",
-  "sdk/java": "0.0.3",
-  "sdk/rust": "0.0.3",
-  "sdk/php": "0.0.3",
-  "sdk/ruby": "0.0.4",
-  "sdk/kotlin": "0.0.3",
-  "sdk/csharp": "0.0.3",
-  "sdk/cpp": "0.0.3",
-  "cli": "0.0.1"
+  ".": "0.1.5",
+  "sdk/js": "0.1.2",
+  "sdk/python": "0.0.5",
+  "sdk/go": "0.0.4",
+  "sdk/java": "0.0.4",
+  "sdk/rust": "0.0.4",
+  "sdk/php": "0.0.4",
+  "sdk/ruby": "0.0.5",
+  "sdk/kotlin": "0.0.4",
+  "sdk/csharp": "0.0.4",
+  "sdk/cpp": "0.0.4",
+  "cli": "0.0.2"
 }
