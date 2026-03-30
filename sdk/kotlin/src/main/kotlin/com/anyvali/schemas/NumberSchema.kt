@@ -49,7 +49,7 @@ data class NumberSchema(
 
         val issues = validateValue(value, ctx)
         return if (issues.isEmpty()) {
-            ParseResult.Success(value as Double)
+            ParseResult.Success((value as Number).toDouble())
         } else {
             ParseResult.Failure(issues)
         }

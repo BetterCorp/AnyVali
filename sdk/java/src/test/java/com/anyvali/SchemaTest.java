@@ -136,7 +136,7 @@ class SchemaTest {
         @Test
         void parsesValidNumber() {
             assertEquals(42.0, number().parse(42.0));
-            assertEquals(42, number().parse(42));
+            assertEquals(42.0, number().parse(42));
         }
 
         @Test

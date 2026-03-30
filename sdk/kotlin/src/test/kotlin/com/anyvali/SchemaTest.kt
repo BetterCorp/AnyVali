@@ -169,13 +169,13 @@ class SchemaTest {
     @Test
     fun `number accepts a positive integer`() {
         val n = number()
-        assertEquals(42, n.parse(42))
+        assertEquals(42.0, n.parse(42))
     }
 
     @Test
     fun `number accepts zero`() {
         val n = number()
-        assertEquals(0, n.parse(0))
+        assertEquals(0.0, n.parse(0))
     }
 
     @Test
@@ -233,7 +233,7 @@ class SchemaTest {
     @Test
     fun `min passes when equal`() {
         val n = number().min(10)
-        assertEquals(10, n.parse(10))
+        assertEquals(10.0, n.parse(10))
     }
 
     @Test
@@ -247,7 +247,7 @@ class SchemaTest {
     @Test
     fun `max passes when equal`() {
         val n = number().max(100)
-        assertEquals(100, n.parse(100))
+        assertEquals(100.0, n.parse(100))
     }
 
     @Test
@@ -289,7 +289,7 @@ class SchemaTest {
     @Test
     fun `multipleOf passes when multiple`() {
         val n = number().multipleOf(3)
-        assertEquals(9, n.parse(9))
+        assertEquals(9.0, n.parse(9))
     }
 
     @Test
@@ -466,7 +466,7 @@ class SchemaTest {
     @Test
     fun `float64 accepts integer as float`() {
         val f = float64()
-        assertEquals(42, f.parse(42))
+        assertEquals(42.0, f.parse(42))
     }
 
     @Test

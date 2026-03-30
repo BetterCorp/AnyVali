@@ -82,7 +82,7 @@ public class NumberSchema extends Schema<Double> {
         double value = toDouble(input);
         checkRange(value, ctx);
         checkConstraints(value, ctx);
-        return input;
+        return value;
     }
 
     protected boolean checkIsNumber(Object input, ValidationContext ctx) {
