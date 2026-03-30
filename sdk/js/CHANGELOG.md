@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/js-v0.1.3...js-v0.2.0) (2026-03-30)
+
+
+### Features
+
+* add static type inference to all 10 SDKs ([f2902ec](https://github.com/BetterCorp/AnyVali/commit/f2902ecf9cdd1153da355b8e27fae07c36486138))
+
 ## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/js-v0.1.2...js-v0.1.3) (2026-03-30)
 
 
