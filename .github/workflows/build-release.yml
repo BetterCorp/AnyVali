@@ -31,14 +31,19 @@ jobs:
       # On that second push: Release Please detects the merged PR and creates releases.
       - name: Auto-merge release PR
         if: steps.release.outputs.pr && steps.release.outputs.releases_created != 'true'
-        run: |
-          pr_number=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
-          if [ "$pr_number" != "null" ] && [ -n "$pr_number" ]; then
-            echo "Auto-merging release PR #${pr_number}"
-            gh pr merge "$pr_number" --squash --auto
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = JSON.parse('${{ steps.release.outputs.pr }}');
+            if (pr && pr.number) {
+              console.log(`Auto-merging release PR #${pr.number}`);
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                merge_method: 'squash',
+              });
+            }
 
   publish-npm:
     needs: build-release

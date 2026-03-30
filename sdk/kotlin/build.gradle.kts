@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.3.20"
     kotlin("plugin.serialization") version "2.3.20"
     id("com.vanniktech.maven.publish") version "0.30.0"
+    jacoco
 }
 
 group = "com.anyvali"
@@ -21,6 +22,15 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(false)
+    }
 }
 
 kotlin {

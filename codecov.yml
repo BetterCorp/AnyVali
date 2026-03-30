@@ -14,9 +14,54 @@ coverage:
         target: 80%
 
 comment:
-  layout: "reach,diff,flags,files"
+  layout: "reach,diff,flags,components,files"
   behavior: default
   require_changes: true
+
+component_management:
+  individual_components:
+    - component_id: js
+      name: JavaScript / TypeScript
+      paths:
+        - sdk/js/src/**
+    - component_id: python
+      name: Python
+      paths:
+        - sdk/python/src/**
+    - component_id: go
+      name: Go
+      paths:
+        - sdk/go/**
+        - "!sdk/go/*_test.go"
+    - component_id: java
+      name: Java
+      paths:
+        - sdk/java/src/main/**
+    - component_id: csharp
+      name: C#
+      paths:
+        - sdk/csharp/src/**
+    - component_id: rust
+      name: Rust
+      paths:
+        - sdk/rust/src/**
+    - component_id: php
+      name: PHP
+      paths:
+        - sdk/php/src/**
+    - component_id: ruby
+      name: Ruby
+      paths:
+        - sdk/ruby/lib/**
+    - component_id: kotlin
+      name: Kotlin
+      paths:
+        - sdk/kotlin/src/main/**
+    - component_id: cli
+      name: CLI
+      paths:
+        - cli/**
+        - "!cli/**_test.go"
 
 flags:
   js:
@@ -54,4 +99,8 @@ flags:
   kotlin:
     paths:
       - sdk/kotlin/src/main/
+    carryforward: true
+  cli:
+    paths:
+      - cli/
     carryforward: true
