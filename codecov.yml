@@ -1,0 +1,57 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+
+flags:
+  js:
+    paths:
+      - sdk/js/src/
+    carryforward: true
+  python:
+    paths:
+      - sdk/python/src/
+    carryforward: true
+  go:
+    paths:
+      - sdk/go/
+    carryforward: true
+  java:
+    paths:
+      - sdk/java/src/
+    carryforward: true
+  csharp:
+    paths:
+      - sdk/csharp/src/
+    carryforward: true
+  rust:
+    paths:
+      - sdk/rust/src/
+    carryforward: true
+  php:
+    paths:
+      - sdk/php/src/
+    carryforward: true
+  ruby:
+    paths:
+      - sdk/ruby/lib/
+    carryforward: true
+  kotlin:
+    paths:
+      - sdk/kotlin/src/main/
+    carryforward: true
