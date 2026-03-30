@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml"><img src="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://codecov.io/gh/BetterCorp/AnyVali"><img src="https://codecov.io/gh/BetterCorp/AnyVali/graph/badge.svg?token=3H068H51QN" alt="codecov" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://www.npmjs.com/package/@anyvali/js"><img src="https://img.shields.io/npm/v/%40anyvali%2Fjs.svg?label=npm" alt="npm" /></a>
   <a href="https://pypi.org/project/anyvali/"><img src="https://img.shields.io/pypi/v/anyvali.svg?label=pypi" alt="PyPI" /></a>
