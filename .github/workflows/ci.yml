@@ -249,7 +249,7 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
       - run: chmod +x runner.sh
       - run: ./runner.sh ci kotlin
       - run: ./runner.sh coverage kotlin
