@@ -1,6 +1,6 @@
 [package]
 name = "anyvali"
-version = "0.0.5"
+version = "0.1.0"
 edition = "2021"
 description = "Native validation with portable schema interchange"
 readme = "README.md"

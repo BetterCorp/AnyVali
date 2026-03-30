@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/java-v0.0.5...java-v0.1.0) (2026-03-30)
+
+
+### Features
+
+* add static type inference to all 10 SDKs ([f2902ec](https://github.com/BetterCorp/AnyVali/commit/f2902ecf9cdd1153da355b8e27fae07c36486138))
+
+
+### Bug Fixes
+
+* **java,kotlin:** handle numeric type conversion in typed parse ([6273111](https://github.com/BetterCorp/AnyVali/commit/6273111c893296cb12c90d4096e7329403dcac6b))
+
 ## [0.0.5](https://github.com/BetterCorp/AnyVali/compare/java-v0.0.4...java-v0.0.5) (2026-03-30)
 
 

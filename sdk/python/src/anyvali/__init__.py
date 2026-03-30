@@ -77,7 +77,7 @@ from .types import (
 
 T = TypeVar("T")
 
-__version__ = "0.0.6"
+__version__ = "0.1.0"
 
 
 # ── Builder functions (public API) ────────────────────────────────
