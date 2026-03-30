@@ -15,7 +15,7 @@ Usage::
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from .interchange.exporter import export_schema, export_schema_json
 from .interchange.importer import import_schema
@@ -76,6 +76,9 @@ from .types import (
 )
 
 T = TypeVar("T")
+
+SchemaAny = BaseSchema[Any]
+"""Any AnyVali schema. Use as a generic constraint or type hint."""
 
 __version__ = "0.1.0"
 

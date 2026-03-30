@@ -48,6 +48,9 @@
 
 namespace anyvali {
 
+/// Any AnyVali schema. Use as a generic constraint. Equivalent to Zod's ZodTypeAny.
+using SchemaAny = std::shared_ptr<Schema>;
+
 // ---- Builder functions (factory helpers) ----
 
 inline std::shared_ptr<StringSchema> string_() {
