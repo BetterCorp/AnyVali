@@ -238,6 +238,27 @@ Constraints are declarative and data-only. No executable code is serialized.
 - **Array**: `minItems`, `maxItems`
 - **Object**: required/optional fields, unknown key mode (`reject`, `strip`, `allow`)
 
+#### Unknown Key Modes
+
+Object schemas control how undeclared keys in the input are handled:
+
+| Mode | Behavior |
+|---|---|
+| `reject` (default) | Parse fails with `unknown_key` issues for each extra key |
+| `strip` | Extra keys are silently removed from the parsed output |
+| `allow` | Extra keys are passed through to the parsed output |
+
+Use `strip` when parsing objects that may contain extra keys you want to ignore, such as environment variables or API responses with evolving fields. Use `allow` when you need to preserve all input data while still validating your declared fields.
+
+### Defaults and Computed Values
+
+Defaults in AnyVali must be static data values (strings, numbers, booleans, null, arrays, objects) -- not function calls. This keeps schemas portable across languages. If you need a computed default like `process.cwd()` in Node.js or `os.getcwd()` in Python, apply it after parsing:
+
+```typescript
+const config = ConfigSchema.parse(input);
+config.appDir ??= process.cwd(); // computed default applied outside the schema
+```
+
 ### Parse Pipeline
 
 Every SDK follows the same five-step parse pipeline:
