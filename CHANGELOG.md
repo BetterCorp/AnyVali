@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.1...anyvali-v0.2.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* **ci:** only publish packages that have new releases ([fcdd045](https://github.com/BetterCorp/AnyVali/commit/fcdd04579b729750accf154d15ec2f68c9bcd258))
+
 ## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.0...anyvali-v0.2.1) (2026-03-30)
 
 
