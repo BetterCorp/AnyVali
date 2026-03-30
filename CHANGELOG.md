@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.8](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.7...anyvali-v0.1.8) (2026-03-30)
+
+
+### Bug Fixes
+
+* add id-token permission for PyPI trusted publishing ([8d88fb0](https://github.com/BetterCorp/AnyVali/commit/8d88fb0bb80debfd1310e312ef4a1e4ae611c6e3))
+* add workflow_call trigger to all release workflows ([f465315](https://github.com/BetterCorp/AnyVali/commit/f465315858c6468fe863ebd584c2a679ee1f545f))
+* **cli:** fetch tags in upload job for GitHub Release ([ceed6e5](https://github.com/BetterCorp/AnyVali/commit/ceed6e5ed813e573b65cc502cb5cee44a62e1dbf))
+* dispatch all publish workflows on any release ([0ad5655](https://github.com/BetterCorp/AnyVali/commit/0ad56553d5e0a0ab5f5fa11a5d9bb943e49bcb68))
+* force version bump across all packages ([959aaee](https://github.com/BetterCorp/AnyVali/commit/959aaeee8617156d7b531fa3fbfb588d99081ea7))
+* **java:** use central-publishing-maven-plugin for Sonatype Central ([987a6e2](https://github.com/BetterCorp/AnyVali/commit/987a6e232ea07f66463af040235e1efd4a7eb7aa))
+* **js:** update repository URL to BetterCorp/AnyVali ([3dae779](https://github.com/BetterCorp/AnyVali/commit/3dae779cd07c1aeb307ea9b181542073f6dba8bc))
+* **kotlin:** add Maven Central publishing via vanniktech plugin ([987a6e2](https://github.com/BetterCorp/AnyVali/commit/987a6e232ea07f66463af040235e1efd4a7eb7aa))
+* **php:** remove split-repo workflow, Packagist pulls from monorepo directly ([94e4079](https://github.com/BetterCorp/AnyVali/commit/94e4079b1d0a3e203ab895b8a149aa609a550ddd))
+
 ## [0.1.7](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.6...anyvali-v0.1.7) (2026-03-30)
 
 

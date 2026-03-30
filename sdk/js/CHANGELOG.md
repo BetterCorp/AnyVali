@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/js-v0.1.2...js-v0.1.3) (2026-03-30)
+
+
+### Bug Fixes
+
+* force version bump across all packages ([959aaee](https://github.com/BetterCorp/AnyVali/commit/959aaeee8617156d7b531fa3fbfb588d99081ea7))
+* **js:** update repository URL to BetterCorp/AnyVali ([3dae779](https://github.com/BetterCorp/AnyVali/commit/3dae779cd07c1aeb307ea9b181542073f6dba8bc))
+
 ## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/js-v0.1.1...js-v0.1.2) (2026-03-30)
 
 

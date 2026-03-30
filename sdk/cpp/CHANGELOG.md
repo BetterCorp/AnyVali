@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.0.4...cpp-v0.0.5) (2026-03-30)
+
+
+### Bug Fixes
+
+* force version bump across all packages ([959aaee](https://github.com/BetterCorp/AnyVali/commit/959aaeee8617156d7b531fa3fbfb588d99081ea7))
+
 ## [0.0.4](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.0.3...cpp-v0.0.4) (2026-03-30)
 
 
