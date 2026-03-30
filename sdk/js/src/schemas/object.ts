@@ -58,7 +58,7 @@ export class ObjectSchema extends BaseSchema<
     // Validate declared properties
     for (const [key, prop] of this._properties) {
       ctx.path.push(key);
-      const hasKey = key in obj;
+      const hasKey = Object.prototype.hasOwnProperty.call(obj, key);
       inputKeys.delete(key);
 
       if (!hasKey) {

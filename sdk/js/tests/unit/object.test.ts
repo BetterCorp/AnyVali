@@ -54,6 +54,16 @@ describe("ObjectSchema", () => {
     expect(result).toEqual({ name: "Alice" });
   });
 
+  it("keeps object modifiers immutable", () => {
+    const base = object({ name: string() });
+    const stripped = base.unknownKeys("strip");
+
+    expect(base.safeParse({ name: "Alice", extra: true }).success).toBe(false);
+    expect(stripped.parse({ name: "Alice", extra: true })).toEqual({
+      name: "Alice",
+    });
+  });
+
   it("handles defaults on fields", () => {
     const s = object({
       name: string(),
@@ -82,6 +92,71 @@ describe("ObjectSchema", () => {
     if (!result.success) {
       expect(result.issues[0].path).toEqual(["user", "name"]);
     }
+  });
+
+  it("collects multiple nested issues with precise paths", () => {
+    const s = object({
+      user: object({
+        name: string().minLength(2),
+        age: int().min(18),
+      }),
+      active: bool(),
+    });
+
+    const result = s.safeParse({
+      user: { name: "", age: 12 },
+      active: "yes",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues.map((issue) => issue.path)).toEqual(
+        expect.arrayContaining([
+          ["user", "name"],
+          ["user", "age"],
+          ["active"],
+        ])
+      );
+    }
+  });
+
+  it("treats inherited properties as absent", () => {
+    const base = { name: "Alice" };
+    const input = Object.create(base) as Record<string, unknown>;
+    input.age = 30;
+
+    const s = object({
+      name: string(),
+      age: int(),
+    });
+
+    const result = s.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "required",
+            path: ["name"],
+          }),
+        ])
+      );
+    }
+  });
+
+  it("returns a detached parsed object", () => {
+    const s = object({
+      user: object({
+        name: string(),
+      }),
+    });
+
+    const input = { user: { name: "Alice" } };
+    const result = s.parse(input);
+
+    expect(result).toEqual(input);
+    expect(result).not.toBe(input);
+    expect(result.user).not.toBe(input.user);
   });
 
   it("rejects non-objects", () => {

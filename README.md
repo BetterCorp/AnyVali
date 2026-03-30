@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml"><img src="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <a href="https://www.npmjs.com/package/anyvali"><img src="https://img.shields.io/npm/v/anyvali.svg?label=npm" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/@anyvali/js"><img src="https://img.shields.io/npm/v/%40anyvali%2Fjs.svg?label=npm" alt="npm" /></a>
   <a href="https://pypi.org/project/anyvali/"><img src="https://img.shields.io/pypi/v/anyvali.svg?label=pypi" alt="PyPI" /></a>
   <a href="https://crates.io/crates/anyvali"><img src="https://img.shields.io/crates/v/anyvali.svg?label=crates.io" alt="crates.io" /></a>
   <a href="https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go"><img src="https://img.shields.io/badge/go-pkg.go.dev-blue.svg" alt="Go" /></a>
@@ -41,7 +41,7 @@ AnyVali lets you write validation schemas in your language, then share them acro
 ## Install
 
 ```bash
-npm install anyvali          # JavaScript / TypeScript
+npm install @anyvali/js      # JavaScript / TypeScript
 pip install anyvali           # Python
 go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali             # Rust
@@ -85,8 +85,7 @@ Define a schema, parse input, get structured errors or clean data.
 <td>
 
 ```typescript
-import { string, int, object, array }
-  from 'anyvali';
+import { string, int, object, array } from "@anyvali/js";
 
 const User = object({
   name:  string().minLength(1),
@@ -172,6 +171,45 @@ schema = v.import_schema(json.loads(schema_json))
 result = schema.safe_parse(request_body)  # Same validation rules!
 ```
 
+## Forms
+
+The JS SDK also ships a small forms layer for browser-native fields, HTML5 attributes, and AnyVali validation.
+
+```typescript
+import { object, string, int } from "@anyvali/js";
+import { initForm } from "@anyvali/js/forms";
+
+const Signup = object({
+  email: string().format("email"),
+  age: int().min(18),
+});
+
+initForm("#signup", { schema: Signup });
+```
+
+```html
+<form id="signup">
+  <input name="email" type="email" />
+  <input name="age" type="number" />
+  <button type="submit">Create account</button>
+</form>
+```
+
+For JSX-style attribute binding:
+
+```tsx
+import { object, string } from "@anyvali/js";
+import { createFormBindings } from "@anyvali/js/forms";
+
+const Signup = object({
+  email: string().format("email"),
+});
+
+const form = createFormBindings({ schema: Signup });
+
+<input {...form.field("email")} />;
+```
+
 The portable JSON format:
 
 ```json
@@ -196,7 +234,7 @@ The portable JSON format:
 
 | Language | Package | Status |
 |----------|---------|--------|
-| JavaScript / TypeScript | [`anyvali`](https://www.npmjs.com/package/anyvali) | v0.0.1 |
+| JavaScript / TypeScript | [`@anyvali/js`](https://www.npmjs.com/package/@anyvali/js) | v0.0.1 |
 | Python | [`anyvali`](https://pypi.org/project/anyvali/) | v0.0.1 |
 | Go | [`github.com/BetterCorp/AnyVali/sdk/go`](https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go) | v0.0.1 |
 | Java | `com.anyvali:anyvali` | v0.0.1 |

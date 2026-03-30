@@ -12,7 +12,7 @@ Pick your language:
 
 ```bash
 # JavaScript / TypeScript
-npm install anyvali
+npm install @anyvali/js
 
 # Python
 pip install anyvali
@@ -55,7 +55,7 @@ Schemas are built with simple builder functions. Every SDK uses the same concept
 ### JavaScript / TypeScript
 
 ```typescript
-import { string, number, int, object, array, optional } from 'anyvali';
+import { string, number, int, object, array, optional } from "@anyvali/js";
 
 const UserSchema = object({
   name: string().minLength(1).maxLength(100),
@@ -379,7 +379,7 @@ The exported JSON looks like:
 
 ```typescript
 // JS — import from JSON
-import { importSchema } from 'anyvali';
+import { importSchema } from "@anyvali/js";
 const schema = importSchema(doc);
 schema.parse({ name: "Alice", email: "alice@test.com" });
 ```
@@ -473,7 +473,7 @@ Use `ref` and `definitions` for recursive or reusable types:
 
 ```typescript
 // JS — recursive tree
-import { object, string, array, ref } from 'anyvali';
+import { object, string, array } from "@anyvali/js";
 
 // In exported JSON:
 // {
@@ -515,6 +515,45 @@ schema.export({ mode: 'portable' });
 // Extended mode — includes language-specific extensions
 schema.export({ mode: 'extended' });
 ```
+
+---
+
+## 11. Forms and HTML Validation
+
+For browser forms, keep your own HTML and let AnyVali enhance it.
+
+```typescript
+import { object, string, int } from "@anyvali/js";
+import { initForm } from "@anyvali/js/forms";
+
+const Signup = object({
+  email: string().format("email"),
+  age: int().min(18),
+});
+
+initForm("#signup", {
+  schema: Signup,
+  validateOn: ["blur", "submit"],
+});
+```
+
+```html
+<form id="signup">
+  <label>
+    Email
+    <input name="email" type="email" />
+  </label>
+  <label>
+    Age
+    <input name="age" type="number" />
+  </label>
+  <div data-anyvali-error-for="email"></div>
+  <div data-anyvali-error-for="age"></div>
+  <button type="submit">Submit</button>
+</form>
+```
+
+`initForm()` applies native attributes where possible, then runs full AnyVali validation on blur and submit.
 
 ---
 

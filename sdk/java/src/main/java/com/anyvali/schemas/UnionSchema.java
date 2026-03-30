@@ -28,7 +28,7 @@ public class UnionSchema extends Schema {
 
     @Override
     protected boolean acceptsNull() {
-        return schemas.stream().anyMatch(Schema::acceptsNull);
+        return schemas.stream().anyMatch(Schema::acceptsNullValue);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class UnionSchema extends Schema {
     protected Map<String, Object> toNode() {
         var variants = new ArrayList<Map<String, Object>>();
         for (Schema s : schemas) {
-            variants.add(s.toNode());
+            variants.add(s.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "union");

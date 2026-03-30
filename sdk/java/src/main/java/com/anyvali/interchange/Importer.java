@@ -60,12 +60,11 @@ public final class Importer {
 
         // Apply common fields
         if (node.containsKey("default")) {
-            schema.hasDefault = true;
-            schema.defaultValue = node.get("default");
+            schema.applyImportedDefault(node.get("default"));
         }
 
         if (node.containsKey("coerce")) {
-            schema.coercion = parseCoercion(node.get("coerce"));
+            schema.applyImportedCoercion(parseCoercion(node.get("coerce")));
         }
 
         return schema;

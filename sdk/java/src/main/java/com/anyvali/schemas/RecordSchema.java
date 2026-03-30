@@ -54,7 +54,7 @@ public class RecordSchema extends Schema {
     protected Map<String, Object> toNode() {
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "record");
-        node.put("values", valueSchema.toNode());
+        node.put("values", valueSchema.toPortableNode());
         return addCommonNodeFields(node);
     }
 

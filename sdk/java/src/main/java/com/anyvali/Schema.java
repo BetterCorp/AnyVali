@@ -117,6 +117,10 @@ public abstract class Schema {
         return false;
     }
 
+    public boolean acceptsNullValue() {
+        return acceptsNull();
+    }
+
     // ---- Abstract methods ----
 
     /**
@@ -124,10 +128,18 @@ public abstract class Schema {
      */
     protected abstract Object validate(Object input, ValidationContext ctx);
 
+    public Object validateValue(Object input, ValidationContext ctx) {
+        return validate(input, ctx);
+    }
+
     /**
      * Return the schema node map for interchange export.
      */
     protected abstract Map<String, Object> toNode();
+
+    public Map<String, Object> toPortableNode() {
+        return toNode();
+    }
 
     // ---- Modifier methods (return new instances) ----
 
@@ -208,6 +220,27 @@ public abstract class Schema {
      * Create a deep copy of this schema (subclasses must implement).
      */
     protected abstract Schema copy();
+
+    public boolean hasDefaultValue() {
+        return hasDefault;
+    }
+
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+    public CoercionConfig getCoercionConfig() {
+        return coercion;
+    }
+
+    public void applyImportedDefault(Object value) {
+        defaultValue = value;
+        hasDefault = true;
+    }
+
+    public void applyImportedCoercion(CoercionConfig config) {
+        coercion = config;
+    }
 
     // ---- Utility ----
 

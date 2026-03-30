@@ -15,9 +15,9 @@ public class OptionalSchema extends Schema {
     public OptionalSchema(Schema inner) {
         this.inner = inner;
         // Inherit defaults from inner
-        if (inner.hasDefault) {
+        if (inner.hasDefaultValue()) {
             this.hasDefault = true;
-            this.defaultValue = inner.defaultValue;
+            this.defaultValue = inner.getDefaultValue();
         }
     }
 
@@ -30,7 +30,7 @@ public class OptionalSchema extends Schema {
 
     @Override
     protected boolean acceptsNull() {
-        return inner.acceptsNull();
+        return inner.acceptsNullValue();
     }
 
     @Override
@@ -47,14 +47,14 @@ public class OptionalSchema extends Schema {
 
     @Override
     protected Object validate(Object input, ValidationContext ctx) {
-        return inner.validate(input, ctx);
+        return inner.validateValue(input, ctx);
     }
 
     @Override
     protected Map<String, Object> toNode() {
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "optional");
-        node.put("schema", inner.toNode());
+        node.put("schema", inner.toPortableNode());
         return addCommonNodeFields(node);
     }
 

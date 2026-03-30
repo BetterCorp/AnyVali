@@ -27,7 +27,7 @@ public class IntersectionSchema extends Schema {
 
     @Override
     protected boolean acceptsNull() {
-        return schemas.stream().allMatch(Schema::acceptsNull);
+        return schemas.stream().allMatch(Schema::acceptsNullValue);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class IntersectionSchema extends Schema {
     protected Map<String, Object> toNode() {
         var allOf = new ArrayList<Map<String, Object>>();
         for (Schema s : schemas) {
-            allOf.add(s.toNode());
+            allOf.add(s.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "intersection");

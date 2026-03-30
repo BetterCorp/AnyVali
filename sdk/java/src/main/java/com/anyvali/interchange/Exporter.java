@@ -26,12 +26,12 @@ public final class Exporter {
     public static Map<String, Object> exportSchema(Schema schema, ExportMode mode,
                                                     Map<String, Schema> definitions,
                                                     Map<String, Object> extensions) {
-        Map<String, Object> rootNode = schema.toNode();
+        Map<String, Object> rootNode = schema.toPortableNode();
 
         Map<String, Object> defs = new LinkedHashMap<>();
         if (definitions != null) {
             for (var entry : definitions.entrySet()) {
-                defs.put(entry.getKey(), entry.getValue().toNode());
+                defs.put(entry.getKey(), entry.getValue().toPortableNode());
             }
         }
 

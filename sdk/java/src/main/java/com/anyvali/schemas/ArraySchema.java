@@ -83,7 +83,7 @@ public class ArraySchema extends Schema {
     protected Map<String, Object> toNode() {
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "array");
-        node.put("items", items.toNode());
+        node.put("items", items.toPortableNode());
         if (minItems != null) node.put("minItems", minItems);
         if (maxItems != null) node.put("maxItems", maxItems);
         return addCommonNodeFields(node);

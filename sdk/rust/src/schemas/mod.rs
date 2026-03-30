@@ -16,6 +16,7 @@ pub mod ref_schema;
 pub mod string;
 pub mod tuple;
 pub mod union;
+pub mod unknown;
 
 pub use self::any::AnySchema;
 pub use self::array::ArraySchema;
@@ -35,3 +36,4 @@ pub use self::ref_schema::RefSchema;
 pub use self::string::StringSchema;
 pub use self::tuple::TupleSchema;
 pub use self::union::UnionSchema;
+pub use self::unknown::UnknownSchema;

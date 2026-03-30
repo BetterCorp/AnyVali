@@ -65,7 +65,7 @@ public class ObjectSchema extends Schema {
                 Object parsed = schema.runPipeline(map.get(key), childCtx);
                 result.put(key, parsed);
             } else if (required.contains(key)) {
-                if (schema.hasDefault) {
+                if (schema.hasDefaultValue()) {
                     // Apply default via pipeline
                     var childCtx = ctx.child(key);
                     Object parsed = schema.runPipeline(ABSENT, childCtx);
@@ -77,7 +77,7 @@ public class ObjectSchema extends Schema {
                 }
             } else {
                 // Optional and not present - check for defaults
-                if (schema.hasDefault) {
+                if (schema.hasDefaultValue()) {
                     var childCtx = ctx.child(key);
                     Object parsed = schema.runPipeline(ABSENT, childCtx);
                     result.put(key, parsed);
@@ -110,7 +110,7 @@ public class ObjectSchema extends Schema {
     protected Map<String, Object> toNode() {
         var props = new LinkedHashMap<String, Object>();
         for (var entry : properties.entrySet()) {
-            props.put(entry.getKey(), entry.getValue().toNode());
+            props.put(entry.getKey(), entry.getValue().toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "object");

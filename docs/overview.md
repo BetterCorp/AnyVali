@@ -50,15 +50,15 @@ AnyVali defaults `number` to IEEE 754 `float64` and `int` to signed `int64`. Thi
 ### JavaScript / TypeScript
 
 ```typescript
-import { v } from "anyvali";
+import { object, string, int64, int, enum_, importSchema } from "@anyvali/js";
 
 // 1. Define a schema
-const UserSchema = v.object({
-  id: v.int64(),
-  name: v.string().minLength(1).maxLength(100),
-  email: v.string().format("email"),
-  age: v.int().min(0).max(150).optional(),
-  role: v.enum(["admin", "user", "guest"]).default("user"),
+const UserSchema = object({
+  id: int64(),
+  name: string().minLength(1).maxLength(100),
+  email: string().format("email"),
+  age: int().min(0).max(150).optional(),
+  role: enum_(["admin", "user", "guest"]).default("user"),
 });
 
 // 2. Parse input (throws on failure)
@@ -99,8 +99,6 @@ console.log(JSON.stringify(doc, null, 2));
 // }
 
 // 5. Import from JSON
-import { importSchema } from "anyvali";
-
 const imported = importSchema(doc);
 const parsed = imported.parse({ id: 1, name: "Bob", email: "bob@test.com" });
 ```

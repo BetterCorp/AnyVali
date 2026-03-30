@@ -193,8 +193,8 @@ The repository includes a static docs site powered by MkDocs Material and served
 ### Local preview
 
 ```bash
-python docs-site/build_docs.py
-pip install -r docs-site/requirements.txt
+python tools/docs/build_docs.py
+pip install -r tools/docs/requirements.txt
 mkdocs serve
 ```
 

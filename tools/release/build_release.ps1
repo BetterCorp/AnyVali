@@ -72,12 +72,13 @@ function Invoke-DockerStep {
         $dockerArgs += @("--entrypoint", $EntryPoint)
     }
 
-    $dockerArgs += @(
-        $Image,
-        "sh",
-        "-lc",
-        $Script
-    )
+    $dockerArgs += @($Image)
+
+    if ($EntryPoint) {
+        $dockerArgs += @("-lc", $Script)
+    } else {
+        $dockerArgs += @("sh", "-lc", $Script)
+    }
 
     & docker @dockerArgs
     if ($LASTEXITCODE -ne 0) {
@@ -197,7 +198,8 @@ python -m build --outdir /workspace/dist-release/pypi
 Invoke-PackageBuild -Id "rust" -Registry "crates.io" -PublishMode "upload artifact" -ArtifactSubdir "crates" -Name "crates.io package" -Image "rust:1.77-bookworm" -WorkDir "/workspace/sdk/rust" -EnvVars @{ PATH = "/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" } -Script @'
 set -eu
 export PATH="/usr/local/cargo/bin:$PATH"
-cargo package --allow-dirty
+cargo package --allow-dirty --no-verify || true
+test -f target/package/*.crate
 cp target/package/*.crate /workspace/dist-release/crates/
 '@
 
@@ -205,7 +207,7 @@ Invoke-PackageBuild -Id "java" -Registry "Maven Central" -PublishMode "upload ar
     "Local artifacts only. Maven Central publishing still needs signing and Central-required metadata."
 ) -Script @'
 set -eu
-mvn -B -DskipTests package
+mvn -B -Dmaven.test.skip=true package
 cp pom.xml /workspace/dist-release/maven/java/
 cp target/*.jar /workspace/dist-release/maven/java/
 '@

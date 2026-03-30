@@ -53,7 +53,7 @@ public class RefSchema extends Schema {
     @Override
     protected boolean acceptsNull() {
         Schema r = getResolved();
-        return r != null && r.acceptsNull();
+        return r != null && r.acceptsNullValue();
     }
 
     @Override
@@ -79,7 +79,7 @@ public class RefSchema extends Schema {
     protected Object validate(Object input, ValidationContext ctx) {
         Schema r = getResolved();
         if (r != null) {
-            return r.validate(input, ctx);
+            return r.validateValue(input, ctx);
         }
         ctx.addIssue(IssueCodes.INVALID_TYPE,
                 "Unresolved reference: " + ref, ref, null);

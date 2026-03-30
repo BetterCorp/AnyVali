@@ -41,14 +41,14 @@ public class NullableSchema extends Schema {
         if (input == null) {
             return null;
         }
-        return inner.validate(input, ctx);
+        return inner.validateValue(input, ctx);
     }
 
     @Override
     protected Map<String, Object> toNode() {
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "nullable");
-        node.put("schema", inner.toNode());
+        node.put("schema", inner.toPortableNode());
         return addCommonNodeFields(node);
     }
 

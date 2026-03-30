@@ -56,7 +56,7 @@ public class TupleSchema extends Schema {
     protected Map<String, Object> toNode() {
         var elements = new ArrayList<Map<String, Object>>();
         for (Schema item : items) {
-            elements.add(item.toNode());
+            elements.add(item.toPortableNode());
         }
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", "tuple");
