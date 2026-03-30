@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "include-component-in-tag": true,
+  "pull-request-title-pattern": "chore: release ${component} ${version}",
   "packages": {
     ".": {
       "component": "anyvali",
@@ -10,7 +11,7 @@
     "sdk/js": {
       "component": "js",
       "release-type": "node",
-      "package-name": "@anyvali/js",
+      "package-name": "anyvali",
       "changelog-path": "sdk/js/CHANGELOG.md"
     },
     "sdk/python": {
