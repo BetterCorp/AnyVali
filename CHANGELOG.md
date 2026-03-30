@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.1...anyvali-v0.1.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* add scope to release-please title pattern ([43e6b88](https://github.com/BetterCorp/AnyVali/commit/43e6b88c947bf41145a7ea3d2a4ebaa4a640d6b8))
+* **java:** bootstrap initial release changelog ([c9bd624](https://github.com/BetterCorp/AnyVali/commit/c9bd624231b5ba752bf4e1b2a99771689a70aa60))
+* **python:** bootstrap initial release changelog ([00b3484](https://github.com/BetterCorp/AnyVali/commit/00b34849d1c49d38ac9798c2d5f9aedbd38026a3))
+* **ruby:** bootstrap initial release changelog ([282910d](https://github.com/BetterCorp/AnyVali/commit/282910d85f5326597ed49e6e55cb7a8018c57a62))
+
 ## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.0...anyvali-v0.1.1) (2026-03-30)
 
 

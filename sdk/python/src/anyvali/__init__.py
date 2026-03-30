@@ -73,7 +73,7 @@ from .types import (
     ValidationIssue,
 )
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 # ── Builder functions (public API) ────────────────────────────────
