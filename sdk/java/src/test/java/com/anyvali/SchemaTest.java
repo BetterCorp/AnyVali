@@ -573,7 +573,7 @@ class SchemaTest {
 
         @Test
         void nullLiteralAcceptsNull() {
-            assertTrue(literal(null).acceptsNull());
+            assertTrue(literal(null).acceptsNullValue());
         }
 
         @Test
@@ -998,7 +998,7 @@ class SchemaTest {
     class ExportTests {
         @Test
         void exportStringSchema() {
-            var node = string().minLength(1).maxLength(100).toNode();
+            var node = string().minLength(1).maxLength(100).toPortableNode();
             assertEquals("string", node.get("kind"));
             assertEquals(1, node.get("minLength"));
             assertEquals(100, node.get("maxLength"));
@@ -1014,7 +1014,7 @@ class SchemaTest {
 
         @Test
         void exportIntSchema() {
-            var node = int_().min(0).max(100).toNode();
+            var node = int_().min(0).max(100).toPortableNode();
             assertEquals("int", node.get("kind"));
             assertEquals(0L, node.get("min"));
             assertEquals(100L, node.get("max"));
@@ -1022,14 +1022,14 @@ class SchemaTest {
 
         @Test
         void exportWithDefault() {
-            var node = string().withDefault("hello").toNode();
+            var node = string().withDefault("hello").toPortableNode();
             assertEquals("hello", node.get("default"));
         }
 
         @Test
         void exportWithCoercion() {
             var s = string().coerce(CoercionConfig.builder().trim(true).lower(true).build());
-            var node = s.toNode();
+            var node = s.toPortableNode();
             @SuppressWarnings("unchecked")
             var coerce = (Map<String, Object>) node.get("coerce");
             assertEquals(true, coerce.get("trim"));

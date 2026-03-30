@@ -48,13 +48,43 @@ final class ConformanceTest extends TestCase
 
             $content = file_get_contents($file->getPathname());
             $suite = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+            // Also decode preserving objects (stdClass) so we can distinguish {} from []
+            $rawSuite = json_decode($content, false, 512, JSON_THROW_ON_ERROR);
             $suiteName = $suite['suite'] ?? $file->getBasename('.json');
 
             foreach ($suite['cases'] as $i => $testCase) {
+                // Use the object-preserved decode for the input to distinguish {} from []
+                $testCase['input'] = self::convertJsonValue($rawSuite->cases[$i]->input);
                 $label = "{$suiteName}: {$testCase['description']}";
                 yield $label => [$testCase];
             }
         }
+    }
+
+    /**
+     * Convert a JSON-decoded value (with stdClass for objects) to PHP types
+     * while preserving the object/array distinction.
+     * Non-empty stdClass → associative array, empty stdClass stays as stdClass
+     * so that getTypeName() can report "object" instead of "array".
+     */
+    private static function convertJsonValue(mixed $value): mixed
+    {
+        if ($value instanceof \stdClass) {
+            $props = (array)$value;
+            if (empty($props)) {
+                // Keep empty stdClass so Schema::getTypeName returns "object"
+                return $value;
+            }
+            $result = [];
+            foreach ($props as $k => $v) {
+                $result[$k] = self::convertJsonValue($v);
+            }
+            return $result;
+        }
+        if (is_array($value)) {
+            return array_map([self::class, 'convertJsonValue'], $value);
+        }
+        return $value;
     }
 
     /**

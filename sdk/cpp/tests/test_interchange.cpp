@@ -1,27 +1,8 @@
+#include "test_framework.hpp"
 #include <anyvali/anyvali.hpp>
-#include <iostream>
 
 using namespace anyvali;
 using json = nlohmann::json;
-
-struct TestRegistrar;
-extern void assert_true(bool condition, const char* expr, const char* file, int line);
-extern void assert_eq_json(const json& actual, const json& expected, const char* file, int line);
-
-#define CONCAT_IMPL(a, b) a##b
-#define CONCAT(a, b) CONCAT_IMPL(a, b)
-#define TEST(name) \
-    static void CONCAT(test_func_, __LINE__)(); \
-    static TestRegistrar CONCAT(registrar_, __LINE__)(name, CONCAT(test_func_, __LINE__)); \
-    static void CONCAT(test_func_, __LINE__)()
-
-#define ASSERT(cond) assert_true(cond, #cond, __FILE__, __LINE__)
-#define ASSERT_JSON_EQ(a, b) assert_eq_json(a, b, __FILE__, __LINE__)
-#define ASSERT_THROWS(expr) do { \
-    bool threw = false; \
-    try { expr; } catch (...) { threw = true; } \
-    assert_true(threw, "expected exception from " #expr, __FILE__, __LINE__); \
-} while(0)
 
 TEST("import: basic string schema") {
     json doc = {

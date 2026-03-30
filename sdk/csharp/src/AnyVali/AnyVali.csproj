@@ -9,8 +9,17 @@
     <Version>0.0.1</Version>
     <PackageId>AnyVali</PackageId>
     <Description>Native validation with portable schema interchange</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://anyvali.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/BetterCorp/AnyVali</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AnyVali.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>

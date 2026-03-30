@@ -147,6 +147,27 @@ func TestIntersectionSchemaMergesObjects(t *testing.T) {
 	}
 }
 
+func TestIntersectionSchemaCollectsAllIssues(t *testing.T) {
+	// Both schemas fail: 7 < 10 (too_small) and 7 > 5 (too_large)
+	s := Intersection(
+		Number().Min(10),
+		Number().Max(5),
+	)
+	r := s.SafeParse(float64(7))
+	if r.Success {
+		t.Fatal("expected failure when both schemas fail")
+	}
+	if len(r.Issues) != 2 {
+		t.Fatalf("expected 2 issues (one from each failing schema), got %d: %v", len(r.Issues), r.Issues)
+	}
+	if r.Issues[0].Code != IssueTooSmall {
+		t.Fatalf("expected first issue to be too_small, got %s", r.Issues[0].Code)
+	}
+	if r.Issues[1].Code != IssueTooLarge {
+		t.Fatalf("expected second issue to be too_large, got %s", r.Issues[1].Code)
+	}
+}
+
 func TestIntersectionSchemaParse(t *testing.T) {
 	s := Intersection(Number().Min(0), Number().Max(100))
 	v, err := s.Parse(float64(50))

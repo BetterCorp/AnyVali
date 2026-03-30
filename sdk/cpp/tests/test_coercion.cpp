@@ -1,23 +1,8 @@
+#include "test_framework.hpp"
 #include <anyvali/anyvali.hpp>
-#include <iostream>
-#include <stdexcept>
 
 using namespace anyvali;
 using json = nlohmann::json;
-
-struct TestRegistrar;
-extern void assert_true(bool condition, const char* expr, const char* file, int line);
-extern void assert_eq_json(const json& actual, const json& expected, const char* file, int line);
-
-#define CONCAT_IMPL(a, b) a##b
-#define CONCAT(a, b) CONCAT_IMPL(a, b)
-#define TEST(name) \
-    static void CONCAT(test_func_, __LINE__)(); \
-    static TestRegistrar CONCAT(registrar_, __LINE__)(name, CONCAT(test_func_, __LINE__)); \
-    static void CONCAT(test_func_, __LINE__)()
-
-#define ASSERT(cond) assert_true(cond, #cond, __FILE__, __LINE__)
-#define ASSERT_JSON_EQ(a, b) assert_eq_json(a, b, __FILE__, __LINE__)
 
 TEST("coercion: string->int valid") {
     auto s = int_();
@@ -127,7 +112,7 @@ TEST("coercion: then validation success") {
 
 TEST("coercion: chained coercions left to right") {
     auto s = string_();
-    s->coerce({"trim", "lower"});
+    s->coerce(std::vector<std::string>{"trim", "lower"});
     auto result = s->safe_parse(json("  HELLO  "));
     ASSERT(result.success);
     ASSERT_JSON_EQ(result.value, json("hello"));

@@ -17,7 +17,7 @@ final class ObjectSchema extends Schema
     private readonly array $properties;
     /** @var string[] */
     private readonly array $required;
-    private readonly UnknownKeyMode $unknownKeys;
+    private UnknownKeyMode $unknownKeys;
 
     /**
      * @param array<string, Schema> $properties
@@ -56,15 +56,17 @@ final class ObjectSchema extends Schema
     public function unknownKeys(UnknownKeyMode $mode): self
     {
         $clone = clone $this;
-        // Use reflection to set readonly property on clone
-        $ref = new \ReflectionProperty($clone, 'unknownKeys');
-        $ref->setValue($clone, $mode);
+        $clone->unknownKeys = $mode;
         return $clone;
     }
 
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
     {
-        if (!is_array($value) || (is_array($value) && $value !== [] && array_is_list($value))) {
+        // Accept stdClass as an object (e.g. empty JSON {} decoded with json_decode(…, false))
+        if ($value instanceof \stdClass) {
+            $value = (array)$value;
+        }
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             return ParseResult::fail([new ValidationIssue(
                 code: IssueCodes::INVALID_TYPE,
                 message: 'Expected object',

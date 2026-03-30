@@ -124,6 +124,7 @@
       "valid": false,
       "output": null,
       "issues": [
+        { "code": "too_small", "path": [], "expected": "10", "received": "7" },
         { "code": "too_large", "path": [], "expected": "5", "received": "7" }
       ]
     }

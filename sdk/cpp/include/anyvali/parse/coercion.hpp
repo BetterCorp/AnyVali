@@ -100,7 +100,7 @@ inline std::optional<nlohmann::json> apply_chain(const std::vector<std::string>&
                                                   const nlohmann::json& value) {
     nlohmann::json current = value;
     for (const auto& c : coercions) {
-        auto result = apply(c, current);
+        auto result = ::anyvali::coercion::apply(c, current);
         if (!result.has_value()) return std::nullopt;
         current = result.value();
     }

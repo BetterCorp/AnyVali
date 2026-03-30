@@ -1,6 +1,9 @@
 package anyvali
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 // --- Any tests ---
 
@@ -12,7 +15,7 @@ func TestAnySchemaAcceptsEverything(t *testing.T) {
 		if !r.Success {
 			t.Fatalf("expected any to accept %v (%T)", v, v)
 		}
-		if r.Data != v {
+		if !reflect.DeepEqual(r.Data, v) {
 			t.Fatalf("expected data=%v, got %v", v, r.Data)
 		}
 	}

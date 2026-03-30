@@ -137,13 +137,14 @@ fn export_ref() {
 
 #[test]
 fn export_primitives() {
-    for (schema, expected_kind): (Box<dyn Schema>, &str) in vec![
+    let primitives: Vec<(Box<dyn Schema>, &str)> = vec![
         (Box::new(any()) as Box<dyn Schema>, "any"),
         (Box::new(unknown()), "unknown"),
         (Box::new(never()), "never"),
         (Box::new(null()), "null"),
         (Box::new(bool_()), "bool"),
-    ] {
+    ];
+    for (schema, expected_kind) in primitives {
         let doc = export(schema.as_ref(), ExportMode::Portable, &HashMap::new()).unwrap();
         assert_eq!(doc.root["kind"], expected_kind);
     }
@@ -217,7 +218,7 @@ fn import_object_schema() {
 
 #[test]
 fn import_with_definitions() {
-    let json_str = r#"{
+    let json_str = r##"{
         "anyvaliVersion": "1.0",
         "schemaVersion": "1",
         "root": {
@@ -239,7 +240,7 @@ fn import_with_definitions() {
             }
         },
         "extensions": {}
-    }"#;
+    }"##;
     let (schema, ctx) = import(json_str).unwrap();
     let result = schema.parse_with_context(
         &json!({"user": {"name": "Alice"}}),

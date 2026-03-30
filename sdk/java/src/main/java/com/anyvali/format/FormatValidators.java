@@ -91,7 +91,10 @@ public final class FormatValidators {
         var matcher = IPV4_RE.matcher(value);
         if (!matcher.matches()) return false;
         for (int i = 1; i <= 4; i++) {
-            int octet = Integer.parseInt(matcher.group(i));
+            String part = matcher.group(i);
+            // Reject leading zeros (e.g. "01", "001")
+            if (part.length() > 1 && part.charAt(0) == '0') return false;
+            int octet = Integer.parseInt(part);
             if (octet < 0 || octet > 255) return false;
         }
         return true;

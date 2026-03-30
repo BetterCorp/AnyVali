@@ -2,7 +2,6 @@
 
 #include "../schema.hpp"
 #include <map>
-#include <set>
 
 namespace anyvali {
 
@@ -18,7 +17,7 @@ public:
     }
 
     ObjectSchema& required(const std::vector<std::string>& fields) {
-        required_fields_.insert(fields.begin(), fields.end());
+        required_fields_ = fields;
         return *this;
     }
 
@@ -36,7 +35,7 @@ public:
         nlohmann::json result = nlohmann::json::object();
         bool has_errors = false;
 
-        // Check required fields
+        // Check required fields (iterate in definition order)
         for (const auto& req : required_fields_) {
             if (!input.contains(req)) {
                 auto it = properties_.find(req);
@@ -132,12 +131,12 @@ public:
     }
 
     const std::map<std::string, std::shared_ptr<Schema>>& properties() const { return properties_; }
-    const std::set<std::string>& required_fields() const { return required_fields_; }
+    const std::vector<std::string>& required_fields() const { return required_fields_; }
     UnknownKeyMode unknown_key_mode() const { return unknown_key_mode_; }
 
 private:
     std::map<std::string, std::shared_ptr<Schema>> properties_;
-    std::set<std::string> required_fields_;
+    std::vector<std::string> required_fields_;
     UnknownKeyMode unknown_key_mode_ = UnknownKeyMode::Reject;
 };
 

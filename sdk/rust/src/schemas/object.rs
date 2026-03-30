@@ -1,5 +1,5 @@
+use indexmap::IndexMap;
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
 
 use crate::issue_codes::*;
 use crate::schema::{ParseContext, Schema};
@@ -15,7 +15,7 @@ pub struct ObjectField {
 /// Schema for object validation.
 #[derive(Debug, Clone)]
 pub struct ObjectSchema {
-    pub properties: BTreeMap<String, ObjectField>,
+    pub properties: IndexMap<String, ObjectField>,
     pub required: Vec<String>,
     pub unknown_keys: UnknownKeyMode,
 }
@@ -23,7 +23,7 @@ pub struct ObjectSchema {
 impl ObjectSchema {
     pub fn new() -> Self {
         ObjectSchema {
-            properties: BTreeMap::new(),
+            properties: IndexMap::new(),
             required: Vec::new(),
             unknown_keys: UnknownKeyMode::Reject,
         }
