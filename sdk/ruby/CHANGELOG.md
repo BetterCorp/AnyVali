@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/ruby/v0.1.0...ruby/v0.1.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **kotlin,ruby:** fix remaining CI failures from type inference ([0677331](https://github.com/BetterCorp/AnyVali/commit/0677331e61b728081b141753485d1861ef20d62f))
+
 ## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/ruby/v0.0.6...ruby/v0.1.0) (2026-03-30)
 
 

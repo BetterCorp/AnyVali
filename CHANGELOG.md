@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.1...anyvali-v0.2.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* **ci:** only publish packages that have new releases ([fcdd045](https://github.com/BetterCorp/AnyVali/commit/fcdd04579b729750accf154d15ec2f68c9bcd258))
+
+## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.0...anyvali-v0.2.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* auto-merge release PRs and document release process ([ed464a8](https://github.com/BetterCorp/AnyVali/commit/ed464a8091329860de6949b0dbf7eb941046b4ce))
+* **kotlin,ruby:** fix remaining CI failures from type inference ([0677331](https://github.com/BetterCorp/AnyVali/commit/0677331e61b728081b141753485d1861ef20d62f))
+* use GitHub API for auto-merge instead of gh CLI ([0486d85](https://github.com/BetterCorp/AnyVali/commit/0486d85f1798e088353744cdab6fde827bda4723))
+
 ## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.8...anyvali-v0.2.0) (2026-03-30)
 
 
