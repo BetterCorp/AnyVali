@@ -1,13 +1,13 @@
 {
-  ".": "0.2.0",
+  ".": "0.2.1",
   "sdk/js": "0.2.0",
   "sdk/python": "0.1.0",
   "sdk/go": "0.1.0",
   "sdk/java": "0.1.0",
   "sdk/rust": "0.1.0",
   "sdk/php": "0.1.0",
-  "sdk/ruby": "0.1.0",
-  "sdk/kotlin": "0.1.0",
+  "sdk/ruby": "0.1.1",
+  "sdk/kotlin": "0.1.1",
   "sdk/csharp": "0.1.0",
   "sdk/cpp": "0.1.0",
   "cli": "0.0.3"
