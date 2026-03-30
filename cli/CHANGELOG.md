@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/BetterCorp/AnyVali/compare/cli-v0.0.2...cli-v0.0.3) (2026-03-30)
+
+
+### Bug Fixes
+
+* force version bump across all packages ([959aaee](https://github.com/BetterCorp/AnyVali/commit/959aaeee8617156d7b531fa3fbfb588d99081ea7))
+
 ## [0.0.2](https://github.com/BetterCorp/AnyVali/compare/cli-v0.0.1...cli-v0.0.2) (2026-03-30)
 
 
