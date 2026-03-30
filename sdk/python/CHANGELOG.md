@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/python-v0.1.0...python-v0.2.0) (2026-03-30)
+
+
+### Features
+
+* add SchemaAny type alias to Python, Kotlin, Rust, and C++ ([a5222a4](https://github.com/BetterCorp/AnyVali/commit/a5222a48c7bb40a56f7c8488a6876bb3fae1c52c))
+
 ## [0.1.0](https://github.com/BetterCorp/AnyVali/compare/python-v0.0.6...python-v0.1.0) (2026-03-30)
 
 

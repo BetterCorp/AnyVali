@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.2...anyvali-v0.3.0) (2026-03-30)
+
+
+### Features
+
+* add SchemaAny type alias to Python, Kotlin, Rust, and C++ ([a5222a4](https://github.com/BetterCorp/AnyVali/commit/a5222a48c7bb40a56f7c8488a6876bb3fae1c52c))
+* **js:** add SchemaAny type alias for generic constraints ([6c1dbe5](https://github.com/BetterCorp/AnyVali/commit/6c1dbe5e4ed1ddfc71e92657ab44a1177857d6ac))
+
 ## [0.2.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.1...anyvali-v0.2.2) (2026-03-30)
 
 
