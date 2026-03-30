@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.6...anyvali-v0.1.7) (2026-03-30)
+
+
+### Bug Fixes
+
+* use workflow_dispatch for all release workflows ([801f098](https://github.com/BetterCorp/AnyVali/commit/801f098f093d413f8a2d5726d498c5fcd507b3a3))
+
 ## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.1.5...anyvali-v0.1.6) (2026-03-30)
 
 
