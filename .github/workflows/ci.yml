@@ -22,7 +22,7 @@ permissions:
 jobs:
   # Skip CI for release commits (changelog/version bumps committed by build-release)
   check:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
@@ -42,7 +42,7 @@ jobs:
   js:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         node-version: [22, 24]
@@ -70,7 +70,7 @@ jobs:
   python:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         python-version: ["3.10", "3.12", "3.13"]
@@ -99,7 +99,7 @@ jobs:
   go:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         go-version: ["1.21", "1.22"]
@@ -126,7 +126,7 @@ jobs:
   java:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         java-version: ["17", "21"]
@@ -154,7 +154,7 @@ jobs:
   csharp:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         shell: bash
@@ -183,7 +183,7 @@ jobs:
   rust:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         toolchain: [stable, nightly]
@@ -217,7 +217,7 @@ jobs:
   php:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         php-version: ["8.1", "8.3"]
@@ -251,7 +251,7 @@ jobs:
   ruby:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         ruby-version: ["3.2", "3.3"]
@@ -280,7 +280,7 @@ jobs:
   kotlin:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         shell: bash
@@ -306,7 +306,7 @@ jobs:
   cpp:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         compiler:
@@ -326,7 +326,7 @@ jobs:
   cli:
     needs: check
     if: needs.check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         go-version: ["1.21", "1.22"]
@@ -347,7 +347,7 @@ jobs:
         run: ./cli/anyvali version
 
   conformance:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, cli]
     if: always() && needs.check.outputs.should_run == 'true'
     defaults:
