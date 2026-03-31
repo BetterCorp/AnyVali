@@ -43,7 +43,7 @@ jobs:
       # Release Please creates a PR with version bumps + changelogs.
       # We merge it with "chore: release" prefix so CI skips on the next push.
       - name: Auto-merge release PR
-        if: steps.release.outputs.pr && steps.release.outputs.releases_created != 'true'
+        if: steps.release.outputs.pr
         uses: actions/github-script@v7
         env:
           RELEASE_PR: ${{ steps.release.outputs.pr }}
