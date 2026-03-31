@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.0...anyvali-v0.3.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* restructure CI and release flow ([880eb22](https://github.com/BetterCorp/AnyVali/commit/880eb220318c1123137a1510d3349db71b772c5e))
+* use env vars for commit message in CI skip check ([331dc94](https://github.com/BetterCorp/AnyVali/commit/331dc946aae47af1e2507cb140a18fe1903ceba4))
+
 ## [0.3.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.2...anyvali-v0.3.0) (2026-03-30)
 
 
