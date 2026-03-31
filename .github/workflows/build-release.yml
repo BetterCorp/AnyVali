@@ -1,10 +1,9 @@
 name: Build Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [master]
-    types: [completed]
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
@@ -15,11 +14,6 @@ permissions:
 
 jobs:
   build-release:
-    # Only run after successful CI on master (not on skipped CI from release commits)
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'master')
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
@@ -39,52 +33,10 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # Enable auto-merge on the release PR.
-      # GitHub will merge it automatically once CI passes.
-      # The PR is locked so nobody can manually merge or comment.
-      - name: Enable auto-merge on release PR
-        if: steps.release.outputs.pr
-        uses: actions/github-script@v7
-        env:
-          RELEASE_PR: ${{ steps.release.outputs.pr }}
-        with:
-          script: |
-            const pr = JSON.parse(process.env.RELEASE_PR);
-            if (!pr || !pr.number) return;
-
-            // Lock the PR so nobody can manually merge
-            try {
-              await github.rest.issues.lock({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                lock_reason: 'resolved',
-              });
-              console.log(`Locked PR #${pr.number}`);
-            } catch (e) {
-              console.log(`Warning: could not lock PR: ${e.message}`);
-            }
-
-            // Enable auto-merge — GitHub will merge once CI status checks pass
-            try {
-              await github.graphql(`
-                mutation($prId: ID!) {
-                  enablePullRequestAutoMerge(input: {
-                    pullRequestId: $prId,
-                    mergeMethod: SQUASH,
-                    commitHeadline: "chore: release"
-                  }) {
-                    pullRequest { number }
-                  }
-                }
-              `, { prId: pr.node_id });
-              console.log(`Auto-merge enabled on PR #${pr.number} — will merge when CI passes`);
-            } catch (e) {
-              console.log(`Warning: could not enable auto-merge: ${e.message}`);
-              console.log(`PR #${pr.number} will need manual merge after CI passes`);
-            }
-
   # --- Publish jobs: only run when releases are actually created ---
+  # Releases are created when the release PR is merged.
+  # On a normal push: Release Please creates/updates the release PR (no releases).
+  # On the release PR merge: Release Please creates GitHub releases + tags.
 
   publish-npm:
     needs: build-release
