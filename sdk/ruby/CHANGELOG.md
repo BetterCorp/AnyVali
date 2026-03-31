@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/ruby/v0.1.1...ruby/v0.1.2) (2026-03-31)
+
+
+### Bug Fixes
+
+* resolve merge conflict, keep simplified build-release ([7807802](https://github.com/BetterCorp/AnyVali/commit/780780259da32288e030bb046571e4f37fd69ec6))
+
 ## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/ruby/v0.1.0...ruby/v0.1.1) (2026-03-30)
 
 

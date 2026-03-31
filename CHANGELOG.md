@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.1](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.0...anyvali-v0.3.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* always auto-merge release PR when one exists ([70c15a7](https://github.com/BetterCorp/AnyVali/commit/70c15a7b67d5ead20f12378ce89bb9ab5ce7e25f))
+* enable auto-merge on release PR after CI passes ([7bf170c](https://github.com/BetterCorp/AnyVali/commit/7bf170cb4df8328338d8be61e15147d78e49ff34))
+* lock release PR immediately, close on merge failure ([8f97a10](https://github.com/BetterCorp/AnyVali/commit/8f97a10abe927f57fd8b9a9404412d1a1d65eb8f))
+* resolve merge conflict, keep simplified build-release ([7807802](https://github.com/BetterCorp/AnyVali/commit/780780259da32288e030bb046571e4f37fd69ec6))
+* restructure CI and release flow ([880eb22](https://github.com/BetterCorp/AnyVali/commit/880eb220318c1123137a1510d3349db71b772c5e))
+* simplify build-release, remove auto-merge ([02ac7d8](https://github.com/BetterCorp/AnyVali/commit/02ac7d8aeb269caae85decbcd1ccad8b8419ed4e))
+* use env vars for commit message in CI skip check ([331dc94](https://github.com/BetterCorp/AnyVali/commit/331dc946aae47af1e2507cb140a18fe1903ceba4))
+
 ## [0.3.0](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.2.2...anyvali-v0.3.0) (2026-03-30)
 
 
