@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.0...js-v0.3.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* resolve merge conflict, keep simplified build-release ([7807802](https://github.com/BetterCorp/AnyVali/commit/780780259da32288e030bb046571e4f37fd69ec6))
+
 ## [0.3.0](https://github.com/BetterCorp/AnyVali/compare/js-v0.2.0...js-v0.3.0) (2026-03-30)
 
 

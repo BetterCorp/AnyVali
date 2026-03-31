@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/rust-v0.2.0...rust-v0.2.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* resolve merge conflict, keep simplified build-release ([7807802](https://github.com/BetterCorp/AnyVali/commit/780780259da32288e030bb046571e4f37fd69ec6))
+
 ## [0.2.0](https://github.com/BetterCorp/AnyVali/compare/rust-v0.1.0...rust-v0.2.0) (2026-03-30)
 
 
