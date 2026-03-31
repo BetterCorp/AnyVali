@@ -7,17 +7,15 @@ This document describes how code gets from a developer's machine to published pa
 ```
 branch (develop/feature/hotfix)
   │
-  └─ PR to master
+  └─ PR to master ─── CI runs ─── merge
        │
-       ├─ CI runs all SDK tests
-       │
-       └─ Merge to master
+       └─ Build Release opens a release PR
             │
-            ├─ CI runs again (verifies merge)
+            ├─ Version bump + changelog
+            ├─ CI runs on the release PR
             │
-            └─ CI passes → Build Release triggers
+            └─ Merge release PR (CI must pass)
                  │
-                 ├─ Version bump + changelog (committed directly, skips CI)
                  ├─ GitHub Releases + tags created
                  └─ Publish workflows dispatched to registries
 ```
@@ -25,13 +23,9 @@ branch (develop/feature/hotfix)
 1. **Create a branch** off `master` (`develop`, `feature/*`, `hotfix/*`, or any branch)
 2. **Write code** using [conventional commits](#commit-messages)
 3. **Open a PR** targeting `master` — CI runs all SDK tests
-4. **Merge the PR** — CI runs again on master to verify the merge
-5. **CI passes** — Build Release triggers automatically:
-   - Calculates version bumps from conventional commits
-   - Generates changelogs
-   - Commits version/changelog updates directly to master (this commit skips CI)
-   - Creates GitHub Releases with tags
-   - Dispatches publish workflows to package registries
+4. **Merge the PR** — Build Release creates a release PR with version bumps and changelogs
+5. **CI runs on the release PR** — verifies the version bump doesn't break anything
+6. **Merge the release PR** (once CI passes) — Build Release creates GitHub Releases with tags and dispatches publish workflows
 
 Hotfixes follow the same flow — branch off `master`, PR back to `master`.
 
@@ -93,18 +87,17 @@ The root package (`anyvali-v*`) tracks cross-cutting changes that don't belong t
 
 ### How Build Release Works
 
-The build-release workflow uses [Release Please](https://github.com/googleapis/release-please) under the hood and triggers automatically after CI passes on master:
+The build-release workflow uses [Release Please](https://github.com/googleapis/release-please) under the hood:
 
-1. **Your PR merges to master** — CI runs and passes.
-2. **Build Release triggers** — Release Please reads conventional commits, creates a release PR with version bumps and changelog updates, and auto-merges it immediately.
-3. **The release PR merge pushes to master** — CI detects the `chore: release` commit message and **skips** (no redundant test run).
-4. **Build Release triggers again** (from the push) — Release Please detects the merged release PR, creates GitHub Releases with tags, and dispatches the relevant publish workflows.
+1. **Your PR merges to master** — Build Release runs and Release Please opens a release PR with version bumps and changelog updates.
+2. **CI runs on the release PR** — the version bump is tested like any other PR.
+3. **You merge the release PR** (once CI passes) — Build Release runs again, Release Please detects the merged release PR, creates GitHub Releases with tags, and dispatches the relevant publish workflows.
 
-From a developer's perspective: merge your PR, packages appear on registries. No manual steps.
+The release PR is a normal PR that requires CI to pass before merging. This ensures version bumps don't break anything and gives you a chance to review the changelog before release.
 
 ### Why CI Skips Release Commits
 
-When Build Release auto-merges its version bump PR, the commit message starts with `chore: release`. CI checks for this prefix and skips all test jobs to avoid a redundant build cycle. Build Release itself is not affected by this skip — it triggers independently via `workflow_run`.
+When the release PR is merged, the commit message starts with `chore: release`. CI checks for this prefix and skips all test jobs to avoid a redundant build cycle (the version bump was already tested on the PR). Build Release still runs because it triggers on every push to master.
 
 ### Configuration Files
 
