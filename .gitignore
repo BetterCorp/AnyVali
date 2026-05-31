@@ -21,5 +21,8 @@ Gemfile.lock
 composer.lock
 **/.phpunit.result.cache
 Cargo.lock
+CVES.md
+DUPLICATES.md
+MISSING.md
 # Copied READMEs (originals live at repo root, copied at pack/publish time)
 sdk/*/README.md
