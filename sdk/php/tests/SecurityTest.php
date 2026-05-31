@@ -348,6 +348,15 @@ final class SecurityTest extends TestCase
         }
     }
 
+    // REVIEW: The test above documents NaN behavior but can still pass when
+    // number() accepts NaN. This companion test makes rejection mandatory.
+    public function testNumberRejectsNanStrictly(): void
+    {
+        $s = AnyVali::number();
+        $result = $s->safeParse(NAN);
+        $this->assertFalse($result->success, 'NAN must not be accepted as a number');
+    }
+
     public function testNumberRejectsPositiveInfinity(): void
     {
         $s = AnyVali::number()->max(1e308);
@@ -395,11 +404,29 @@ final class SecurityTest extends TestCase
         $this->assertNotNull($result);
     }
 
+    // REVIEW: The test above only checks that parsing returns a result. This
+    // companion test asserts the intended security behavior.
+    public function testFloat32RejectsNanStrictly(): void
+    {
+        $s = AnyVali::float32();
+        $result = $s->safeParse(NAN);
+        $this->assertFalse($result->success, 'NAN must not be accepted as float32');
+    }
+
     public function testFloat64RejectsNan(): void
     {
         $s = AnyVali::float64();
         $result = $s->safeParse(NAN);
         $this->assertNotNull($result);
+    }
+
+    // REVIEW: The test above only checks that parsing returns a result. This
+    // companion test asserts the intended security behavior.
+    public function testFloat64RejectsNanStrictly(): void
+    {
+        $s = AnyVali::float64();
+        $result = $s->safeParse(NAN);
+        $this->assertFalse($result->success, 'NAN must not be accepted as float64');
     }
 
     public function testInt8RejectsNan(): void

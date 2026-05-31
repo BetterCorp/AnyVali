@@ -39,6 +39,7 @@ final class BoolSchema extends Schema
         $node = ['kind' => 'bool'];
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
         if ($this->coerce !== null) $node['coerce'] = $this->coerce;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

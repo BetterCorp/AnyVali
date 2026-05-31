@@ -51,7 +51,7 @@ Version bumps are determined by [Conventional Commits](https://www.conventionalc
 Use the component name in parentheses to scope a commit to a specific SDK:
 
 ```
-fix(js): handle null input in parser       → bumps @anyvali/js only
+fix(js): handle null input in parser       → bumps anyvali only
 feat(python): add date-time coercion       → bumps anyvali (Python) only
 fix(cli): treat bare "-" as stdin arg       → bumps CLI only
 fix: update all SDK releases                → bumps root package + touched paths
@@ -63,7 +63,7 @@ Valid scopes: `js`, `python`, `go`, `java`, `rust`, `php`, `ruby`, `kotlin`, `cs
 
 | Tag | Registry | Package |
 |-----|----------|---------|
-| `js-v*` | npm | `@anyvali/js` |
+| `js-v*` | npm | `anyvali` |
 | `python-v*` | PyPI | `anyvali` |
 | `go-v*` | Go modules | `github.com/BetterCorp/AnyVali/sdk/go` |
 | `rust-v*` | crates.io | `anyvali` |

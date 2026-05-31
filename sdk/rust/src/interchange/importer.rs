@@ -76,6 +76,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -92,6 +93,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -104,6 +106,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -121,42 +124,50 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
         "int8" => {
             let mut schema = IntSchema::with_width(IntWidth::Int8);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "int16" => {
             let mut schema = IntSchema::with_width(IntWidth::Int16);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "int32" => {
             let mut schema = IntSchema::with_width(IntWidth::Int32);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "uint8" => {
             let mut schema = IntSchema::with_width(IntWidth::UInt8);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "uint16" => {
             let mut schema = IntSchema::with_width(IntWidth::UInt16);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "uint32" => {
             let mut schema = IntSchema::with_width(IntWidth::UInt32);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
         "uint64" => {
             let mut schema = IntSchema::with_width(IntWidth::UInt64);
             import_int_constraints(obj, &mut schema);
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -168,22 +179,41 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
-        "null" => Ok(Box::new(NullSchema::new())),
+        "null" => {
+            let mut schema = NullSchema::new();
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
+        }
 
-        "any" => Ok(Box::new(AnySchema::new())),
+        "any" => {
+            let mut schema = AnySchema::new();
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
+        }
 
-        "unknown" => Ok(Box::new(UnknownSchema::new())),
+        "unknown" => {
+            let mut schema = UnknownSchema::new();
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
+        }
 
-        "never" => Ok(Box::new(NeverSchema::new())),
+        "never" => {
+            let mut schema = NeverSchema::new();
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
+        }
 
         "literal" => {
             let value = obj
                 .get("value")
                 .ok_or_else(|| "Literal schema must have a 'value' field".to_string())?;
-            Ok(Box::new(LiteralSchema::new(value.clone())))
+            let mut schema = LiteralSchema::new(value.clone());
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "enum" => {
@@ -191,13 +221,18 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 .get("values")
                 .and_then(|v| v.as_array())
                 .ok_or_else(|| "Enum schema must have a 'values' array".to_string())?;
-            Ok(Box::new(EnumSchema::new(values.clone())))
+            let mut schema = EnumSchema::new(values.clone());
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "array" => {
+            // Accept "items", "item", and "array.items" keys for compatibility
             let items_node = obj
                 .get("items")
-                .ok_or_else(|| "Array schema must have an 'items' field".to_string())?;
+                .or_else(|| obj.get("item"))
+                .or_else(|| obj.get("array.items"))
+                .ok_or_else(|| "Array schema must have an 'items' or 'item' field".to_string())?;
             let items = import_node(items_node)?;
             let mut schema = ArraySchema::new(items);
             if let Some(v) = obj.get("minItems").and_then(|v| v.as_u64()) {
@@ -206,6 +241,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("maxItems").and_then(|v| v.as_u64()) {
                 schema.max_items = Some(v as usize);
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -216,11 +252,14 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 .ok_or_else(|| "Tuple schema must have an 'elements' array".to_string())?;
             let elements: Result<Vec<Box<dyn Schema>>, String> =
                 elements_arr.iter().map(|e| import_node(e)).collect();
-            Ok(Box::new(TupleSchema::new(elements?)))
+            let mut schema = TupleSchema::new(elements?);
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "object" => {
             let mut schema = ObjectSchema::new();
+            schema.unknown_keys_explicit = true;
 
             if let Some(props) = obj.get("properties").and_then(|v| v.as_object()) {
                 for (name, prop_node) in props {
@@ -253,6 +292,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 };
             }
 
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -261,17 +301,24 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 .get("values")
                 .ok_or_else(|| "Record schema must have a 'values' field".to_string())?;
             let values = import_node(values_node)?;
-            Ok(Box::new(RecordSchema::new(values)))
+            let mut schema = RecordSchema::new(values);
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "union" => {
+            // Accept "variants", "schemas", and "union.variants" keys for compatibility
             let variants_arr = obj
                 .get("variants")
+                .or_else(|| obj.get("schemas"))
+                .or_else(|| obj.get("union.variants"))
                 .and_then(|v| v.as_array())
-                .ok_or_else(|| "Union schema must have a 'variants' array".to_string())?;
+                .ok_or_else(|| "Union schema must have a 'variants' or 'schemas' array".to_string())?;
             let variants: Result<Vec<Box<dyn Schema>>, String> =
                 variants_arr.iter().map(|v| import_node(v)).collect();
-            Ok(Box::new(UnionSchema::new(variants?)))
+            let mut schema = UnionSchema::new(variants?);
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "intersection" => {
@@ -281,7 +328,9 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 .ok_or_else(|| "Intersection schema must have an 'allOf' array".to_string())?;
             let all_of: Result<Vec<Box<dyn Schema>>, String> =
                 all_of_arr.iter().map(|v| import_node(v)).collect();
-            Ok(Box::new(IntersectionSchema::new(all_of?)))
+            let mut schema = IntersectionSchema::new(all_of?);
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         "optional" => {
@@ -293,6 +342,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -305,6 +355,7 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
             if let Some(v) = obj.get("default") {
                 schema.default_value = Some(v.clone());
             }
+            schema.metadata = import_metadata(obj);
             Ok(Box::new(schema))
         }
 
@@ -313,11 +364,18 @@ pub fn import_node(node: &Value) -> Result<Box<dyn Schema>, String> {
                 .get("ref")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| "Ref schema must have a 'ref' field".to_string())?;
-            Ok(Box::new(RefSchema::new(ref_path)))
+            let mut schema = RefSchema::new(ref_path);
+            schema.metadata = import_metadata(obj);
+            Ok(Box::new(schema))
         }
 
         other => Err(format!("Unsupported schema kind: {}", other)),
     }
+}
+
+/// Extract metadata from an imported schema node, if present.
+fn import_metadata(obj: &serde_json::Map<String, Value>) -> Option<Value> {
+    obj.get("metadata").cloned()
 }
 
 fn import_numeric_constraints(

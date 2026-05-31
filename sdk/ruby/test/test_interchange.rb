@@ -60,6 +60,20 @@ class TestInterchange < Minitest::Test
     assert_equal "too_small", result.issues.first.code
   end
 
+  def test_import_string_schema_with_invalid_pattern_fails_without_raising
+    doc = {
+      "anyvaliVersion" => "1.0",
+      "schemaVersion" => "1",
+      "root" => { "kind" => "string", "pattern" => "(" },
+      "definitions" => {},
+      "extensions" => {}
+    }
+    schema = AnyVali.import_schema(doc)
+    result = schema.safe_parse("abc")
+    assert result.failure?
+    assert_equal "invalid_string", result.issues.first.code
+  end
+
   def test_import_number_schema
     doc = {
       "anyvaliVersion" => "1.0",
@@ -143,6 +157,20 @@ class TestInterchange < Minitest::Test
     assert_equal ["a", "b"], schema.parse(["a", "b"])
   end
 
+  def test_import_array_schema_with_canonical_items_key
+    doc = {
+      "anyvaliVersion" => "1.0",
+      "schemaVersion" => "1",
+      "root" => { "kind" => "array", "array.items" => { "kind" => "int" } },
+      "definitions" => {},
+      "extensions" => {}
+    }
+    schema = AnyVali.import_schema(doc)
+    assert_equal [1, 2], schema.parse([1, 2])
+    result = schema.safe_parse(["a"])
+    assert result.failure?
+  end
+
   def test_import_tuple_schema
     doc = {
       "anyvaliVersion" => "1.0",
@@ -172,6 +200,24 @@ class TestInterchange < Minitest::Test
     schema = AnyVali.import_schema(doc)
     assert_equal "hello", schema.parse("hello")
     assert_equal 42, schema.parse(42)
+  end
+
+  def test_import_union_schema_with_canonical_variants_key
+    doc = {
+      "anyvaliVersion" => "1.0",
+      "schemaVersion" => "1",
+      "root" => {
+        "kind" => "union",
+        "union.variants" => [{ "kind" => "string" }, { "kind" => "int" }]
+      },
+      "definitions" => {},
+      "extensions" => {}
+    }
+    schema = AnyVali.import_schema(doc)
+    assert_equal "hello", schema.parse("hello")
+    assert_equal 42, schema.parse(42)
+    result = schema.safe_parse(true)
+    assert result.failure?
   end
 
   def test_import_record_schema

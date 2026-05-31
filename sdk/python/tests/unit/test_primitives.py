@@ -33,6 +33,12 @@ class TestString:
         assert schema.safe_parse("123").success
         assert not schema.safe_parse("abc").success
 
+    def test_invalid_pattern_does_not_raise(self):
+        schema = v.string().pattern("(")
+        result = schema.safe_parse("abc")
+        assert not result.success
+        assert result.issues[0].code == v.INVALID_STRING
+
     def test_starts_with(self):
         schema = v.string().starts_with("hello")
         assert schema.safe_parse("hello world").success

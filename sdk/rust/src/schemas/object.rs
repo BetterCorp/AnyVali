@@ -2,7 +2,10 @@ use indexmap::IndexMap;
 use serde_json::{json, Value};
 
 use crate::issue_codes::*;
-use crate::schema::{ParseContext, Schema};
+use crate::schema::{
+    ParseContext, Schema, DescribeOpts, add_metadata_to_node, build_describe_metadata,
+    merge_metadata, reserved_metadata_keys, validate_metadata_keys,
+};
 use crate::types::{PathSegment, UnknownKeyMode, ValidationIssue, value_type_name};
 
 /// A field definition in an object schema.
@@ -18,6 +21,8 @@ pub struct ObjectSchema {
     pub properties: IndexMap<String, ObjectField>,
     pub required: Vec<String>,
     pub unknown_keys: UnknownKeyMode,
+    pub unknown_keys_explicit: bool,
+    pub metadata: Option<Value>,
 }
 
 impl ObjectSchema {
@@ -25,7 +30,9 @@ impl ObjectSchema {
         ObjectSchema {
             properties: IndexMap::new(),
             required: Vec::new(),
-            unknown_keys: UnknownKeyMode::Reject,
+            unknown_keys: UnknownKeyMode::Strip,
+            unknown_keys_explicit: false,
+            metadata: None,
         }
     }
 
@@ -63,6 +70,59 @@ impl ObjectSchema {
 
     pub fn unknown_keys(mut self, mode: UnknownKeyMode) -> Self {
         self.unknown_keys = mode;
+        self.unknown_keys_explicit = true;
+        self
+    }
+
+    fn effective_unknown_keys(&self) -> UnknownKeyMode {
+        if self.unknown_keys_explicit {
+            self.unknown_keys
+        } else {
+            UnknownKeyMode::Strip
+        }
+    }
+
+    fn export_unknown_keys(&self) -> UnknownKeyMode {
+        if self.unknown_keys_explicit {
+            self.unknown_keys
+        } else {
+            UnknownKeyMode::Strip
+        }
+    }
+
+    pub fn describe(mut self, description: &str, opts: Option<&DescribeOpts>) -> Self {
+        let new_meta = build_describe_metadata(description, opts);
+        match &mut self.metadata {
+            Some(existing) => merge_metadata(existing, &new_meta),
+            None => self.metadata = Some(new_meta),
+        }
+        self
+    }
+
+    pub fn with_metadata(mut self, meta: Value, replace: bool) -> Self {
+        validate_metadata_keys(&meta);
+        if replace {
+            let reserved = reserved_metadata_keys();
+            let mut preserved = serde_json::Map::new();
+            if let Some(Value::Object(existing)) = &self.metadata {
+                for (k, v) in existing {
+                    if reserved.contains(k.as_str()) {
+                        preserved.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+            if let Value::Object(new_map) = &meta {
+                for (k, v) in new_map {
+                    preserved.insert(k.clone(), v.clone());
+                }
+            }
+            self.metadata = Some(Value::Object(preserved));
+        } else {
+            match &mut self.metadata {
+                Some(existing) => merge_metadata(existing, &meta),
+                None => self.metadata = Some(meta),
+            }
+        }
         self
     }
 }
@@ -146,7 +206,7 @@ impl Schema for ObjectSchema {
         // Check unknown keys
         for key in obj.keys() {
             if !self.properties.contains_key(key) {
-                match self.unknown_keys {
+                match self.effective_unknown_keys() {
                     UnknownKeyMode::Reject => {
                         let mut key_path = path.to_vec();
                         key_path.push(PathSegment::Key(key.clone()));
@@ -196,7 +256,7 @@ impl Schema for ObjectSchema {
             "required": self.required,
         });
 
-        let mode_str = match self.unknown_keys {
+        let mode_str = match self.export_unknown_keys() {
             UnknownKeyMode::Reject => "reject",
             UnknownKeyMode::Strip => "strip",
             UnknownKeyMode::Allow => "allow",
@@ -205,6 +265,7 @@ impl Schema for ObjectSchema {
             .unwrap()
             .insert("unknownKeys".to_string(), json!(mode_str));
 
+        add_metadata_to_node(&mut node, &self.metadata);
         node
     }
 }

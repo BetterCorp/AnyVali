@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,6 +16,8 @@ import (
 
 // Version is the server/CLI version. Set by the main package or cmd.
 var Version = "0.0.1"
+
+const maxRequestBodyBytes = 2 << 20
 
 // Config holds server configuration.
 type Config struct {
@@ -53,8 +56,11 @@ func (s *Server) Start() error {
 	mux := s.buildRouter()
 
 	s.httpSrv = &http.Server{
-		Addr:    addr,
-		Handler: mux,
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	fmt.Printf("AnyVali server listening on %s\n", addr)
@@ -142,7 +148,13 @@ func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
 		Input     json.RawMessage `json:"input"`
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
+		}
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
@@ -180,6 +192,10 @@ func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := schema.SafeParse(input)
+	if hasSchemaIssue(result) {
+		writeJSONError(w, http.StatusBadRequest, "invalid schema: "+result.Issues[0].Message)
+		return
+	}
 	writeValidationResult(w, result)
 }
 
@@ -202,12 +218,22 @@ func (s *Server) handleValidateNamed(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	var input any
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
+		}
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
 
 	result := schema.SafeParse(input)
+	if hasSchemaIssue(result) {
+		writeJSONError(w, http.StatusBadRequest, "invalid schema: "+result.Issues[0].Message)
+		return
+	}
 	writeValidationResult(w, result)
 }
 
@@ -266,6 +292,18 @@ func writeValidationResult(w http.ResponseWriter, result anyvali.ParseResult) {
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func hasSchemaIssue(result anyvali.ParseResult) bool {
+	if result.Success {
+		return false
+	}
+	for _, issue := range result.Issues {
+		if issue.Code == anyvali.IssueUnsupportedSchemaKind {
+			return true
+		}
+	}
+	return false
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

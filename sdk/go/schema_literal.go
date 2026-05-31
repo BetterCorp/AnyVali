@@ -12,6 +12,24 @@ func newLiteralSchema(value any) *LiteralSchema {
 	return &LiteralSchema{value: value}
 }
 
+func (s *LiteralSchema) Describe(description string, opts ...DescribeOpts) *LiteralSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *LiteralSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *LiteralSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *LiteralSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -58,5 +76,6 @@ func (s *LiteralSchema) ToNode() map[string]any {
 		"value": s.value,
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

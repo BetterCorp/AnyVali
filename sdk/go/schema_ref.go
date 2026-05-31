@@ -13,6 +13,24 @@ func newRefSchema(ref string) *RefSchema {
 	return &RefSchema{ref: ref}
 }
 
+func (s *RefSchema) Describe(description string, opts ...DescribeOpts) *RefSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *RefSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *RefSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 // Resolve sets the actual schema this reference points to.
 func (s *RefSchema) Resolve(schema Schema) *RefSchema {
 	s.resolved = schema
@@ -41,8 +59,10 @@ func (s *RefSchema) SafeParse(input any) ParseResult {
 }
 
 func (s *RefSchema) ToNode() map[string]any {
-	return map[string]any{
+	node := map[string]any{
 		"kind": "ref",
 		"ref":  s.ref,
 	}
+	s.addMetadataNode(node)
+	return node
 }

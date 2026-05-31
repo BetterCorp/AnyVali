@@ -31,6 +31,7 @@ public class ArraySchema extends Schema<List<Object>> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.items = other.items;
         this.minItems = other.minItems;
         this.maxItems = other.maxItems;

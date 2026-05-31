@@ -23,6 +23,7 @@ public class TupleSchema extends Schema<List<Object>> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.items = new ArrayList<>(other.items);
     }
 

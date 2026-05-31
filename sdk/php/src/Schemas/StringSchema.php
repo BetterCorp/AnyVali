@@ -113,14 +113,26 @@ final class StringSchema extends Schema
             );
         }
 
-        if ($this->pattern !== null && !preg_match('/' . $this->pattern . '/', $value)) {
-            $issues[] = new ValidationIssue(
-                code: IssueCodes::INVALID_STRING,
-                message: "String does not match pattern {$this->pattern}",
-                path: $ctx->path,
-                expected: $this->pattern,
-                received: $value,
-            );
+        if ($this->pattern !== null) {
+            $result = @preg_match('/' . $this->pattern . '/', $value);
+            if ($result === false) {
+                // Invalid regex pattern - treat as validation failure
+                $issues[] = new ValidationIssue(
+                    code: IssueCodes::INVALID_STRING,
+                    message: "Invalid regex pattern: {$this->pattern}",
+                    path: $ctx->path,
+                    expected: $this->pattern,
+                    received: $value,
+                );
+            } elseif ($result === 0) {
+                $issues[] = new ValidationIssue(
+                    code: IssueCodes::INVALID_STRING,
+                    message: "String does not match pattern {$this->pattern}",
+                    path: $ctx->path,
+                    expected: $this->pattern,
+                    received: $value,
+                );
+            }
         }
 
         if ($this->startsWith !== null && !str_starts_with($value, $this->startsWith)) {
@@ -182,6 +194,7 @@ final class StringSchema extends Schema
         if ($this->format !== null) $node['format'] = $this->format;
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
         if ($this->coerce !== null) $node['coerce'] = $this->coerce;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

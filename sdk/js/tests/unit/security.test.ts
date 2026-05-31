@@ -512,6 +512,13 @@ describe("CWE-20 - Format validation bypass", () => {
       expect(s.safeParse("not-an-email").success).toBe(false);
     });
 
+    // REVIEW: The test above proves the vulnerable email case, but it does not
+    // distinguish malformed built-ins from valid custom extension names.
+    it("rejects malformed format identifiers without blocking custom formats", () => {
+      expect(string().format("email\0" as any).safeParse("not-an-email").success).toBe(false);
+      expect(string().format("x-custom" as any).safeParse("any value").success).toBe(true);
+    });
+
     it("does not import a tampered email format as an unconstrained string", () => {
       const schema = importSchema({
         anyvaliVersion: "1.0",
@@ -521,6 +528,27 @@ describe("CWE-20 - Format validation bypass", () => {
         extensions: {},
       });
       expect(schema.safeParse("not-an-email").success).toBe(false);
+    });
+
+    // REVIEW: Imported schemas need the same malformed-format guard as the
+    // builder API, otherwise untrusted interchange can strip validation.
+    it("rejects imported malformed format identifiers without blocking custom formats", () => {
+      const malformed = importSchema({
+        anyvaliVersion: "1.0",
+        schemaVersion: "1.1",
+        root: { kind: "string", format: "email\0" as any },
+        definitions: {},
+        extensions: {},
+      });
+      const custom = importSchema({
+        anyvaliVersion: "1.0",
+        schemaVersion: "1.1",
+        root: { kind: "string", format: "x-custom" as any },
+        definitions: {},
+        extensions: {},
+      });
+      expect(malformed.safeParse("not-an-email").success).toBe(false);
+      expect(custom.safeParse("any value").success).toBe(true);
     });
 
     it("rejects null byte injection: user@example.com\\0.evil.com", () => {
@@ -649,6 +677,14 @@ describe("Unicode length constraints", () => {
     const emoji = "😀";
     expect(string().maxLength(1).safeParse(emoji).success).toBe(true);
     expect(string().minLength(2).safeParse(emoji).success).toBe(false);
+  });
+
+  // REVIEW: The test above covers one surrogate pair. This companion case
+  // catches mixed BMP plus astral strings where UTF-16 length diverges more subtly.
+  it("counts mixed BMP and astral code points for min and max length", () => {
+    const value = "a😀";
+    expect(string().minLength(2).maxLength(2).safeParse(value).success).toBe(true);
+    expect(string().maxLength(1).safeParse(value).success).toBe(false);
   });
 
   it("uses code point length for imported maxLength schemas", () => {

@@ -6,6 +6,16 @@ import kotlinx.serialization.json.*
 class NeverSchema : Schema<Nothing>() {
     override val kind: String = "never"
 
+    fun describe(description: String, opts: DescribeOptions? = null): NeverSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): NeverSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun validateValue(value: Any?, ctx: ValidationContext): List<ValidationIssue> {
         return listOf(
             ValidationIssue(
@@ -19,5 +29,6 @@ class NeverSchema : Schema<Nothing>() {
 
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("never"))
+        addMetadataToNode(this)
     }
 }

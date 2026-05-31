@@ -10,6 +10,8 @@ export type {
   CoercionConfig,
   StringFormat,
   ParseContext,
+  MetadataOptions,
+  DescribeOptions,
 } from "./types.js";
 
 export { ISSUE_CODES } from "./issue-codes.js";

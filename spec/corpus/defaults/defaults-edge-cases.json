@@ -1,0 +1,192 @@
+{
+  "suite": "defaults-edge-cases",
+  "cases": [
+    {
+      "description": "SPEC §Defaults: default on string field",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "value": { "kind": "string", "default": "fallback" }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "value": "fallback" },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default with array value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "tags": { "kind": "array", "items": { "kind": "string" }, "default": [] }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "tags": [] },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default with object value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "config": {
+              "kind": "object",
+              "properties": {
+                "debug": { "kind": "bool" }
+              },
+              "required": ["debug"],
+              "unknownKeys": "reject",
+              "default": { "debug": false }
+            }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "config": { "debug": false } },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default with number zero (falsy but present)",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "count": { "kind": "int", "default": 0 }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "count": 0 },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default with empty string (falsy but present)",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string", "default": "" }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "name": "" },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default with false boolean (falsy but present)",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "active": { "kind": "bool", "default": false }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "active": false },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: multiple fields with defaults, some present some absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string" },
+            "role": { "kind": "string", "default": "user" },
+            "active": { "kind": "bool", "default": true },
+            "score": { "kind": "int", "default": 0 }
+          },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "active": false },
+      "valid": true,
+      "output": { "name": "Alice", "role": "user", "active": false, "score": 0 },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Defaults: default on nested object field",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "user": {
+              "kind": "object",
+              "properties": {
+                "name": { "kind": "string" },
+                "role": { "kind": "string", "default": "guest" }
+              },
+              "required": ["name"],
+              "unknownKeys": "reject"
+            }
+          },
+          "required": ["user"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "user": { "name": "Bob" } },
+      "valid": true,
+      "output": { "user": { "name": "Bob", "role": "guest" } },
+      "issues": []
+    }
+  ]
+}

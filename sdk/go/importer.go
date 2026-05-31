@@ -6,11 +6,17 @@ import (
 	"math"
 )
 
+// refResolving tracks which definitions are currently being resolved
+// to prevent infinite recursion on circular $ref schemas.
+var refResolving map[string]bool
+
 // Import converts a Document to a Schema.
 func Import(doc *Document) (Schema, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("document is nil")
 	}
+	refResolving = make(map[string]bool)
+	defer func() { refResolving = nil }()
 	return importNode(doc.Root, doc.Definitions)
 }
 
@@ -220,9 +226,13 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 }
 
 func importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
+	// Accept both "item" and "items" keys for compatibility
 	itemNode, ok := node["item"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("array schema missing 'item' field")
+		itemNode, ok = node["items"].(map[string]any)
+	}
+	if !ok {
+		return nil, fmt.Errorf("array schema missing 'item' or 'items' field")
 	}
 	item, err := importNode(itemNode, defs)
 	if err != nil {
@@ -311,9 +321,13 @@ func importRecordSchema(node map[string]any, defs map[string]map[string]any) (*R
 }
 
 func importUnionSchema(node map[string]any, defs map[string]map[string]any) (*UnionSchema, error) {
+	// Accept both "schemas" and "variants" keys for compatibility
 	schemasNode, ok := node["schemas"].([]any)
 	if !ok {
-		return nil, fmt.Errorf("union schema missing 'schemas' field")
+		schemasNode, ok = node["variants"].([]any)
+	}
+	if !ok {
+		return nil, fmt.Errorf("union schema missing 'schemas' or 'variants' field")
 	}
 	schemas := make([]Schema, len(schemasNode))
 	for i, sn := range schemasNode {
@@ -391,7 +405,18 @@ func importRefSchema(node map[string]any, defs map[string]map[string]any) (*RefS
 	if len(ref) > len(defPrefix) && ref[:len(defPrefix)] == defPrefix {
 		defName := ref[len(defPrefix):]
 		if defNode, ok := defs[defName]; ok {
+			// Cycle detection: skip resolution if this definition is already being resolved
+			if refResolving != nil && refResolving[defName] {
+				// Leave unresolved - lazy resolution will handle it at validation time
+				return s, nil
+			}
+			if refResolving != nil {
+				refResolving[defName] = true
+			}
 			resolved, err := importNode(defNode, defs)
+			if refResolving != nil {
+				delete(refResolving, defName)
+			}
 			if err != nil {
 				return nil, fmt.Errorf("ref %q: %w", ref, err)
 			}

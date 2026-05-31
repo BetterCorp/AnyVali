@@ -12,7 +12,7 @@ public class ExportTests
         var s = V.String().MinLength(1).MaxLength(100);
         var doc = s.Export();
         Assert.Equal("1.0", doc.AnyvaliVersion);
-        Assert.Equal("1", doc.SchemaVersion);
+        Assert.Equal("1.1", doc.SchemaVersion);
         Assert.Equal("string", doc.Root["kind"]);
         Assert.Equal(1L, doc.Root["minLength"]);
         Assert.Equal(100L, doc.Root["maxLength"]);
@@ -124,6 +124,23 @@ public class ImportTests
     }
 
     [Fact]
+    public void ImportStringSchemaWithInvalidPatternFailsWithoutThrowing()
+    {
+        var doc = new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1.1",
+            Root = new Dictionary<string, object?> { ["kind"] = "string", ["pattern"] = "(" },
+            Definitions = new(),
+            Extensions = new(),
+        };
+        var schema = V.Import(doc);
+        var result = schema.SafeParse("abc");
+        Assert.False(result.Success);
+        Assert.Equal(IssueCodes.InvalidString, result.Issues[0].Code);
+    }
+
+    [Fact]
     public void ImportNumberSchema()
     {
         var doc = new AnyValiDocument
@@ -204,6 +221,27 @@ public class ImportTests
     }
 
     [Fact]
+    public void ImportArraySchemaWithCanonicalItemsKey()
+    {
+        var doc = new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1.1",
+            Root = new Dictionary<string, object?>
+            {
+                ["kind"] = "array",
+                ["array.items"] = new Dictionary<string, object?> { ["kind"] = "int" },
+            },
+            Definitions = new(),
+            Extensions = new(),
+        };
+        var schema = V.Import(doc);
+        var good = (List<object?>)schema.Parse(new List<object?> { 1L, 2L })!;
+        Assert.Equal(2, good.Count);
+        Assert.False(schema.SafeParse(new List<object?> { "a" }).Success);
+    }
+
+    [Fact]
     public void ImportUnionSchema()
     {
         var doc = new AnyValiDocument
@@ -225,6 +263,31 @@ public class ImportTests
         var schema = V.Import(doc);
         Assert.Equal("hello", schema.Parse("hello"));
         Assert.Equal(42L, schema.Parse(42L));
+    }
+
+    [Fact]
+    public void ImportUnionSchemaWithCanonicalVariantsKey()
+    {
+        var doc = new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1.1",
+            Root = new Dictionary<string, object?>
+            {
+                ["kind"] = "union",
+                ["union.variants"] = new List<object?>
+                {
+                    new Dictionary<string, object?> { ["kind"] = "string" },
+                    new Dictionary<string, object?> { ["kind"] = "int" },
+                },
+            },
+            Definitions = new(),
+            Extensions = new(),
+        };
+        var schema = V.Import(doc);
+        Assert.Equal("hello", schema.Parse("hello"));
+        Assert.Equal(42L, schema.Parse(42L));
+        Assert.False(schema.SafeParse(true).Success);
     }
 
     [Fact]

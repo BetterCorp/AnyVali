@@ -13,6 +13,16 @@ data class ArraySchema(
     fun minItems(n: Int) = copy(minItems = n)
     fun maxItems(n: Int) = copy(maxItems = n)
 
+    fun describe(description: String, opts: DescribeOptions? = null): ArraySchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): ArraySchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<List<Any?>> {
         if (input !is List<*>) {
             return ParseResult.Failure(
@@ -80,5 +90,6 @@ data class ArraySchema(
         put("items", items.exportNode())
         minItems?.let { put("minItems", JsonPrimitive(it)) }
         maxItems?.let { put("maxItems", JsonPrimitive(it)) }
+        addMetadataToNode(this)
     }
 }

@@ -109,6 +109,7 @@ final class ArraySchema extends Schema
         if ($this->minItems !== null) $node['minItems'] = $this->minItems;
         if ($this->maxItems !== null) $node['maxItems'] = $this->maxItems;
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

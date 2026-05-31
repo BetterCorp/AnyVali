@@ -25,6 +25,7 @@ class UnionSchema(BaseSchema[Any]):
                 path=list(ctx.path),
                 issues=[],
                 definitions=ctx.definitions,
+                depth=ctx.depth,
             )
             result = schema._run_pipeline(input, trial_ctx)
             if not trial_ctx.issues:

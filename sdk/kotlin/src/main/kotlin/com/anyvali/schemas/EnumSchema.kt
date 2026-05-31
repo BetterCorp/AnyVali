@@ -8,6 +8,16 @@ data class EnumSchema(
 ) : Schema<Any?>() {
     override val kind: String = "enum"
 
+    fun describe(description: String, opts: DescribeOptions? = null): EnumSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): EnumSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun validateValue(input: Any?, ctx: ValidationContext): List<ValidationIssue> {
         val matched = values.any { v -> valuesEqual(input, v) }
         if (!matched) {
@@ -38,6 +48,7 @@ data class EnumSchema(
                 else -> JsonPrimitive(v.toString())
             }
         }))
+        addMetadataToNode(this)
     }
 
     private fun valuesEqual(a: Any?, b: Any?): Boolean {

@@ -24,6 +24,24 @@ func (s *ArraySchema) MaxItems(n int) *ArraySchema {
 	return s
 }
 
+func (s *ArraySchema) Describe(description string, opts ...DescribeOpts) *ArraySchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *ArraySchema) Metadata(meta map[string]any, opts ...MetadataOpts) *ArraySchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *ArraySchema) Default(value []any) *ArraySchema {
 	s.setDefault(value)
 	return s
@@ -104,5 +122,6 @@ func (s *ArraySchema) ToNode() map[string]any {
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

@@ -449,6 +449,24 @@ func TestImportArraySchema(t *testing.T) {
 	}
 }
 
+func TestImportArraySchemaWithCanonicalItemsKey(t *testing.T) {
+	doc := &Document{
+		Root: map[string]any{
+			"kind":     "array",
+			"items":    map[string]any{"kind": "string"},
+			"minItems": float64(1),
+		},
+	}
+	s, err := Import(doc)
+	if err != nil {
+		t.Fatalf("expected canonical array.items import to succeed, got: %v", err)
+	}
+	r := s.SafeParse([]any{"hello"})
+	if !r.Success {
+		t.Fatalf("expected imported canonical array schema to validate, got: %v", r.Issues)
+	}
+}
+
 func TestImportArraySchemaMissingItem(t *testing.T) {
 	doc := &Document{
 		Root: map[string]any{"kind": "array"},
@@ -651,6 +669,25 @@ func TestImportUnionSchema(t *testing.T) {
 	r = s.SafeParse(int64(42))
 	if !r.Success {
 		t.Fatal("expected success")
+	}
+}
+
+func TestImportUnionSchemaWithCanonicalVariantsKey(t *testing.T) {
+	doc := &Document{
+		Root: map[string]any{
+			"kind": "union",
+			"variants": []any{
+				map[string]any{"kind": "string"},
+				map[string]any{"kind": "int"},
+			},
+		},
+	}
+	s, err := Import(doc)
+	if err != nil {
+		t.Fatalf("expected canonical union.variants import to succeed, got: %v", err)
+	}
+	if !s.SafeParse("hello").Success {
+		t.Fatal("expected canonical union import to accept matching string variant")
 	}
 }
 

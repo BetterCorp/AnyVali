@@ -23,6 +23,16 @@ data class IntSchema(
     fun default(v: Long) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
 
+    fun describe(description: String, opts: DescribeOptions? = null): IntSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): IntSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     private val rangeMin: Long get() = when (schemaKind) {
         "int8" -> -128L
         "int16" -> -32768L
@@ -231,6 +241,7 @@ data class IntSchema(
             }
         }
         coerce?.let { put("coerce", JsonPrimitive(it)) }
+        addMetadataToNode(this)
     }
 
     companion object {

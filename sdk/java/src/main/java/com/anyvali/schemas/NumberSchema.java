@@ -31,6 +31,7 @@ public class NumberSchema extends Schema<Double> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.kind = other.kind;
         this.min = other.min;
         this.max = other.max;

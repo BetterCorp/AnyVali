@@ -102,6 +102,12 @@ TEST("format: date invalid leap day") {
     ASSERT(!s->safe_parse(json("2023-02-29")).success);
 }
 
+TEST("format: date impossible calendar date") {
+    auto s = string_();
+    s->format("date");
+    ASSERT(!s->safe_parse(json("2024-04-31")).success);
+}
+
 TEST("format: date-time with Z") {
     auto s = string_();
     s->format("date-time");
@@ -118,4 +124,10 @@ TEST("format: date-time without timezone rejected") {
     auto s = string_();
     s->format("date-time");
     ASSERT(!s->safe_parse(json("2024-01-15T10:30:00")).success);
+}
+
+TEST("format: date-time impossible calendar date rejected") {
+    auto s = string_();
+    s->format("date-time");
+    ASSERT(!s->safe_parse(json("2024-04-31T10:30:00Z")).success);
 }

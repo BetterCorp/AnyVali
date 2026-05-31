@@ -23,8 +23,11 @@ public:
 
     ObjectSchema& unknownKeys(UnknownKeyMode mode) {
         unknown_key_mode_ = mode;
+        unknown_key_mode_explicit_ = true;
         return *this;
     }
+
+    UnknownKeyMode unknown_key_mode() const { return effective_unknown_key_mode(); }
 
     nlohmann::json validate(const nlohmann::json& input, ValidationContext& ctx) const override {
         if (!input.is_object()) {
@@ -92,12 +95,12 @@ public:
         // Check unknown keys
         for (auto it = input.begin(); it != input.end(); ++it) {
             if (properties_.find(it.key()) == properties_.end()) {
-                if (unknown_key_mode_ == UnknownKeyMode::Reject) {
+                if (effective_unknown_key_mode() == UnknownKeyMode::Reject) {
                     ctx.push_path(it.key());
                     ctx.add_issue(issue_codes::UNKNOWN_KEY, "undefined", it.key());
                     ctx.pop_path();
                     has_errors = true;
-                } else if (unknown_key_mode_ == UnknownKeyMode::Allow) {
+                } else if (effective_unknown_key_mode() == UnknownKeyMode::Allow) {
                     result[it.key()] = it.value();
                 }
                 // Strip mode: just don't add it
@@ -121,7 +124,7 @@ public:
             req.push_back(r);
         }
         node["required"] = req;
-        switch (unknown_key_mode_) {
+        switch (export_unknown_key_mode()) {
             case UnknownKeyMode::Reject: node["unknownKeys"] = "reject"; break;
             case UnknownKeyMode::Strip: node["unknownKeys"] = "strip"; break;
             case UnknownKeyMode::Allow: node["unknownKeys"] = "allow"; break;
@@ -132,12 +135,20 @@ public:
 
     const std::map<std::string, std::shared_ptr<Schema>>& properties() const { return properties_; }
     const std::vector<std::string>& required_fields() const { return required_fields_; }
-    UnknownKeyMode unknown_key_mode() const { return unknown_key_mode_; }
 
 private:
+    UnknownKeyMode effective_unknown_key_mode() const {
+        return unknown_key_mode_explicit_ ? unknown_key_mode_ : UnknownKeyMode::Strip;
+    }
+
+    UnknownKeyMode export_unknown_key_mode() const {
+        return unknown_key_mode_explicit_ ? unknown_key_mode_ : UnknownKeyMode::Strip;
+    }
+
     std::map<std::string, std::shared_ptr<Schema>> properties_;
     std::vector<std::string> required_fields_;
-    UnknownKeyMode unknown_key_mode_ = UnknownKeyMode::Reject;
+    UnknownKeyMode unknown_key_mode_ = UnknownKeyMode::Strip;
+    bool unknown_key_mode_explicit_ = false;
 };
 
 } // namespace anyvali

@@ -12,6 +12,16 @@ data class BoolSchema(
     fun default(v: Boolean) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
 
+    fun describe(description: String, opts: DescribeOptions? = null): BoolSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): BoolSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Boolean> {
         var value = input
@@ -62,6 +72,7 @@ data class BoolSchema(
         put("kind", JsonPrimitive("bool"))
         if (defaultValue !== UNSET) put("default", JsonPrimitive(defaultValue as Boolean))
         coerce?.let { put("coerce", JsonPrimitive(it)) }
+        addMetadataToNode(this)
     }
 
     companion object {

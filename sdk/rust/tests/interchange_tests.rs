@@ -7,7 +7,7 @@ fn export_string_schema() {
     let s = string().min_length(1).max_length(100);
     let doc = export(&s, ExportMode::Portable, &HashMap::new()).unwrap();
     assert_eq!(doc.anyvali_version, "1.0");
-    assert_eq!(doc.schema_version, "1");
+    assert_eq!(doc.schema_version, "1.1");
     assert_eq!(doc.root["kind"], "string");
     assert_eq!(doc.root["minLength"], 1);
     assert_eq!(doc.root["maxLength"], 100);
@@ -165,6 +165,21 @@ fn import_string_schema() {
     assert_eq!(schema.kind(), "string");
     assert!(schema.parse(&json!("abc")).is_ok());
     assert!(!schema.safe_parse(&json!("ab")).success);
+}
+
+#[test]
+fn import_string_schema_with_invalid_pattern_fails_closed() {
+    let json_str = r#"{
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "pattern": "(" },
+        "definitions": {},
+        "extensions": {}
+    }"#;
+    let (schema, _ctx) = import(json_str).unwrap();
+    let result = schema.safe_parse(&json!("abc"));
+    assert!(!result.success);
+    assert_eq!(result.issues[0].code, "invalid_string");
 }
 
 #[test]
@@ -358,6 +373,20 @@ fn import_array() {
 }
 
 #[test]
+fn import_array_with_canonical_items_key() {
+    let json_str = r#"{
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "array.items": { "kind": "int" } },
+        "definitions": {},
+        "extensions": {}
+    }"#;
+    let (schema, _ctx) = import(json_str).unwrap();
+    assert!(schema.parse(&json!([1, 2])).is_ok());
+    assert!(!schema.safe_parse(&json!(["a"])).success);
+}
+
+#[test]
 fn import_tuple() {
     let json_str = r#"{
         "anyvaliVersion": "1.0",
@@ -395,6 +424,24 @@ fn import_union() {
     let (schema, _ctx) = import(json_str).unwrap();
     assert!(schema.parse(&json!("hello")).is_ok());
     assert!(schema.parse(&json!(42)).is_ok());
+}
+
+#[test]
+fn import_union_with_canonical_variants_key() {
+    let json_str = r#"{
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+            "kind": "union",
+            "union.variants": [{ "kind": "string" }, { "kind": "int" }]
+        },
+        "definitions": {},
+        "extensions": {}
+    }"#;
+    let (schema, _ctx) = import(json_str).unwrap();
+    assert!(schema.parse(&json!("hello")).is_ok());
+    assert!(schema.parse(&json!(42)).is_ok());
+    assert!(!schema.safe_parse(&json!(true)).success);
 }
 
 #[test]

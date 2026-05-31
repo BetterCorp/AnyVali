@@ -14,7 +14,7 @@ func TestExportStringSchema(t *testing.T) {
 	if doc.AnyvaliVersion != "1.0" {
 		t.Fatal("wrong version")
 	}
-	if doc.SchemaVersion != "1" {
+	if doc.SchemaVersion != "1.1" {
 		t.Fatal("wrong schema version")
 	}
 	if doc.Root["kind"] != "string" {

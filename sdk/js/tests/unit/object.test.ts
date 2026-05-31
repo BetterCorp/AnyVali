@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { object, string, int, optional, bool } from "../../src/index.js";
+import { object, string, int, optional, bool, RefSchema } from "../../src/index.js";
 
 describe("ObjectSchema", () => {
   it("accepts valid objects", () => {
@@ -24,19 +24,19 @@ describe("ObjectSchema", () => {
     }
   });
 
-  it("rejects unknown keys by default", () => {
+  it("strips unknown keys by default", () => {
     const s = object({ name: string() });
+    const result = s.parse({ name: "Alice", extra: true });
+    expect(result).toEqual({ name: "Alice" });
+  });
+
+  it("rejects unknown keys when configured", () => {
+    const s = object({ name: string() }).unknownKeys("reject");
     const result = s.safeParse({ name: "Alice", extra: true });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.issues[0].code).toBe("unknown_key");
     }
-  });
-
-  it("strips unknown keys when configured", () => {
-    const s = object({ name: string() }).unknownKeys("strip");
-    const result = s.parse({ name: "Alice", extra: true });
-    expect(result).toEqual({ name: "Alice" });
   });
 
   it("allows unknown keys when configured", () => {
@@ -56,12 +56,14 @@ describe("ObjectSchema", () => {
 
   it("keeps object modifiers immutable", () => {
     const base = object({ name: string() });
-    const stripped = base.unknownKeys("strip");
+    const rejected = base.unknownKeys("reject");
 
-    expect(base.safeParse({ name: "Alice", extra: true }).success).toBe(false);
-    expect(stripped.parse({ name: "Alice", extra: true })).toEqual({
+    expect(base.parse({ name: "Alice", extra: true })).toEqual({
       name: "Alice",
     });
+    expect(rejected.safeParse({ name: "Alice", extra: true }).success).toBe(
+      false
+    );
   });
 
   it("handles defaults on fields", () => {
@@ -157,6 +159,44 @@ describe("ObjectSchema", () => {
     expect(result).toEqual(input);
     expect(result).not.toBe(input);
     expect(result.user).not.toBe(input.user);
+  });
+
+  it("preserves __proto__ as data when unknown keys are allowed", () => {
+    const s = object({ name: string() }).unknownKeys("allow");
+    const input = JSON.parse(
+      '{"name":"Alice","__proto__":{"polluted":"yes"}}'
+    ) as Record<string, unknown>;
+
+    const result = s.parse(input) as Record<string, unknown>;
+
+    expect(result.name).toBe("Alice");
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(
+      Object.getOwnPropertyDescriptor(result, "__proto__")?.value
+    ).toEqual({ polluted: "yes" });
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("fails closed on cyclic input for recursive schemas", () => {
+    let node!: ReturnType<typeof object>;
+    const next = optional(new RefSchema("#/definitions/Node", () => node));
+    node = object({
+      value: string(),
+      next,
+    });
+
+    const input: Record<string, unknown> = { value: "root" };
+    input.next = input;
+
+    let result:
+      | ReturnType<typeof node.safeParse>
+      | undefined;
+
+    expect(() => {
+      result = node.safeParse(input);
+    }).not.toThrow();
+    expect(result?.success).toBe(false);
   });
 
   it("rejects non-objects", () => {

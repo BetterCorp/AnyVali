@@ -465,6 +465,12 @@ class TestFormatValidationBypass_CWE_20:
         result = schema.safe_parse("not-an-email")
         assert not result.success
 
+    # REVIEW: The test above proves the vulnerable email case, but it does not
+    # distinguish malformed built-ins from valid custom extension names.
+    def test_malformed_format_identifier_rejected_custom_format_allowed(self):
+        assert not v.string().format("email\x00").safe_parse("not-an-email").success
+        assert v.string().format("x-custom").safe_parse("any value").success
+
     def test_imported_tampered_email_format_not_unconstrained(self):
         """Imported malformed format identifiers must not become no-ops."""
         schema = v.import_schema({
@@ -475,6 +481,24 @@ class TestFormatValidationBypass_CWE_20:
         })
         result = schema.safe_parse("not-an-email")
         assert not result.success
+
+    # REVIEW: Imported schemas need the same malformed-format guard as the
+    # builder API, otherwise untrusted interchange can strip validation.
+    def test_imported_malformed_format_identifier_rejected_custom_format_allowed(self):
+        malformed = v.import_schema({
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {"kind": "string", "format": "email\x00"},
+            "definitions": {},
+        })
+        custom = v.import_schema({
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {"kind": "string", "format": "x-custom"},
+            "definitions": {},
+        })
+        assert not malformed.safe_parse("not-an-email").success
+        assert custom.safe_parse("any value").success
 
     def test_email_null_byte_injection(self):
         """Null byte in email should be rejected."""

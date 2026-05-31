@@ -42,7 +42,12 @@ fun ref(ref: String) = RefSchema(ref)
 fun obj(
     properties: Map<String, Schema<*>>,
     required: Set<String> = emptySet(),
-    unknownKeys: UnknownKeyMode = UnknownKeyMode.REJECT
-) = ObjectSchema(properties, required, unknownKeys)
+    unknownKeys: UnknownKeyMode? = null
+) = ObjectSchema(
+    properties,
+    required,
+    unknownKeys ?: UnknownKeyMode.STRIP,
+    unknownKeys != null
+)
 
 fun import_(jsonStr: String): Pair<Schema<*>, Map<String, Schema<*>>> = Importer.importFromJson(jsonStr)

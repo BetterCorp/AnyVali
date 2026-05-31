@@ -1,5 +1,5 @@
-use serde_json::Value;
-use std::collections::HashMap;
+use serde_json::{json, Value};
+use std::collections::{HashMap, HashSet};
 
 use crate::types::{ParseResult, PathSegment, ValidationError, ValidationIssue};
 
@@ -89,5 +89,116 @@ impl<T: Schema + Clone + 'static> SchemaClone for T {
 impl Clone for Box<dyn Schema> {
     fn clone(&self) -> Box<dyn Schema> {
         self.clone_box()
+    }
+}
+
+/// Reserved metadata keys that must use describe() instead of metadata().
+pub fn reserved_metadata_keys() -> HashSet<&'static str> {
+    let mut keys = HashSet::new();
+    keys.insert("title");
+    keys.insert("description");
+    keys.insert("deprecated");
+    keys.insert("deprecatedMessage");
+    keys.insert("notStable");
+    keys.insert("since");
+    keys.insert("sensitive");
+    keys.insert("readonly");
+    keys.insert("writeonly");
+    keys.insert("examples");
+    keys
+}
+
+/// Options for describe().
+#[derive(Debug, Clone, Default)]
+pub struct DescribeOpts {
+    pub title: Option<String>,
+    pub deprecated: Option<bool>,
+    pub deprecated_message: Option<String>,
+    pub not_stable: Option<bool>,
+    pub since: Option<String>,
+    pub sensitive: Option<bool>,
+    pub readonly: Option<bool>,
+    pub writeonly: Option<bool>,
+    pub examples: Option<Vec<Value>>,
+}
+
+/// Validate and build metadata from describe() parameters.
+pub fn build_describe_metadata(description: &str, opts: Option<&DescribeOpts>) -> Value {
+    let mut meta = serde_json::Map::new();
+    meta.insert("description".to_string(), json!(description));
+
+    if let Some(opts) = opts {
+        if let Some(title) = &opts.title {
+            meta.insert("title".to_string(), json!(title));
+        }
+        if let Some(deprecated) = opts.deprecated {
+            meta.insert("deprecated".to_string(), json!(deprecated));
+        }
+        if let Some(msg) = &opts.deprecated_message {
+            if opts.deprecated != Some(true) {
+                panic!("describe(): deprecatedMessage requires deprecated to be true");
+            }
+            meta.insert("deprecatedMessage".to_string(), json!(msg));
+        }
+        if let Some(not_stable) = opts.not_stable {
+            meta.insert("notStable".to_string(), json!(not_stable));
+        }
+        if let Some(since) = &opts.since {
+            meta.insert("since".to_string(), json!(since));
+        }
+        if let Some(sensitive) = opts.sensitive {
+            meta.insert("sensitive".to_string(), json!(sensitive));
+        }
+        if let Some(readonly) = opts.readonly {
+            meta.insert("readonly".to_string(), json!(readonly));
+        }
+        if let Some(writeonly) = opts.writeonly {
+            meta.insert("writeonly".to_string(), json!(writeonly));
+        }
+        if opts.readonly == Some(true) && opts.writeonly == Some(true) {
+            panic!("describe(): readonly and writeonly cannot both be true");
+        }
+        if let Some(examples) = &opts.examples {
+            meta.insert("examples".to_string(), json!(examples));
+        }
+    }
+
+    Value::Object(meta)
+}
+
+/// Validate metadata keys (for metadata() call - no reserved keys allowed).
+pub fn validate_metadata_keys(meta: &Value) {
+    let reserved = reserved_metadata_keys();
+    if let Value::Object(map) = meta {
+        for key in map.keys() {
+            if reserved.contains(key.as_str()) {
+                panic!(
+                    "metadata(): \"{}\" is a reserved key. Use describe() instead.",
+                    key
+                );
+            }
+        }
+    }
+}
+
+/// Merge metadata: shallow merge src into dst.
+pub fn merge_metadata(dst: &mut Value, src: &Value) {
+    if let (Value::Object(d), Value::Object(s)) = (dst, src) {
+        for (k, v) in s {
+            d.insert(k.clone(), v.clone());
+        }
+    }
+}
+
+/// Helper to add metadata to an export node.
+pub fn add_metadata_to_node(node: &mut Value, metadata: &Option<Value>) {
+    if let Some(meta) = metadata {
+        if let Value::Object(map) = meta {
+            if !map.is_empty() {
+                if let Value::Object(obj) = node {
+                    obj.insert("metadata".to_string(), meta.clone());
+                }
+            }
+        }
     }
 }

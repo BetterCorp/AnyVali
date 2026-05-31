@@ -13,7 +13,7 @@ final class AnyValiDocument
      */
     public function __construct(
         public readonly string $anyvaliVersion = '1.0',
-        public readonly string $schemaVersion = '1',
+        public readonly string $schemaVersion = '1.1',
         public readonly array $root = [],
         public readonly array $definitions = [],
         public readonly array $extensions = [],

@@ -74,6 +74,24 @@ func (s *Float64Schema) Coerce(c CoercionType) *Float64Schema {
 	return s
 }
 
+func (s *Float64Schema) Describe(description string, opts ...DescribeOpts) *Float64Schema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *Float64Schema) Metadata(meta map[string]any, opts ...MetadataOpts) *Float64Schema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *Float64Schema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -194,5 +212,6 @@ func (s *Float64Schema) ToNode() map[string]any {
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

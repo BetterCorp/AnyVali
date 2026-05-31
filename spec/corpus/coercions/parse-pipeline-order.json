@@ -1,0 +1,189 @@
+{
+  "suite": "parse-pipeline-order",
+  "cases": [
+    {
+      "description": "SPEC §Coercions: coercion runs before default (present value coerced, default ignored)",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "count": { "kind": "int", "coerce": "string->int", "default": 99 }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "count": "42" },
+      "valid": true,
+      "output": { "count": 42 },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: absent value skips coercion, gets default",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "count": { "kind": "int", "coerce": "string->int", "default": 99 }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": { "count": 99 },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: coercion only applies to present values, not absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": "trim" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Coercions: coercion then default then validation (full pipeline)",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "name": { "kind": "string", "coerce": "trim", "minLength": 1 },
+            "role": { "kind": "string", "default": "user", "minLength": 1 }
+          },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "  Alice  " },
+      "valid": true,
+      "output": { "name": "Alice", "role": "user" },
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: coercion failure prevents further pipeline steps",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 0, "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-a-number",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "coercion_failed", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Coercions: trim + lower coercion chain order preserved",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": ["trim", "lower"], "minLength": 1, "maxLength": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "  HELLO  ",
+      "valid": true,
+      "output": "hello",
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: trim + upper coercion chain",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "coerce": ["trim", "upper"] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "  hello  ",
+      "valid": true,
+      "output": "HELLO",
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: string->int then min constraint validated",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 10, "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "5",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Coercions: string->number then max constraint validated",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "max": 100.0, "coerce": "string->number" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "200.5",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Coercions: string->bool coercion then bool validation",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "bool", "coerce": "string->bool" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "true",
+      "valid": true,
+      "output": true,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Coercions: non-string input bypasses string->int coercion",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": true,
+      "output": 42,
+      "issues": []
+    }
+  ]
+}

@@ -15,7 +15,7 @@ describe("Export", () => {
   it("exports a simple string schema", () => {
     const doc = exportSchema(string().minLength(1).maxLength(100));
     expect(doc.anyvaliVersion).toBe("1.0");
-    expect(doc.schemaVersion).toBe("1");
+    expect(doc.schemaVersion).toBe("1.1");
     expect(doc.root.kind).toBe("string");
     expect((doc.root as any).minLength).toBe(1);
     expect((doc.root as any).maxLength).toBe(100);
@@ -108,5 +108,84 @@ describe("Import", () => {
     expect(() =>
       importSchema({ anyvaliVersion: "1.0", schemaVersion: "1" } as any)
     ).toThrow();
+  });
+
+  it("imports invalid regex patterns without throwing", () => {
+    const doc = {
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: { kind: "string", pattern: "(" },
+      definitions: {},
+      extensions: {},
+    };
+
+    const imported = importSchema(doc as any);
+
+    expect(() => imported.safeParse("abc")).not.toThrow();
+    expect(imported.safeParse("abc").success).toBe(false);
+  });
+
+  it("imports array schemas with canonical items keys", () => {
+    const doc = {
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: {
+        kind: "array",
+        items: { kind: "int" },
+      },
+      definitions: {},
+      extensions: {},
+    };
+
+    const imported = importSchema(doc as any);
+    expect(imported.parse([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(imported.safeParse(["a"]).success).toBe(false);
+  });
+
+  it("imports union schemas with canonical variants keys", () => {
+    const doc = {
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: {
+        kind: "union",
+        variants: [{ kind: "string" }, { kind: "int" }],
+      },
+      definitions: {},
+      extensions: {},
+    };
+
+    const imported = importSchema(doc as any);
+    expect(imported.parse("hello")).toBe("hello");
+    expect(imported.parse(42)).toBe(42);
+    expect(imported.safeParse(true).success).toBe(false);
+  });
+
+  it("imports __proto__ property names without prototype pollution", () => {
+    const doc = JSON.parse(`{
+      "anyvaliVersion": "1.0",
+      "schemaVersion": "1.1",
+      "root": {
+        "kind": "object",
+        "properties": {
+          "__proto__": { "kind": "string" }
+        },
+        "required": ["__proto__"],
+        "unknownKeys": "reject"
+      },
+      "definitions": {},
+      "extensions": {}
+    }`);
+    const input = JSON.parse('{"__proto__":"safe"}') as Record<string, unknown>;
+
+    const imported = importSchema(doc as any);
+
+    expect(() => imported.parse(input)).not.toThrow();
+    const result = imported.parse(input) as Record<string, unknown>;
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(Object.getOwnPropertyDescriptor(result, "__proto__")?.value).toBe(
+      "safe"
+    );
+    expect(({} as Record<string, unknown>).safe).toBeUndefined();
   });
 });

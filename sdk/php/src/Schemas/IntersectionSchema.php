@@ -66,9 +66,11 @@ final class IntersectionSchema extends Schema
 
     public function exportNode(): array
     {
-        return [
+        $node = [
             'kind' => 'intersection',
             'allOf' => array_map(fn(Schema $s) => $s->exportNode(), $this->allOf),
         ];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

@@ -73,6 +73,24 @@ func (s *IntSchema) Coerce(c CoercionType) *IntSchema {
 	return s
 }
 
+func (s *IntSchema) Describe(description string, opts ...DescribeOpts) *IntSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *IntSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *IntSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *IntSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -262,5 +280,6 @@ func (s *IntSchema) ToNode() map[string]any {
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

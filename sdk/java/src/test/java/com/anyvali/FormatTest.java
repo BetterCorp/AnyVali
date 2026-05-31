@@ -129,6 +129,7 @@ class FormatTest {
         void invalidDateTime() {
             // No timezone
             assertFalse(FormatValidators.validate("date-time", "2024-01-15T10:30:00"));
+            assertFalse(FormatValidators.validate("date-time", "2024-04-31T10:30:00Z"));
             assertFalse(FormatValidators.validate("date-time", "not a datetime"));
             assertFalse(FormatValidators.validate("date-time", ""));
         }

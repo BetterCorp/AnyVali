@@ -1,0 +1,376 @@
+{
+  "suite": "issue-codes",
+  "cases": [
+    {
+      "description": "SPEC §IssueCodes: invalid_type on wrong type",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 42,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: required on missing required field",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": { "name": { "kind": "string" } },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "required", "path": ["name"] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: unknown_key on unexpected property",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": { "name": { "kind": "string" } },
+          "required": ["name"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "name": "Alice", "extra": true },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "unknown_key", "path": ["extra"] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_small on string minLength",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "minLength": 5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "ab",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_large on string maxLength",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "maxLength": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "abcde",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_small on numeric min",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_large on numeric max",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "max": 10 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 15,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_small on array minItems",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "int" }, "minItems": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: too_large on array maxItems",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "array", "items": { "kind": "int" }, "maxItems": 2 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": [1, 2, 3],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: invalid_string on pattern mismatch",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "pattern": "^[a-z]+$" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "ABC123",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: invalid_string on format mismatch",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "string", "format": "email" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-an-email",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_string", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: invalid_number on non-finite number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_number", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: companion invalid_number coverage for multipleOf mismatch",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 3 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_number", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: invalid_literal on wrong literal value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "literal", "value": "hello" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "world",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_literal", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: invalid_union on no variant match",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "union", "variants": [{ "kind": "string" }, { "kind": "int" }] },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": true,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_union", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: coercion_failed on invalid coercion",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "coerce": "string->int" },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "not-a-number",
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "coercion_failed", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: default_invalid when default fails validation",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "count": { "kind": "int", "min": 10, "default": 5 }
+          },
+          "required": [],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "default_invalid", "path": ["count"] }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: issue path includes nested object keys",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "user": {
+              "kind": "object",
+              "properties": {
+                "name": { "kind": "string" }
+              },
+              "required": ["name"],
+              "unknownKeys": "reject"
+            }
+          },
+          "required": ["user"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "user": { "name": 42 } },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["user", "name"], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: issue path includes array indexes",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "array",
+          "items": { "kind": "string" }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": ["hello", 42, "world"],
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": [1], "expected": "string", "received": "number" }
+      ]
+    },
+    {
+      "description": "SPEC §IssueCodes: issue path with mixed object keys and array indexes",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": {
+          "kind": "object",
+          "properties": {
+            "items": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "properties": {
+                  "value": { "kind": "int" }
+                },
+                "required": ["value"],
+                "unknownKeys": "reject"
+              }
+            }
+          },
+          "required": ["items"],
+          "unknownKeys": "reject"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": { "items": [{ "value": 1 }, { "value": "not-int" }] },
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "invalid_type", "path": ["items", 1, "value"], "expected": "int", "received": "string" }
+      ]
+    }
+  ]
+}

@@ -67,8 +67,18 @@ module AnyVali
       end
 
       if @constraints["pattern"]
-        re = Regexp.new(@constraints["pattern"])
-        unless re.match?(value)
+        begin
+          re = Regexp.new(@constraints["pattern"])
+          unless re.match?(value)
+            issues << ValidationIssue.new(
+              code: IssueCodes::INVALID_STRING,
+              path: path,
+              expected: @constraints["pattern"],
+              received: value
+            )
+          end
+        rescue RegexpError
+          # Invalid regex pattern - treat as validation failure
           issues << ValidationIssue.new(
             code: IssueCodes::INVALID_STRING,
             path: path,

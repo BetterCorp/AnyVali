@@ -48,6 +48,6 @@ public sealed class LiteralSchema : Schema<object?>
 
     internal override Schema Clone() => new LiteralSchema(_value)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

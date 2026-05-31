@@ -11,7 +11,7 @@
     "sdk/js": {
       "component": "js",
       "release-type": "node",
-      "package-name": "@anyvali/js",
+      "package-name": "anyvali",
       "changelog-path": "CHANGELOG.md"
     },
     "sdk/python": {

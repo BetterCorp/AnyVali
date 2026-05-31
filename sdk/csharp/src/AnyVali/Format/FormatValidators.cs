@@ -31,8 +31,15 @@ public static class FormatValidators
         @"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$",
         RegexOptions.Compiled);
 
+    private static readonly Regex FormatNameRe = new(
+        @"^[A-Za-z][A-Za-z0-9-]*$",
+        RegexOptions.Compiled);
+
     public static bool Validate(string value, string format)
     {
+        if (!FormatNameRe.IsMatch(format))
+            return false;
+
         return format switch
         {
             "email" => EmailRe.IsMatch(value),
@@ -42,7 +49,7 @@ public static class FormatValidators
             "ipv6" => Ipv6Re.IsMatch(value),
             "date" => IsValidDate(value),
             "date-time" => IsValidDateTime(value),
-            _ => true // unknown formats pass
+            _ => true // valid custom formats pass
         };
     }
 

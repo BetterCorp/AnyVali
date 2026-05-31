@@ -31,10 +31,27 @@ export type SchemaKind =
   | "nullable"
   | "ref";
 
+export interface MetadataOptions {
+  replace?: boolean;
+}
+
+export interface DescribeOptions {
+  title?: string;
+  deprecated?: boolean;
+  deprecatedMessage?: string;
+  notStable?: boolean;
+  since?: string;
+  sensitive?: boolean;
+  readonly?: boolean;
+  writeonly?: boolean;
+  examples?: unknown[];
+}
+
 export interface SchemaNodeBase {
   kind: SchemaKind;
   default?: unknown;
   coerce?: CoercionConfig | string | string[];
+  metadata?: Record<string, unknown>;
 }
 
 export interface CoercionConfig {
@@ -215,4 +232,8 @@ export interface ParseContext {
   path: (string | number)[];
   issues: ValidationIssue[];
   definitions?: Record<string, SchemaNode>;
+  /** Tracks objects already being validated to detect circular references. */
+  seen?: WeakSet<object>;
+  /** Current recursion depth, used to bound unbounded recursion (DoS guard). */
+  depth?: number;
 }

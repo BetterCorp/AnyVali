@@ -8,6 +8,16 @@ data class NullableSchema(
 ) : Schema<Any?>() {
     override val kind: String = "nullable"
 
+    fun describe(description: String, opts: DescribeOptions? = null): NullableSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): NullableSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         if (input == null) return ParseResult.Success(null)
         return inner.safeParseWithContext(input, ctx)
@@ -21,5 +31,6 @@ data class NullableSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("nullable"))
         put("schema", inner.exportNode())
+        addMetadataToNode(this)
     }
 }

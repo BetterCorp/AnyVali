@@ -41,7 +41,9 @@ public sealed class StringSchema : Schema<string>
             return null;
         }
 
-        if (_minLength.HasValue && val.Length < _minLength.Value)
+        var length = CodePointLength(val);
+
+        if (_minLength.HasValue && length < _minLength.Value)
         {
             ctx.Issues.Add(new ValidationIssue
             {
@@ -49,11 +51,11 @@ public sealed class StringSchema : Schema<string>
                 Message = $"String must have at least {_minLength.Value} character(s)",
                 Path = ctx.ClonePath(),
                 Expected = _minLength.Value.ToString(),
-                Received = val.Length.ToString(),
+                Received = length.ToString(),
             });
         }
 
-        if (_maxLength.HasValue && val.Length > _maxLength.Value)
+        if (_maxLength.HasValue && length > _maxLength.Value)
         {
             ctx.Issues.Add(new ValidationIssue
             {
@@ -61,19 +63,34 @@ public sealed class StringSchema : Schema<string>
                 Message = $"String must have at most {_maxLength.Value} character(s)",
                 Path = ctx.ClonePath(),
                 Expected = _maxLength.Value.ToString(),
-                Received = val.Length.ToString(),
+                Received = length.ToString(),
             });
         }
 
         if (_pattern is not null)
         {
-            var re = new Regex(_pattern);
-            if (!re.IsMatch(val))
+            try
             {
+                var re = new Regex(_pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+                if (!re.IsMatch(val))
+                {
+                    ctx.Issues.Add(new ValidationIssue
+                    {
+                        Code = IssueCodes.InvalidString,
+                        Message = $"String does not match pattern: {_pattern}",
+                        Path = ctx.ClonePath(),
+                        Expected = _pattern,
+                        Received = val,
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                // Invalid regex pattern or timeout - treat as validation failure
                 ctx.Issues.Add(new ValidationIssue
                 {
                     Code = IssueCodes.InvalidString,
-                    Message = $"String does not match pattern: {_pattern}",
+                    Message = $"Invalid regex pattern: {_pattern}",
                     Path = ctx.ClonePath(),
                     Expected = _pattern,
                     Received = val,
@@ -132,6 +149,22 @@ public sealed class StringSchema : Schema<string>
         return val;
     }
 
+    private static int CodePointLength(string value)
+    {
+        var count = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (char.IsHighSurrogate(value[i]) &&
+                i + 1 < value.Length &&
+                char.IsLowSurrogate(value[i + 1]))
+            {
+                i++;
+            }
+            count++;
+        }
+        return count;
+    }
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?> { ["kind"] = "string" };
@@ -155,7 +188,7 @@ public sealed class StringSchema : Schema<string>
             _endsWith = _endsWith, _includes = _includes,
             _format = _format,
             DefaultValue = DefaultValue, CoercionCfg = CoercionCfg,
-            IsPortable = IsPortable,
+            IsPortable = IsPortable, MetadataMap = MetadataMap,
         };
     }
 }

@@ -3,7 +3,7 @@
 module AnyVali
   class AnyValiDocument
     ANYVALI_VERSION = "1.0"
-    SCHEMA_VERSION = "1"
+    SCHEMA_VERSION = "1.1"
 
     attr_reader :anyvali_version, :schema_version, :root, :definitions, :extensions
 

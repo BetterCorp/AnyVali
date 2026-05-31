@@ -33,6 +33,8 @@ final class NeverSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'never'];
+        $node = ['kind' => 'never'];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

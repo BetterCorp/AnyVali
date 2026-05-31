@@ -1,10 +1,26 @@
 package com.anyvali
 
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.*
+
+data class DescribeOptions(
+    val title: String? = null,
+    val deprecated: Boolean? = null,
+    val deprecatedMessage: String? = null,
+    val notStable: Boolean? = null,
+    val since: String? = null,
+    val sensitive: Boolean? = null,
+    val readonly: Boolean? = null,
+    val writeonly: Boolean? = null,
+    val examples: List<Any?>? = null
+)
 
 abstract class Schema<out T> {
     abstract val kind: String
     open val hasCustomValidators: Boolean get() = false
+
+    // Metadata storage
+    var schemaMetadata: MutableMap<String, Any?>? = null
+        protected set
 
     abstract fun validateValue(value: Any?, ctx: ValidationContext): List<ValidationIssue>
 
@@ -53,7 +69,79 @@ abstract class Schema<out T> {
         return AnyValiDocument(root = exportNode())
     }
 
+    // ---- Describe & Metadata helpers ----
+
+    protected fun applyDescribe(description: String, opts: DescribeOptions? = null) {
+        if (schemaMetadata == null) schemaMetadata = mutableMapOf()
+        schemaMetadata!!["description"] = description
+        opts?.let {
+            it.title?.let { v -> schemaMetadata!!["title"] = v }
+            it.deprecated?.let { v -> schemaMetadata!!["deprecated"] = v }
+            it.deprecatedMessage?.let { v ->
+                require(it.deprecated == true) { "describe(): deprecatedMessage requires deprecated to be true" }
+                schemaMetadata!!["deprecatedMessage"] = v
+            }
+            it.notStable?.let { v -> schemaMetadata!!["notStable"] = v }
+            it.since?.let { v -> schemaMetadata!!["since"] = v }
+            it.sensitive?.let { v -> schemaMetadata!!["sensitive"] = v }
+            it.readonly?.let { v -> schemaMetadata!!["readonly"] = v }
+            it.writeonly?.let { v -> schemaMetadata!!["writeonly"] = v }
+            require(!(it.readonly == true && it.writeonly == true)) {
+                "describe(): readonly and writeonly cannot both be true"
+            }
+            it.examples?.let { v -> schemaMetadata!!["examples"] = v }
+        }
+    }
+
+    protected fun applyMetadata(meta: Map<String, Any?>, replace: Boolean = false) {
+        for (key in meta.keys) {
+            require(key !in RESERVED_METADATA_KEYS) {
+                "metadata(): \"$key\" is a reserved key. Use describe() instead."
+            }
+        }
+        if (replace) {
+            val preserved = schemaMetadata?.filter { it.key in RESERVED_METADATA_KEYS }?.toMutableMap() ?: mutableMapOf()
+            preserved.putAll(meta)
+            schemaMetadata = preserved
+        } else {
+            if (schemaMetadata == null) schemaMetadata = mutableMapOf()
+            schemaMetadata!!.putAll(meta)
+        }
+    }
+
+    protected fun addMetadataToNode(builder: JsonObjectBuilder) {
+        schemaMetadata?.takeIf { it.isNotEmpty() }?.let { meta ->
+            builder.put("metadata", buildJsonObject {
+                for ((k, v) in meta) {
+                    when (v) {
+                        is String -> put(k, v)
+                        is Boolean -> put(k, v)
+                        is Number -> put(k, JsonPrimitive(v))
+                        is List<*> -> put(k, buildJsonArray {
+                            for (item in v) {
+                                when (item) {
+                                    is String -> add(JsonPrimitive(item))
+                                    is Boolean -> add(JsonPrimitive(item))
+                                    is Number -> add(JsonPrimitive(item))
+                                    null -> add(JsonNull)
+                                    else -> add(JsonPrimitive(item.toString()))
+                                }
+                            }
+                        })
+                        null -> put(k, JsonNull)
+                        else -> put(k, v.toString())
+                    }
+                }
+            })
+        }
+    }
+
     companion object {
+        private val RESERVED_METADATA_KEYS = setOf(
+            "title", "description", "deprecated", "deprecatedMessage",
+            "notStable", "since", "sensitive", "readonly", "writeonly", "examples"
+        )
+
         fun getJsonTypeName(value: Any?): String = when (value) {
             null -> "null"
             is Boolean -> "boolean"

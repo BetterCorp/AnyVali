@@ -27,6 +27,7 @@ public class StringSchema extends Schema<String> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.minLength = other.minLength;
         this.maxLength = other.maxLength;
         this.pattern = other.pattern;
@@ -99,10 +100,19 @@ public class StringSchema extends Schema<String> {
                     maxLength, s.length());
         }
 
-        if (pattern != null && !Pattern.compile(pattern).matcher(s).find()) {
-            ctx.addIssue(IssueCodes.INVALID_STRING,
-                    "String does not match pattern '" + pattern + "'",
-                    pattern, s);
+        if (pattern != null) {
+            try {
+                if (!Pattern.compile(pattern).matcher(s).find()) {
+                    ctx.addIssue(IssueCodes.INVALID_STRING,
+                            "String does not match pattern '" + pattern + "'",
+                            pattern, s);
+                }
+            } catch (Exception e) {
+                // Invalid regex pattern - treat as validation failure
+                ctx.addIssue(IssueCodes.INVALID_STRING,
+                        "Invalid regex pattern: " + pattern,
+                        pattern, s);
+            }
         }
 
         if (startsWith != null && !s.startsWith(startsWith)) {

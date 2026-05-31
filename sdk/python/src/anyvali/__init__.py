@@ -200,7 +200,7 @@ def object_(
     properties: dict[str, BaseSchema],
     *,
     required: list[str] | None = None,
-    unknown_keys: UnknownKeyMode = "reject",
+    unknown_keys: UnknownKeyMode | None = None,
 ) -> ObjectSchema:
     """Create an object schema."""
     return ObjectSchema(properties, required=required, unknown_keys=unknown_keys)

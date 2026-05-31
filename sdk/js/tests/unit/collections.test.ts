@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { array, tuple, record, string, int, bool } from "../../src/index.js";
+import { array, tuple, record, string, int, bool, any } from "../../src/index.js";
 
 describe("ArraySchema", () => {
   it("accepts valid arrays", () => {
@@ -76,5 +76,24 @@ describe("RecordSchema", () => {
     if (!result.success) {
       expect(result.issues[0].path).toEqual(["b"]);
     }
+  });
+
+  it("preserves __proto__ as data in records", () => {
+    const s = record(any());
+    const input = JSON.parse(
+      '{"safe":1,"__proto__":{"polluted":"yes"}}'
+    ) as Record<
+      string,
+      unknown
+    >;
+
+    const result = s.parse(input);
+
+    expect(result.safe).toBe(1);
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(
+      Object.getOwnPropertyDescriptor(result, "__proto__")?.value
+    ).toEqual({ polluted: "yes" });
   });
 });

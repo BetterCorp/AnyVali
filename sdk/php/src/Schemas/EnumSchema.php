@@ -58,6 +58,8 @@ final class EnumSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'enum', 'values' => $this->values];
+        $node = ['kind' => 'enum', 'values' => $this->values];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

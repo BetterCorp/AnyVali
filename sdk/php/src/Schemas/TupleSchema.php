@@ -93,9 +93,11 @@ final class TupleSchema extends Schema
 
     public function exportNode(): array
     {
-        return [
+        $node = [
             'kind' => 'tuple',
             'elements' => array_map(fn(Schema $s) => $s->exportNode(), $this->elements),
         ];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

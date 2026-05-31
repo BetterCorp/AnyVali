@@ -6,11 +6,59 @@ import (
 	"math"
 )
 
-// baseSchema provides common schema functionality: coercions, defaults.
+// baseSchema provides common schema functionality: coercions, defaults, metadata.
 type baseSchema struct {
 	coercions    []CoercionType
 	defaultValue any
 	hasDefault   bool
+	metadata     map[string]any
+}
+
+var reservedMetadataKeys = map[string]bool{
+	"title": true, "description": true, "deprecated": true,
+	"deprecatedMessage": true, "notStable": true, "since": true,
+	"sensitive": true, "readonly": true, "writeonly": true, "examples": true,
+}
+
+// DescribeOpts contains optional reserved metadata fields for Describe().
+type DescribeOpts struct {
+	Title             string
+	Deprecated        bool
+	DeprecatedMessage string
+	NotStable         bool
+	Since             string
+	Sensitive         bool
+	Readonly          bool
+	Writeonly         bool
+	Examples          []any
+}
+
+// MetadataOpts contains options for Metadata().
+type MetadataOpts struct {
+	Replace bool
+}
+
+// deepCopyDefault returns a deep copy of a portable default value so that
+// mutable containers are not shared across parses. Portable defaults are
+// JSON-representable, so only maps and slices need recursive copying;
+// everything else is immutable or copied by value.
+func deepCopyDefault(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		cp := make(map[string]any, len(val))
+		for k, item := range val {
+			cp[k] = deepCopyDefault(item)
+		}
+		return cp
+	case []any:
+		cp := make([]any, len(val))
+		for i, item := range val {
+			cp[i] = deepCopyDefault(item)
+		}
+		return cp
+	default:
+		return val
+	}
 }
 
 // SetDefault sets a default value for the schema.
@@ -33,7 +81,11 @@ func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []Validat
 	if value == nil || isAbsent(value) {
 		// Step 3: apply default if absent
 		if b.hasDefault {
-			value = b.defaultValue
+			// Deep-copy so mutable defaults (maps/slices) are isolated per
+			// parse. Pass-through schemas (Any/Unknown items, allowed unknown
+			// keys) alias the stored default, so without copying a mutation to
+			// one result would corrupt the default for the next parse.
+			value = deepCopyDefault(b.defaultValue)
 		} else if value == nil {
 			// nil is a present value (null), pass through to validation
 			value = nil
@@ -90,6 +142,86 @@ func (b *baseSchema) addCoercionNode(node map[string]any) {
 func (b *baseSchema) addDefaultNode(node map[string]any) {
 	if b.hasDefault {
 		node["default"] = b.defaultValue
+	}
+}
+
+func (b *baseSchema) setDescribe(description string, opts *DescribeOpts) {
+	if b.metadata == nil {
+		b.metadata = make(map[string]any)
+	}
+	b.metadata["description"] = description
+	if opts != nil {
+		if opts.Title != "" {
+			b.metadata["title"] = opts.Title
+		}
+		if opts.Deprecated {
+			b.metadata["deprecated"] = true
+		}
+		if opts.DeprecatedMessage != "" {
+			if !opts.Deprecated {
+				panic("describe(): deprecatedMessage requires deprecated to be true")
+			}
+			b.metadata["deprecatedMessage"] = opts.DeprecatedMessage
+		}
+		if opts.NotStable {
+			b.metadata["notStable"] = true
+		}
+		if opts.Since != "" {
+			b.metadata["since"] = opts.Since
+		}
+		if opts.Sensitive {
+			b.metadata["sensitive"] = true
+		}
+		if opts.Readonly {
+			b.metadata["readonly"] = true
+		}
+		if opts.Writeonly {
+			b.metadata["writeonly"] = true
+		}
+		if opts.Readonly && opts.Writeonly {
+			panic("describe(): readonly and writeonly cannot both be true")
+		}
+		if opts.Examples != nil {
+			b.metadata["examples"] = opts.Examples
+		}
+	}
+}
+
+func (b *baseSchema) setMetadata(meta map[string]any, opts *MetadataOpts) {
+	for key := range meta {
+		if reservedMetadataKeys[key] {
+			panic(fmt.Sprintf("metadata(): %q is a reserved key. Use Describe() instead.", key))
+		}
+	}
+	if opts != nil && opts.Replace {
+		// Keep reserved keys, replace rest
+		preserved := make(map[string]any)
+		for k, v := range b.metadata {
+			if reservedMetadataKeys[k] {
+				preserved[k] = v
+			}
+		}
+		b.metadata = preserved
+		for k, v := range meta {
+			b.metadata[k] = v
+		}
+	} else {
+		if b.metadata == nil {
+			b.metadata = make(map[string]any)
+		}
+		for k, v := range meta {
+			b.metadata[k] = v
+		}
+	}
+}
+
+func (b *baseSchema) addMetadataNode(node map[string]any) {
+	if len(b.metadata) > 0 {
+		metaCopy := make(map[string]any, len(b.metadata))
+		for k, v := range b.metadata {
+			metaCopy[k] = v
+		}
+		node["metadata"] = metaCopy
 	}
 }
 

@@ -313,10 +313,15 @@ func TestObjectSchema(t *testing.T) {
 		t.Fatal("expected failure for missing required field")
 	}
 
-	// Unknown key rejected by default
+	// Unknown key stripped by default
 	input3 := map[string]any{"name": "Alice", "age": int64(30), "extra": "val"}
-	if r := s.SafeParse(input3); r.Success {
-		t.Fatal("expected failure for unknown key")
+	if r := s.SafeParse(input3); !r.Success {
+		t.Fatalf("expected success with stripped unknown key, got issues: %v", r.Issues)
+	} else {
+		out := r.Data.(map[string]any)
+		if _, ok := out["extra"]; ok {
+			t.Fatal("expected extra key to be stripped")
+		}
 	}
 }
 
@@ -694,8 +699,8 @@ func TestDocumentStructure(t *testing.T) {
 	if doc.AnyvaliVersion != "1.0" {
 		t.Fatalf("expected version 1.0, got %s", doc.AnyvaliVersion)
 	}
-	if doc.SchemaVersion != "1" {
-		t.Fatalf("expected schema version 1, got %s", doc.SchemaVersion)
+	if doc.SchemaVersion != "1.1" {
+		t.Fatalf("expected schema version 1.1, got %s", doc.SchemaVersion)
 	}
 	if doc.Root["kind"] != "object" {
 		t.Fatalf("expected root kind object, got %v", doc.Root["kind"])

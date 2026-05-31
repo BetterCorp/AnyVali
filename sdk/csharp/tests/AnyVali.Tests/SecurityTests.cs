@@ -421,6 +421,15 @@ public class SecurityTests
         Assert.False(s.SafeParse("not-an-email").Success);
     }
 
+    // REVIEW: The test above proves the vulnerable email case, but it does not
+    // distinguish malformed built-ins from valid custom extension names.
+    [Fact]
+    public void Format_MalformedIdentifierRejected_CustomFormatAllowed()
+    {
+        Assert.False(V.String().Format("email\0").SafeParse("not-an-email").Success);
+        Assert.True(V.String().Format("x-custom").SafeParse("any value").Success);
+    }
+
     [Fact]
     public void FormatEmail_ImportedTamperedFormatName_NotUnconstrained()
     {
@@ -434,6 +443,32 @@ public class SecurityTests
         };
         var schema = V.Import(doc);
         Assert.False(schema.SafeParse("not-an-email").Success);
+    }
+
+    // REVIEW: Imported schemas need the same malformed-format guard as the
+    // builder API, otherwise untrusted interchange can strip validation.
+    [Fact]
+    public void Format_ImportedMalformedIdentifierRejected_CustomFormatAllowed()
+    {
+        var malformed = V.Import(new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1",
+            Root = new Dictionary<string, object?> { ["kind"] = "string", ["format"] = "email\0" },
+            Definitions = new(),
+            Extensions = new(),
+        });
+        var custom = V.Import(new AnyValiDocument
+        {
+            AnyvaliVersion = "1.0",
+            SchemaVersion = "1",
+            Root = new Dictionary<string, object?> { ["kind"] = "string", ["format"] = "x-custom" },
+            Definitions = new(),
+            Extensions = new(),
+        });
+
+        Assert.False(malformed.SafeParse("not-an-email").Success);
+        Assert.True(custom.SafeParse("any value").Success);
     }
 
     [Fact]
@@ -589,6 +624,16 @@ public class SecurityTests
         var emoji = char.ConvertFromUtf32(0x1F600);
         Assert.True(V.String().MaxLength(1).SafeParse(emoji).Success);
         Assert.False(V.String().MinLength(2).SafeParse(emoji).Success);
+    }
+
+    // REVIEW: The test above covers one surrogate pair. This companion case
+    // catches mixed BMP plus astral strings where UTF-16 length diverges more subtly.
+    [Fact]
+    public void UnicodeLength_MixedBmpAndAstral_CountsCodePoints()
+    {
+        var value = "a" + char.ConvertFromUtf32(0x1F600);
+        Assert.True(V.String().MinLength(2).MaxLength(2).SafeParse(value).Success);
+        Assert.False(V.String().MaxLength(1).SafeParse(value).Success);
     }
 
     [Fact]

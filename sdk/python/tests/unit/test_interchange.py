@@ -102,6 +102,43 @@ class TestImport:
         with pytest.raises(Exception):
             v.import_schema({"root": None})
 
+    def test_string_import_with_invalid_pattern_fails_without_throwing(self):
+        doc = {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {"kind": "string", "pattern": "("},
+        }
+        schema = v.import_schema(doc)
+        result = schema.safe_parse("abc")
+        assert not result.success
+
+    def test_array_import_with_canonical_items_key(self):
+        doc = {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {
+                "kind": "array",
+                "items": {"kind": "int"},
+            },
+        }
+        schema = v.import_schema(doc)
+        assert schema.safe_parse([1, 2]).success
+        assert not schema.safe_parse(["a"]).success
+
+    def test_union_import_with_canonical_variants_key(self):
+        doc = {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {
+                "kind": "union",
+                "variants": [{"kind": "string"}, {"kind": "int"}],
+            },
+        }
+        schema = v.import_schema(doc)
+        assert schema.safe_parse("hello").success
+        assert schema.safe_parse(42).success
+        assert not schema.safe_parse(True).success
+
 
 class TestRoundTrip:
     def test_string_roundtrip(self):

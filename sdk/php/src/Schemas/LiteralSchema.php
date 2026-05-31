@@ -46,6 +46,8 @@ final class LiteralSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'literal', 'value' => $this->literalValue];
+        $node = ['kind' => 'literal', 'value' => $this->literalValue];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

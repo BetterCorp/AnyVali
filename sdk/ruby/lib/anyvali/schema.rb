@@ -3,15 +3,18 @@
 module AnyVali
   class Schema
     attr_reader :kind, :constraints, :coerce_config, :default_value, :has_default,
-                :custom_validators
+                :custom_validators, :metadata
 
-    def initialize(kind:, constraints: {}, coerce_config: nil, default_value: nil, has_default: false, custom_validators: [])
+    RESERVED_METADATA_KEYS = %w[title description deprecated deprecatedMessage notStable since sensitive readonly writeonly examples].freeze
+
+    def initialize(kind:, constraints: {}, coerce_config: nil, default_value: nil, has_default: false, custom_validators: [], metadata: {})
       @kind = kind
       @constraints = constraints.freeze
       @coerce_config = coerce_config
       @default_value = default_value
       @has_default = has_default
       @custom_validators = custom_validators.freeze
+      @metadata = metadata.freeze
     end
 
     def parse(input)
@@ -67,6 +70,70 @@ module AnyVali
       dup_with(coerce_config: config)
     end
 
+    def describe(description, **opts)
+      raise ArgumentError, "describe(): description must be a string" unless description.is_a?(String)
+
+      meta = { "description" => description }
+
+      if opts.key?(:title)
+        raise ArgumentError, "describe(): title must be a string" unless opts[:title].is_a?(String)
+        meta["title"] = opts[:title]
+      end
+      if opts.key?(:deprecated)
+        raise ArgumentError, "describe(): deprecated must be a boolean" unless [true, false].include?(opts[:deprecated])
+        meta["deprecated"] = opts[:deprecated]
+      end
+      if opts.key?(:deprecated_message)
+        raise ArgumentError, "describe(): deprecatedMessage must be a string" unless opts[:deprecated_message].is_a?(String)
+        raise ArgumentError, "describe(): deprecatedMessage requires deprecated: true" unless opts[:deprecated]
+        meta["deprecatedMessage"] = opts[:deprecated_message]
+      end
+      if opts.key?(:not_stable)
+        raise ArgumentError, "describe(): notStable must be a boolean" unless [true, false].include?(opts[:not_stable])
+        meta["notStable"] = opts[:not_stable]
+      end
+      if opts.key?(:since)
+        raise ArgumentError, "describe(): since must be a string" unless opts[:since].is_a?(String)
+        meta["since"] = opts[:since]
+      end
+      if opts.key?(:sensitive)
+        raise ArgumentError, "describe(): sensitive must be a boolean" unless [true, false].include?(opts[:sensitive])
+        meta["sensitive"] = opts[:sensitive]
+      end
+      if opts.key?(:readonly)
+        raise ArgumentError, "describe(): readonly must be a boolean" unless [true, false].include?(opts[:readonly])
+        meta["readonly"] = opts[:readonly]
+      end
+      if opts.key?(:writeonly)
+        raise ArgumentError, "describe(): writeonly must be a boolean" unless [true, false].include?(opts[:writeonly])
+        meta["writeonly"] = opts[:writeonly]
+      end
+      if opts[:readonly] && opts[:writeonly]
+        raise ArgumentError, "describe(): readonly and writeonly cannot both be true"
+      end
+      if opts.key?(:examples)
+        raise ArgumentError, "describe(): examples must be an array" unless opts[:examples].is_a?(Array)
+        meta["examples"] = opts[:examples]
+      end
+
+      dup_with(metadata: @metadata.merge(meta))
+    end
+
+    def with_metadata(meta, replace: false)
+      meta.each_key do |key|
+        if RESERVED_METADATA_KEYS.include?(key)
+          raise ArgumentError, "with_metadata(): \"#{key}\" is a reserved key. Use describe() instead."
+        end
+      end
+
+      if replace
+        preserved = @metadata.select { |k, _| RESERVED_METADATA_KEYS.include?(k) }
+        dup_with(metadata: preserved.merge(meta))
+      else
+        dup_with(metadata: @metadata.merge(meta))
+      end
+    end
+
     def refine(&block)
       dup_with(custom_validators: @custom_validators + [block])
     end
@@ -94,6 +161,7 @@ module AnyVali
       @constraints.each { |k, v| node[k] = v }
       node["coerce"] = @coerce_config if @coerce_config
       node["default"] = @default_value if @has_default
+      node["metadata"] = @metadata.dup unless @metadata.empty?
       node
     end
 
@@ -110,7 +178,8 @@ module AnyVali
         coerce_config: @coerce_config,
         default_value: @default_value,
         has_default: @has_default,
-        custom_validators: @custom_validators
+        custom_validators: @custom_validators,
+        metadata: @metadata
       }.merge(overrides)
       self.class.new(**attrs)
     end

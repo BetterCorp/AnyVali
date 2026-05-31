@@ -101,7 +101,7 @@ pub enum UnknownKeyMode {
 
 impl Default for UnknownKeyMode {
     fn default() -> Self {
-        UnknownKeyMode::Reject
+        UnknownKeyMode::Strip
     }
 }
 

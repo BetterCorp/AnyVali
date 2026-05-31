@@ -127,6 +127,13 @@ class FormatTest {
         assertIs<ParseResult.Failure>(result)
     }
 
+    @Test
+    fun `date rejects impossible calendar date`() {
+        val s = string().format("date")
+        val result = s.safeParse("2024-04-31")
+        assertIs<ParseResult.Failure>(result)
+    }
+
     // ---- DateTime ----
 
     @Test
@@ -145,6 +152,13 @@ class FormatTest {
     fun `datetime rejects without timezone`() {
         val s = string().format("date-time")
         val result = s.safeParse("2024-01-15T10:30:00")
+        assertIs<ParseResult.Failure>(result)
+    }
+
+    @Test
+    fun `datetime rejects impossible calendar date`() {
+        val s = string().format("date-time")
+        val result = s.safeParse("2024-04-31T10:30:00Z")
         assertIs<ParseResult.Failure>(result)
     }
 

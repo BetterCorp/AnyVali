@@ -11,6 +11,24 @@ func newNullSchema() *NullSchema {
 	return &NullSchema{}
 }
 
+func (s *NullSchema) Describe(description string, opts ...DescribeOpts) *NullSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *NullSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *NullSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *NullSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -36,5 +54,7 @@ func (s *NullSchema) validate(value any) (any, []ValidationIssue) {
 }
 
 func (s *NullSchema) ToNode() map[string]any {
-	return map[string]any{"kind": "null"}
+	node := map[string]any{"kind": "null"}
+	s.addMetadataNode(node)
+	return node
 }

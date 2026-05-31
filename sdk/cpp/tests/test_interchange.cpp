@@ -18,6 +18,20 @@ TEST("import: basic string schema") {
     ASSERT(result.success);
 }
 
+TEST("import: string schema with invalid pattern fails without throwing") {
+    json doc = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", {{"kind", "string"}, {"pattern", "("}}},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    auto imported = import_schema(doc);
+    auto result = parse_document(imported, json("abc"));
+    ASSERT(!result.success);
+    ASSERT(result.issues[0].code == "invalid_string");
+}
+
 TEST("import: number with constraints") {
     json doc = {
         {"anyvaliVersion", "1.0"},
@@ -69,6 +83,23 @@ TEST("import: union schema") {
     ASSERT(!parse_document(imported, json(true)).success);
 }
 
+TEST("import: union schema with canonical variants key") {
+    json doc = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", {
+            {"kind", "union"},
+            {"union.variants", {{{"kind", "string"}}, {{"kind", "int"}}}}
+        }},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    auto imported = import_schema(doc);
+    ASSERT(parse_document(imported, json("hello")).success);
+    ASSERT(parse_document(imported, json(42)).success);
+    ASSERT(!parse_document(imported, json(true)).success);
+}
+
 TEST("import: intersection schema") {
     json doc = {
         {"anyvaliVersion", "1.0"},
@@ -110,6 +141,19 @@ TEST("import: array schema") {
     };
     auto imported = import_schema(doc);
     ASSERT(parse_document(imported, json::array({1, 2, 3})).success);
+}
+
+TEST("import: array schema with canonical items key") {
+    json doc = {
+        {"anyvaliVersion", "1.0"},
+        {"schemaVersion", "1"},
+        {"root", {{"kind", "array"}, {"array.items", {{"kind", "int"}}}}},
+        {"definitions", json::object()},
+        {"extensions", json::object()}
+    };
+    auto imported = import_schema(doc);
+    ASSERT(parse_document(imported, json::array({1, 2, 3})).success);
+    ASSERT(!parse_document(imported, json::array({"a"})).success);
 }
 
 TEST("import: tuple schema") {
@@ -295,6 +339,7 @@ TEST("export: round-trip object schema") {
     auto exported = export_schema(doc);
     ASSERT(exported["root"]["kind"] == "object");
     ASSERT(exported["root"]["properties"]["name"]["kind"] == "string");
+    ASSERT(exported["root"]["unknownKeys"] == "strip");
 }
 
 TEST("export: round-trip with definitions") {
@@ -449,7 +494,7 @@ TEST("import: null empty root") {
     ASSERT(threw2);
 }
 
-TEST("import: default unknown keys is reject") {
+TEST("import: default unknown keys is strip") {
     json doc = {
         {"anyvaliVersion", "1.0"},
         {"schemaVersion", "1"},
@@ -457,7 +502,7 @@ TEST("import: default unknown keys is reject") {
             {"kind", "object"},
             {"properties", {{"name", {{"kind", "string"}}}}},
             {"required", {"name"}}
-            // no unknownKeys field -> defaults to reject
+            // no unknownKeys field -> defaults to strip
         }},
         {"definitions", json::object()},
         {"extensions", json::object()}
@@ -465,6 +510,6 @@ TEST("import: default unknown keys is reject") {
     auto imported = import_schema(doc);
     auto result = parse_document(imported,
         json::object({{"name", "Alice"}, {"extra", "value"}}));
-    ASSERT(!result.success);
-    ASSERT(result.issues[0].code == "unknown_key");
+    ASSERT(result.success);
+    ASSERT(result.output == json::object({{"name", "Alice"}}));
 }

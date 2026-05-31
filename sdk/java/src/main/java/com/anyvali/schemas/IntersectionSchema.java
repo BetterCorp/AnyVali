@@ -22,6 +22,7 @@ public class IntersectionSchema extends Schema<Object> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.schemas = new ArrayList<>(other.schemas);
     }
 

@@ -144,7 +144,9 @@ module AnyVali
       end
 
       def build_array(node)
-        items = node_to_schema(node["items"])
+        # Accept "items", "item", and "array.items" keys for compatibility
+        items_node = node["items"] || node["item"] || node["array.items"]
+        items = node_to_schema(items_node)
         constraints = {}
         %w[minItems maxItems].each do |k|
           constraints[k] = node[k] if node.key?(k)
@@ -163,11 +165,12 @@ module AnyVali
           props[k] = node_to_schema(v)
         end
         required = node["required"] || []
-        unknown_keys = node["unknownKeys"] || "reject"
+        unknown_keys = node["unknownKeys"] || "strip"
         ObjectSchema.new(
           properties: props,
           required: required,
-          unknown_keys: unknown_keys
+          unknown_keys: unknown_keys,
+          unknown_keys_explicit: true
         )
       end
 
@@ -177,7 +180,9 @@ module AnyVali
       end
 
       def build_union(node)
-        variants = node["variants"].map { |v| node_to_schema(v) }
+        # Accept "variants", "schemas", and "union.variants" keys for compatibility
+        variants_data = node["variants"] || node["schemas"] || node["union.variants"] || []
+        variants = variants_data.map { |v| node_to_schema(v) }
         UnionSchema.new(variants: variants)
       end
 

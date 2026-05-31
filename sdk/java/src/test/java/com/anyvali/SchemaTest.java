@@ -72,6 +72,14 @@ class SchemaTest {
         }
 
         @Test
+        void invalidPatternFailsWithoutThrowing() {
+            var s = string().pattern("(");
+            var r = s.safeParse("abc");
+            assertFalse(r.success());
+            assertEquals(IssueCodes.INVALID_STRING, r.issues().get(0).code());
+        }
+
+        @Test
         void startsWith() {
             var s = string().startsWith("hello");
             assertEquals("hello world", s.parse("hello world"));
@@ -730,20 +738,20 @@ class SchemaTest {
         }
 
         @Test
-        void rejectsUnknownKeysByDefault() {
+        void stripsUnknownKeysByDefault() {
             var s = object_(Map.of("name", string()));
-            var r = s.safeParse(Map.of("name", "Alice", "extra", "value"));
-            assertFalse(r.success());
-            assertEquals(IssueCodes.UNKNOWN_KEY, r.issues().get(0).code());
-        }
-
-        @Test
-        void stripsUnknownKeys() {
-            var s = object_(Map.of("name", string()), null, UnknownKeyMode.STRIP);
             @SuppressWarnings("unchecked")
             var result = (Map<String, Object>) s.parse(Map.of("name", "Alice", "extra", "value"));
             assertEquals(1, result.size());
             assertEquals("Alice", result.get("name"));
+        }
+
+        @Test
+        void rejectsUnknownKeysWhenConfigured() {
+            var s = object_(Map.of("name", string()), null, UnknownKeyMode.REJECT);
+            var r = s.safeParse(Map.of("name", "Alice", "extra", "value"));
+            assertFalse(r.success());
+            assertEquals(IssueCodes.UNKNOWN_KEY, r.issues().get(0).code());
         }
 
         @Test

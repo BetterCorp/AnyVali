@@ -25,6 +25,8 @@ final class AnySchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'any'];
+        $node = ['kind' => 'any'];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }
