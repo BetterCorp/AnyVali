@@ -25,7 +25,7 @@ top-level properties:
 | Property | Type | Description |
 |------------------|--------|-------------|
 | `anyvaliVersion` | string | The specification family version. MUST be `"1.0"` for this version. |
-| `schemaVersion` | string | The interchange format version. MUST be `"1"` for this version. |
+| `schemaVersion` | string | The interchange format version. MUST be `"1.1"` for this version. |
 | `root` | object | The root schema node. MUST be a valid schema node (see Section 2). |
 | `definitions` | object | A map of definition names to schema nodes. MAY be empty (`{}`). |
 | `extensions` | object | A map of extension namespace names to extension data. MAY be empty (`{}`). |
@@ -52,8 +52,10 @@ The following properties MAY appear on any schema node:
 | `default` | any JSON value | Default value materialized when input is absent. |
 | `coerce` | string or array | Coercion identifier or ordered list of identifiers. |
 | `extensions` | object | Node-level extension data (keyed by namespace). |
+| `metadata`   | object          | Descriptive metadata (see Section 2.3). MAY be empty or absent. |
 
 ### 2.2 Node Shapes by Kind
+
 
 #### `any`
 ```json
@@ -238,7 +240,7 @@ Same shape for all unsigned integer kinds.
     "age": { "kind": "int" }
   },
   "required": ["name", "age"],
-  "unknownKeys": "reject"
+  "unknownKeys": "strip"
 }
 ```
 
@@ -246,7 +248,7 @@ Same shape for all unsigned integer kinds.
 |--------------|--------|-------------|
 | `properties` | object | REQUIRED. Map of property names to schema nodes. |
 | `required` | array | REQUIRED. Array of property names that must be present. |
-| `unknownKeys` | string | OPTIONAL. One of `"reject"`, `"strip"`, `"allow"`. Default: `"reject"`. |
+| `unknownKeys` | string | OPTIONAL. One of `"reject"`, `"strip"`, `"allow"`. Default: `"strip"`. |
 
 #### `record`
 ```json
@@ -323,6 +325,56 @@ Same shape for all unsigned integer kinds.
 |----------|--------|-------------|
 | `ref` | string | REQUIRED. JSON pointer to a definition. MUST match `#/definitions/<name>`. |
 
+### 2.3 Metadata Object
+
+Any schema node MAY include a `metadata` property containing descriptive,
+non-validation information.
+
+```json
+{
+  "kind": "string",
+  "format": "email",
+  "metadata": {
+    "title": "Email",
+    "description": "The user's primary email address",
+    "deprecated": true,
+    "deprecatedMessage": "Use contactEmail instead",
+    "since": "1.0.0",
+    "sensitive": true,
+    "examples": ["user@example.com", "admin@corp.io"]
+  }
+}
+```
+
+#### 2.3.1 Reserved Keys
+
+The following keys have defined types. Exporting SDKs MUST ensure values
+conform to these types.
+
+| Key | JSON Type | Constraints |
+|---------------------|-----------|-------------|
+| `title` | string | |
+| `description` | string | |
+| `deprecated` | boolean | |
+| `deprecatedMessage` | string | Only present when `deprecated` is `true`. |
+| `notStable` | boolean | |
+| `since` | string | |
+| `sensitive` | boolean | |
+| `readonly` | boolean | Must not coexist with `writeonly: true`. |
+| `writeonly` | boolean | Must not coexist with `readonly: true`. |
+| `examples` | array | Elements should be valid against the enclosing schema. |
+
+#### 2.3.2 Custom Keys
+
+Keys not listed above are permitted and carry tool-specific or domain-specific
+semantics. Importing SDKs MUST preserve unrecognized metadata keys during
+round-trip (import → export).
+
+#### 2.3.3 Portability
+
+Metadata is always portable. It does not affect validation semantics and MUST
+be preserved in both `portable` and `extended` export modes.
+
 ---
 
 ## 3. Definitions
@@ -339,7 +391,7 @@ The `definitions` object is a flat map from string names to schema nodes.
         "friend": { "kind": "ref", "ref": "#/definitions/User" }
       },
       "required": ["name"],
-      "unknownKeys": "reject"
+      "unknownKeys": "strip"
     }
   }
 }
@@ -524,7 +576,7 @@ A valid AnyVali v1.0 document MUST:
 
 1. Be valid JSON (RFC 8259).
 2. Have `anyvaliVersion` equal to `"1.0"`.
-3. Have `schemaVersion` equal to `"1"`.
+3. Have `schemaVersion` equal to `"1.1"`.
 4. Have a `root` that is a valid schema node.
 5. Have a `definitions` object where every value is a valid schema node.
 6. Have an `extensions` object.

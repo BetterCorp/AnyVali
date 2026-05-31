@@ -125,7 +125,7 @@ var user = V.Object(new Dictionary<string, Schema>
 });
 ```
 
-By default, unknown keys are rejected. Pass `UnknownKeyMode` to change this:
+By default, unknown keys are stripped. Pass `UnknownKeyMode` to change this:
 
 ```csharp
 // Strip unknown keys silently
@@ -556,12 +556,12 @@ var envSchema = V.Object(new Dictionary<string, Schema>
 }, UnknownKeyMode.Strip);
 ```
 
-Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+`Strip` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `Reject` (default) | Parse fails with `unknown_key` issues |
-| `Strip` | Extra keys silently removed from output |
+| `Strip` (default) | Extra keys silently removed from output |
+| `Reject` | Parse fails with `unknown_key` issues |
 | `Allow` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -697,8 +697,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `UnknownKeyMode.Reject` | Reject unknown keys (default) |
-| `UnknownKeyMode.Strip` | Remove unknown keys from output |
+| `UnknownKeyMode.Strip` | Remove unknown keys from output (default) |
+| `UnknownKeyMode.Reject` | Reject unknown keys |
 | `UnknownKeyMode.Allow` | Pass unknown keys through |
 
 ### ExportMode Enum

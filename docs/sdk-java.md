@@ -160,8 +160,8 @@ The `unknownKeys` parameter controls how keys not declared in the properties are
 
 | Mode | Behavior |
 |---|---|
-| `REJECT` (default) | Produces an `unknown_key` issue for each extra key |
-| `STRIP` | Silently removes extra keys from the output |
+| `STRIP` (default) | Silently removes extra keys from the output |
+| `REJECT` | Produces an `unknown_key` issue for each extra key |
 | `ALLOW` | Passes extra keys through to the output |
 
 ### Composition
@@ -529,12 +529,12 @@ var envSchema = AnyVali.object_(
 );
 ```
 
-Without `STRIP`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `REJECT`.
+`STRIP` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `REJECT` (default) | Parse fails with `unknown_key` issues |
-| `STRIP` | Extra keys silently removed from output |
+| `STRIP` (default) | Extra keys silently removed from output |
+| `REJECT` | Parse fails with `unknown_key` issues |
 | `ALLOW` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -656,8 +656,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `UnknownKeyMode.REJECT` | Reject unknown keys (default) |
-| `UnknownKeyMode.STRIP` | Remove unknown keys from output |
+| `UnknownKeyMode.STRIP` | Remove unknown keys from output (default) |
+| `UnknownKeyMode.REJECT` | Reject unknown keys |
 | `UnknownKeyMode.ALLOW` | Pass unknown keys through |
 
 ### ExportMode Enum

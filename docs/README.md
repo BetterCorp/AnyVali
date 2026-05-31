@@ -12,7 +12,7 @@ Pick your language:
 
 ```bash
 # JavaScript / TypeScript
-npm install @anyvali/js
+npm install anyvali
 
 # Python
 pip install anyvali
@@ -55,7 +55,7 @@ Schemas are built with simple builder functions. Every SDK uses the same concept
 ### JavaScript / TypeScript
 
 ```typescript
-import { string, number, int, object, array, optional } from "@anyvali/js";
+import { string, number, int, object, array, optional } from "anyvali";
 
 const UserSchema = object({
   name: string().minLength(1).maxLength(100),
@@ -264,9 +264,9 @@ object({
   age: int().optional(),
 })
 
-// Unknown key handling (default: "reject")
-object({ name: string() })                        // rejects unknown keys
-object({ name: string() }, { unknownKeys: "strip" })  // silently removes unknown keys
+// Unknown key handling (default: "strip")
+object({ name: string() })                        // silently removes unknown keys
+object({ name: string() }, { unknownKeys: "reject" }) // rejects unknown keys
 object({ name: string() }, { unknownKeys: "allow" })  // keeps unknown keys
 ```
 
@@ -381,7 +381,7 @@ The exported JSON looks like:
       "email": { "kind": "string", "format": "email" }
     },
     "required": ["name", "email"],
-    "unknownKeys": "reject"
+    "unknownKeys": "strip"
   },
   "definitions": {},
   "extensions": {}
@@ -392,7 +392,7 @@ The exported JSON looks like:
 
 ```typescript
 // JS — import from JSON
-import { importSchema } from "@anyvali/js";
+import { importSchema } from "anyvali";
 const schema = importSchema(doc);
 schema.parse({ name: "Alice", email: "alice@test.com" });
 ```
@@ -486,7 +486,7 @@ Use `ref` and `definitions` for recursive or reusable types:
 
 ```typescript
 // JS — recursive tree
-import { object, string, array } from "@anyvali/js";
+import { object, string, array } from "anyvali";
 
 // In exported JSON:
 // {
@@ -536,8 +536,8 @@ schema.export({ mode: 'extended' });
 For browser forms, keep your own HTML and let AnyVali enhance it.
 
 ```typescript
-import { object, string, int } from "@anyvali/js";
-import { initForm } from "@anyvali/js/forms";
+import { object, string, int } from "anyvali";
+import { initForm } from "anyvali/forms";
 
 const Signup = object({
   email: string().format("email"),

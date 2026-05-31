@@ -50,7 +50,7 @@ AnyVali defaults `number` to IEEE 754 `float64` and `int` to signed `int64`. Thi
 ### JavaScript / TypeScript
 
 ```typescript
-import { object, string, int64, int, enum_, importSchema } from "@anyvali/js";
+import { object, string, int64, int, enum_, importSchema } from "anyvali";
 
 // 1. Define a schema
 const UserSchema = object({
@@ -244,8 +244,8 @@ Object schemas control how undeclared keys in the input are handled:
 
 | Mode | Behavior |
 |---|---|
-| `reject` (default) | Parse fails with `unknown_key` issues for each extra key |
-| `strip` | Extra keys are silently removed from the parsed output |
+| `strip` (default) | Extra keys are silently removed from the parsed output |
+| `reject` | Parse fails with `unknown_key` issues for each extra key |
 | `allow` | Extra keys are passed through to the parsed output |
 
 Use `strip` when parsing objects that may contain extra keys you want to ignore, such as environment variables or API responses with evolving fields. Use `allow` when you need to preserve all input data while still validating your declared fields.
@@ -314,7 +314,7 @@ Issues follow a standard structure:
 All 10 SDKs provide static type inference so that parsed output carries the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
 
 ```typescript
-import { object, string, int, type Infer } from "@anyvali/js";
+import { object, string, int, type Infer } from "anyvali";
 
 const User = object({
   name: string().minLength(1),

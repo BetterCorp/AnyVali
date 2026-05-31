@@ -153,8 +153,8 @@ Control how unknown keys are handled. The `unknownKeys` parameter controls how k
 
 | Mode | Behavior |
 |---|---|
-| `UnknownKeyMode.REJECT` (default) | Produces an `unknown_key` issue for each extra key |
-| `UnknownKeyMode.STRIP` | Silently removes extra keys from the output |
+| `UnknownKeyMode.STRIP` (default) | Silently removes extra keys from the output |
+| `UnknownKeyMode.REJECT` | Produces an `unknown_key` issue for each extra key |
 | `UnknownKeyMode.ALLOW` | Passes extra keys through to the output |
 
 ```kotlin
@@ -545,12 +545,12 @@ val envSchema = obj(
 )
 ```
 
-Without `STRIP`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `REJECT`.
+`STRIP` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `REJECT` (default) | Parse fails with `unknown_key` issues |
-| `STRIP` | Extra keys silently removed from output |
+| `STRIP` (default) | Extra keys silently removed from output |
+| `REJECT` | Parse fails with `unknown_key` issues |
 | `ALLOW` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -698,8 +698,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `UnknownKeyMode.REJECT` | Reject unknown keys (default) |
-| `UnknownKeyMode.STRIP` | Remove unknown keys from output |
+| `UnknownKeyMode.STRIP` | Remove unknown keys from output (default) |
+| `UnknownKeyMode.REJECT` | Reject unknown keys |
 | `UnknownKeyMode.ALLOW` | Pass unknown keys through |
 
 ### ExportMode Enum

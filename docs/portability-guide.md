@@ -561,14 +561,14 @@ This allows schema authors to provide reasonable default behavior for SDKs they 
 
 ### How do I handle unknown keys in portable schemas?
 
-AnyVali defaults to rejecting unknown keys. You can change this per object:
+AnyVali defaults to stripping unknown keys. You can change this per object:
 
 ```typescript
-// Reject unknown keys (default)
+// Strip unknown keys (default)
 v.object({ name: v.string() })
 
-// Strip unknown keys
-v.object({ name: v.string() }).unknownKeys("strip")
+// Reject unknown keys
+v.object({ name: v.string() }).unknownKeys("reject")
 
 // Allow unknown keys (pass through)
 v.object({ name: v.string() }).unknownKeys("allow")

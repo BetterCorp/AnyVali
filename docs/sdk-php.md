@@ -142,7 +142,7 @@ $user = AnyVali::object(
 $strict = AnyVali::object(
     properties: ['name' => AnyVali::string()],
     required: ['name'],
-    unknownKeys: UnknownKeyMode::Reject,   // error on unexpected keys (default)
+    unknownKeys: UnknownKeyMode::Reject,   // error on unexpected keys
 );
 
 $stripped = AnyVali::object(
@@ -442,7 +442,7 @@ echo json_encode($doc, JSON_PRETTY_PRINT);
 //             "name": { "kind": "string", "minLength": 1, "maxLength": 100 }
 //         },
 //         "required": ["id", "name"],
-//         "unknownKeys": "reject"
+//         "unknownKeys": "strip"
 //     },
 //     "definitions": {},
 //     "extensions": {}
@@ -611,12 +611,12 @@ $envSchema = AnyVali::object(
 );
 ```
 
-Without `Strip`, parse would fail with `unknown_key` issues for every extra key because the default mode is `Reject`.
+`Strip` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `Reject` (default) | Parse fails with `unknown_key` issues |
-| `Strip` | Extra keys silently removed from output |
+| `Strip` (default) | Extra keys silently removed from output |
+| `Reject` | Parse fails with `unknown_key` issues |
 | `Allow` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -719,8 +719,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `UnknownKeyMode::Reject` | Error on unexpected keys (default) |
-| `UnknownKeyMode::Strip` | Silently remove unexpected keys |
+| `UnknownKeyMode::Strip` | Silently remove unexpected keys (default) |
+| `UnknownKeyMode::Reject` | Error on unexpected keys |
 | `UnknownKeyMode::Allow` | Keep unexpected keys as-is |
 
 ### ParseResult
