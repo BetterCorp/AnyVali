@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.2...anyvali-v0.3.3) (2026-06-01)
+
+
+### Bug Fixes
+
+* **release:** upload CLI assets before publish ([18f1713](https://github.com/BetterCorp/AnyVali/commit/18f17138106c359437b6a2ab84f215c561aaf86d))
+
 ## [0.3.2](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.1...anyvali-v0.3.2) (2026-06-01)
 
 
