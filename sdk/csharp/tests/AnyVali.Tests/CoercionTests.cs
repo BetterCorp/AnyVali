@@ -31,35 +31,35 @@ public class CoercionTests
     public void StringToBoolTrue()
     {
         var s = V.Bool().Coerce(new CoercionConfig { From = "string" });
-        Assert.Equal(true, s.Parse("true"));
+        Assert.True(s.Parse("true"));
     }
 
     [Fact]
     public void StringToBoolFalse()
     {
         var s = V.Bool().Coerce(new CoercionConfig { From = "string" });
-        Assert.Equal(false, s.Parse("false"));
+        Assert.False(s.Parse("false"));
     }
 
     [Fact]
     public void StringToBoolOne()
     {
         var s = V.Bool().Coerce(new CoercionConfig { From = "string" });
-        Assert.Equal(true, s.Parse("1"));
+        Assert.True(s.Parse("1"));
     }
 
     [Fact]
     public void StringToBoolZero()
     {
         var s = V.Bool().Coerce(new CoercionConfig { From = "string" });
-        Assert.Equal(false, s.Parse("0"));
+        Assert.False(s.Parse("0"));
     }
 
     [Fact]
     public void StringToBoolCaseInsensitive()
     {
         var s = V.Bool().Coerce(new CoercionConfig { From = "string" });
-        Assert.Equal(true, s.Parse("TRUE"));
+        Assert.True(s.Parse("TRUE"));
     }
 
     [Fact]

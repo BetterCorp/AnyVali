@@ -517,7 +517,7 @@ public class ImportTests
             Extensions = new(),
         };
         var schema = V.Import(doc);
-        Assert.Equal(true, schema.Parse(true));
+        Assert.True(Assert.IsType<bool>(schema.Parse(true)));
     }
 
     [Fact]

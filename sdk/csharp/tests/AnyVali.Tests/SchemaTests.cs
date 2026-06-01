@@ -330,10 +330,10 @@ public class IntSchemaTests
 public class BoolSchemaTests
 {
     [Fact]
-    public void AcceptsTrue() => Assert.Equal(true, V.Bool().Parse(true));
+    public void AcceptsTrue() => Assert.True(V.Bool().Parse(true));
 
     [Fact]
-    public void AcceptsFalse() => Assert.Equal(false, V.Bool().Parse(false));
+    public void AcceptsFalse() => Assert.False(V.Bool().Parse(false));
 
     [Fact]
     public void RejectsString()
@@ -373,7 +373,7 @@ public class AnySchemaTests
         var s = V.Any();
         Assert.Equal("hello", s.Parse("hello"));
         Assert.Equal(42L, s.Parse(42L));
-        Assert.Equal(true, s.Parse(true));
+        Assert.True(Assert.IsType<bool>(s.Parse(true)));
         Assert.Null(s.Parse(null));
     }
 }
@@ -421,7 +421,7 @@ public class LiteralSchemaTests
     public void AcceptsMatchingBool()
     {
         var s = V.Literal(true);
-        Assert.Equal(true, s.Parse(true));
+        Assert.True(Assert.IsType<bool>(s.Parse(true)));
     }
 
     [Fact]

@@ -78,7 +78,10 @@ jobs:
 
       - name: Build C#
         if: matrix.language == 'csharp'
-        run: cd sdk/csharp && dotnet build --no-restore || dotnet restore && dotnet build
+        run: |
+          cd sdk/csharp
+          dotnet restore AnyVali.sln
+          dotnet build AnyVali.sln --no-restore
 
       - name: Build C++
         if: matrix.language == 'cpp'

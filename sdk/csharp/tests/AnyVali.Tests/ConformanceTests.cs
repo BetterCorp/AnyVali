@@ -161,10 +161,10 @@ public class ConformanceTests
                 }
                 break;
             case JsonValueKind.True:
-                Assert.Equal(true, actual);
+                Assert.True(Assert.IsType<bool>(actual));
                 break;
             case JsonValueKind.False:
-                Assert.Equal(false, actual);
+                Assert.False(Assert.IsType<bool>(actual));
                 break;
             case JsonValueKind.Array:
                 var actualList = Assert.IsType<List<object?>>(actual);
