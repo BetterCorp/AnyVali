@@ -19,6 +19,13 @@ impl ParseContext {
         }
     }
 
+    pub fn with_definitions(definitions: HashMap<String, Box<dyn Schema>>) -> Self {
+        ParseContext {
+            definitions,
+            active_refs: Arc::new(Mutex::new(HashSet::new())),
+        }
+    }
+
     pub fn enter_ref(&self, key: String) -> bool {
         self.active_refs.lock().unwrap().insert(key)
     }

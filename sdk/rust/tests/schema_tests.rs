@@ -1124,7 +1124,7 @@ fn ref_resolves_definition() {
     let mut definitions: HashMap<String, Box<dyn Schema>> = HashMap::new();
     definitions.insert("User".to_string(), Box::new(user_schema));
 
-    let ctx = ParseContext { definitions };
+    let ctx = ParseContext::with_definitions(definitions);
     let result = root.parse_with_context(
         &json!({"user": {"name": "Alice", "age": 30}}),
         &ctx,
@@ -1148,7 +1148,7 @@ fn ref_validates_against_definition() {
     let mut definitions: HashMap<String, Box<dyn Schema>> = HashMap::new();
     definitions.insert("User".to_string(), Box::new(user_schema));
 
-    let ctx = ParseContext { definitions };
+    let ctx = ParseContext::with_definitions(definitions);
     let result = root.safe_parse_with_context(
         &json!({"user": {"name": "Alice"}}),
         &ctx,

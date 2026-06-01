@@ -32,7 +32,7 @@ pub fn import_document(doc: &AnyValiDocument) -> Result<(Box<dyn Schema>, ParseC
     // Import root
     let root = import_node(&doc.root)?;
 
-    let ctx = ParseContext { definitions };
+    let ctx = ParseContext::with_definitions(definitions);
     Ok((root, ctx))
 }
 
