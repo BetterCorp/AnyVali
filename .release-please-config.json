@@ -67,7 +67,8 @@
       "component": "cli",
       "release-type": "go",
       "package-name": "github.com/BetterCorp/AnyVali/cli",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "draft": true
     }
   }
 }
