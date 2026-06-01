@@ -70,7 +70,8 @@ public class RefSchema extends Schema<Object> {
 
         if (r != null) {
             String refName = normalizedRef();
-            if (!ctx.enterRef(refName)) {
+            String refKey = refName + "@" + System.identityHashCode(input);
+            if (!ctx.enterRef(refKey)) {
                 ctx.addIssue(IssueCodes.INVALID_TYPE,
                         "Recursive reference detected: " + ref, ref, null);
                 return null;
@@ -78,7 +79,7 @@ public class RefSchema extends Schema<Object> {
             try {
                 return r.runPipeline(input, ctx);
             } finally {
-                ctx.exitRef(refName);
+                ctx.exitRef(refKey);
             }
         }
         ctx.addIssue(IssueCodes.INVALID_TYPE,

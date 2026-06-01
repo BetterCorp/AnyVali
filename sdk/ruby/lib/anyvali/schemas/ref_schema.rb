@@ -25,7 +25,25 @@ module AnyVali
         )]
         return ParseResult.new(value: nil, issues: issues)
       end
-      resolved.safe_parse(input, path: path, context: context)
+      context.instance_variable_set(:@active_refs, {}) unless context.instance_variable_defined?(:@active_refs)
+      active_refs = context.instance_variable_get(:@active_refs)
+      key = "#{@ref}:#{input.object_id}"
+      if active_refs[key]
+        return ParseResult.new(value: nil, issues: [
+          ValidationIssue.new(
+            code: IssueCodes::INVALID_TYPE,
+            path: path,
+            expected: @ref,
+            received: "recursive ref"
+          )
+        ])
+      end
+      active_refs[key] = true
+      begin
+        resolved.safe_parse(input, path: path, context: context)
+      ensure
+        active_refs.delete(key)
+      end
     end
 
     protected

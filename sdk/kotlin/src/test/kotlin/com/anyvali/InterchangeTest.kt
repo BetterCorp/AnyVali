@@ -950,7 +950,7 @@ class InterchangeTest {
         // Default unknown key mode should be strip
         val result = schema.safeParse(mapOf("name" to "Alice", "extra" to "val"))
         assertIs<ParseResult.Success<*>>(result)
-        assertEquals(mapOf("name" to "Alice"), result.data)
+        assertEquals(mapOf("name" to "Alice"), result.value)
     }
 
     @Test

@@ -48,13 +48,7 @@ final class Coercion
     private static function stringToInt(mixed $value, array $path): array
     {
         if (!is_string($value)) {
-            return [$value, new ValidationIssue(
-                code: IssueCodes::COERCION_FAILED,
-                message: 'Expected string input for string->int coercion',
-                path: $path,
-                expected: 'int',
-                received: self::describeValue($value),
-            )];
+            return [$value, null];
         }
 
         $trimmed = trim($value);
@@ -78,13 +72,7 @@ final class Coercion
     private static function stringToNumber(mixed $value, array $path): array
     {
         if (!is_string($value)) {
-            return [$value, new ValidationIssue(
-                code: IssueCodes::COERCION_FAILED,
-                message: 'Expected string input for string->number coercion',
-                path: $path,
-                expected: 'number',
-                received: self::describeValue($value),
-            )];
+            return [$value, null];
         }
 
         $trimmed = trim($value);
@@ -108,13 +96,7 @@ final class Coercion
     private static function stringToBool(mixed $value, array $path): array
     {
         if (!is_string($value)) {
-            return [$value, new ValidationIssue(
-                code: IssueCodes::COERCION_FAILED,
-                message: 'Expected string input for string->bool coercion',
-                path: $path,
-                expected: 'bool',
-                received: self::describeValue($value),
-            )];
+            return [$value, null];
         }
 
         $lower = strtolower(trim($value));

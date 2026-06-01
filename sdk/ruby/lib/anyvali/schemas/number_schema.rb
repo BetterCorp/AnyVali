@@ -70,6 +70,16 @@ module AnyVali
         return
       end
 
+      if value.is_a?(Float) && (value.nan? || value.infinite?)
+        issues << ValidationIssue.new(
+          code: IssueCodes::INVALID_NUMBER,
+          path: path,
+          expected: @kind,
+          received: value.to_s
+        )
+        return
+      end
+
       # Must be a whole number
       if value.is_a?(Float) && value != value.floor
         issues << ValidationIssue.new(
@@ -116,6 +126,16 @@ module AnyVali
           path: path,
           expected: @kind,
           received: Schema.type_name(value)
+        )
+        return
+      end
+
+      if value.is_a?(Float) && (value.nan? || value.infinite?)
+        issues << ValidationIssue.new(
+          code: IssueCodes::INVALID_NUMBER,
+          path: path,
+          expected: @kind,
+          received: value.to_s
         )
         return
       end

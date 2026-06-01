@@ -14,7 +14,7 @@ namespace coercion {
 inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
                                             const nlohmann::json& value) {
     if (coercion_name == "string->int") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         // Trim whitespace
         size_t start = s.find_first_not_of(" \t\n\r");
@@ -32,7 +32,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
     }
 
     if (coercion_name == "string->number") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         size_t start = s.find_first_not_of(" \t\n\r");
         size_t end = s.find_last_not_of(" \t\n\r");
@@ -49,7 +49,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
     }
 
     if (coercion_name == "string->bool") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         // Trim
         size_t start = s.find_first_not_of(" \t\n\r");
@@ -66,7 +66,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
     }
 
     if (coercion_name == "trim") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         size_t start = s.find_first_not_of(" \t\n\r");
         size_t end = s.find_last_not_of(" \t\n\r");
@@ -75,7 +75,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
     }
 
     if (coercion_name == "lower") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         std::string lower;
         lower.reserve(s.size());
@@ -84,7 +84,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
     }
 
     if (coercion_name == "upper") {
-        if (!value.is_string()) return std::nullopt;
+        if (!value.is_string()) return value;
         std::string s = value.get<std::string>();
         std::string upper;
         upper.reserve(s.size());

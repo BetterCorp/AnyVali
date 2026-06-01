@@ -55,7 +55,7 @@ class SecurityTest {
     fun `CVE-2016-4055 ReDoS - safe pattern still validates correctly`() {
         val s = string().pattern("^[a-z]+$")
         val result = s.safeParse("abcdef")
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     // ========================================================================
@@ -90,7 +90,7 @@ class SecurityTest {
             mapOf("value" to "root", "child" to null),
             definitions
         )
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     @Test
@@ -124,7 +124,7 @@ class SecurityTest {
             )
         )
         val result = schema.safeParse(nested, definitions)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     @Test
@@ -226,7 +226,7 @@ class SecurityTest {
     fun `CWE-190 int8 overflow - max boundary 127 accepted`() {
         val i = int8()
         val result = i.safeParse(127)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(127L, result.getOrThrow())
     }
 
@@ -242,7 +242,7 @@ class SecurityTest {
     fun `CWE-190 int8 underflow - min boundary -128 accepted`() {
         val i = int8()
         val result = i.safeParse(-128)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(-128L, result.getOrThrow())
     }
 
@@ -258,7 +258,7 @@ class SecurityTest {
     fun `CWE-190 int16 overflow - max boundary 32767 accepted`() {
         val i = int16()
         val result = i.safeParse(32767)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(32767L, result.getOrThrow())
     }
 
@@ -274,7 +274,7 @@ class SecurityTest {
     fun `CWE-190 int16 underflow - min boundary -32768 accepted`() {
         val i = int16()
         val result = i.safeParse(-32768)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(-32768L, result.getOrThrow())
     }
 
@@ -290,7 +290,7 @@ class SecurityTest {
     fun `CWE-190 int32 overflow - max boundary 2147483647 accepted`() {
         val i = int32()
         val result = i.safeParse(2147483647)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(2147483647L, result.getOrThrow())
     }
 
@@ -306,7 +306,7 @@ class SecurityTest {
     fun `CWE-190 int32 underflow - min boundary -2147483648 accepted`() {
         val i = int32()
         val result = i.safeParse(-2147483648L)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(-2147483648L, result.getOrThrow())
     }
 
@@ -322,7 +322,7 @@ class SecurityTest {
     fun `CWE-190 int64 overflow - Long MAX_VALUE accepted`() {
         val i = int64()
         val result = i.safeParse(Long.MAX_VALUE)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(Long.MAX_VALUE, result.getOrThrow())
     }
 
@@ -330,15 +330,15 @@ class SecurityTest {
     fun `CWE-190 int64 underflow - Long MIN_VALUE accepted`() {
         val i = int64()
         val result = i.safeParse(Long.MIN_VALUE)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertEquals(Long.MIN_VALUE, result.getOrThrow())
     }
 
     @Test
     fun `CWE-190 uint8 boundaries - 0 and 255 accepted`() {
         val i = uint8()
-        assertIs<ParseResult.Success>(i.safeParse(0))
-        assertIs<ParseResult.Success>(i.safeParse(255))
+        assertIs<ParseResult.Success<*>>(i.safeParse(0))
+        assertIs<ParseResult.Success<*>>(i.safeParse(255))
     }
 
     @Test
@@ -360,8 +360,8 @@ class SecurityTest {
     @Test
     fun `CWE-190 uint16 boundaries - 0 and 65535 accepted`() {
         val i = uint16()
-        assertIs<ParseResult.Success>(i.safeParse(0))
-        assertIs<ParseResult.Success>(i.safeParse(65535))
+        assertIs<ParseResult.Success<*>>(i.safeParse(0))
+        assertIs<ParseResult.Success<*>>(i.safeParse(65535))
     }
 
     @Test
@@ -375,8 +375,8 @@ class SecurityTest {
     @Test
     fun `CWE-190 uint32 boundaries - 0 and 4294967295 accepted`() {
         val i = uint32()
-        assertIs<ParseResult.Success>(i.safeParse(0))
-        assertIs<ParseResult.Success>(i.safeParse(4294967295L))
+        assertIs<ParseResult.Success<*>>(i.safeParse(0))
+        assertIs<ParseResult.Success<*>>(i.safeParse(4294967295L))
     }
 
     @Test
@@ -579,7 +579,7 @@ class SecurityTest {
     fun `CWE-20 email accepts valid complex email`() {
         val s = string().format("email")
         val result = s.safeParse("user.name+tag@sub.domain.com")
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     @Test
@@ -614,7 +614,7 @@ class SecurityTest {
     fun `CWE-20 url accepts valid https url`() {
         val s = string().format("url")
         val result = s.safeParse("https://example.com/path?q=1&r=2#frag")
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     @Test
@@ -662,8 +662,8 @@ class SecurityTest {
     @Test
     fun `CWE-20 ipv4 accepts boundary values`() {
         val s = string().format("ipv4")
-        assertIs<ParseResult.Success>(s.safeParse("0.0.0.0"))
-        assertIs<ParseResult.Success>(s.safeParse("255.255.255.255"))
+        assertIs<ParseResult.Success<*>>(s.safeParse("0.0.0.0"))
+        assertIs<ParseResult.Success<*>>(s.safeParse("255.255.255.255"))
     }
 
     // ========================================================================
@@ -673,7 +673,7 @@ class SecurityTest {
     @Test
     fun `unicode length astral code point counts as one character`() {
         val emoji = String(Character.toChars(0x1F600))
-        assertIs<ParseResult.Success>(string().maxLength(1).safeParse(emoji))
+        assertIs<ParseResult.Success<*>>(string().maxLength(1).safeParse(emoji))
         assertIs<ParseResult.Failure>(string().minLength(2).safeParse(emoji))
     }
 
@@ -690,7 +690,7 @@ class SecurityTest {
         """.trimIndent()
         val (schema, definitions) = Importer.importFromJson(jsonStr)
         val result = schema.safeParse(String(Character.toChars(0x1F600)), definitions)
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
     }
 
     // ========================================================================
@@ -704,7 +704,7 @@ class SecurityTest {
         val start = System.nanoTime()
         val result = s.safeParse(largeStr)
         val elapsed = System.nanoTime() - start
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertTrue(elapsed < 5_000_000_000L, "Large string took ${elapsed / 1_000_000}ms, expected < 5000ms")
     }
 
@@ -724,7 +724,7 @@ class SecurityTest {
         val start = System.nanoTime()
         val result = a.safeParse(largeArray)
         val elapsed = System.nanoTime() - start
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertTrue(elapsed < 5_000_000_000L, "Large array took ${elapsed / 1_000_000}ms, expected < 5000ms")
     }
 
@@ -748,7 +748,7 @@ class SecurityTest {
         val start = System.nanoTime()
         val result = s.safeParse(nested)
         val elapsed = System.nanoTime() - start
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertTrue(elapsed < 5_000_000_000L, "Deeply nested object took ${elapsed / 1_000_000}ms, expected < 5000ms")
     }
 
@@ -764,7 +764,7 @@ class SecurityTest {
         val start = System.nanoTime()
         val result = o.safeParse(input)
         val elapsed = System.nanoTime() - start
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertTrue(elapsed < 5_000_000_000L, "Large object took ${elapsed / 1_000_000}ms, expected < 5000ms")
     }
 
@@ -775,7 +775,7 @@ class SecurityTest {
         val start = System.nanoTime()
         val result = s.safeParse(largeStr)
         val elapsed = System.nanoTime() - start
-        assertIs<ParseResult.Success>(result)
+        assertIs<ParseResult.Success<*>>(result)
         assertTrue(elapsed < 5_000_000_000L, "Pattern on large string took ${elapsed / 1_000_000}ms, expected < 5000ms")
     }
 

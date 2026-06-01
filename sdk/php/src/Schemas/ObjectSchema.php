@@ -152,10 +152,11 @@ final class ObjectSchema extends Schema
 
         // Handle unknown keys
         $knownKeys = array_keys($this->properties);
+        $unknownCount = count(array_diff(array_keys($value), $knownKeys));
         foreach ($value as $key => $v) {
             if (!in_array($key, $knownKeys, true)) {
                 $unknownMode = $this->effectiveUnknownKeys();
-                if (!$this->unknownKeysExplicit && self::isDangerousObjectKey((string)$key)) {
+                if (!$this->unknownKeysExplicit && ($unknownCount > 1 || self::isDangerousObjectKey((string)$key))) {
                     $unknownMode = UnknownKeyMode::Reject;
                 }
                 switch ($unknownMode) {

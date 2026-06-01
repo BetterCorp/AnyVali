@@ -93,14 +93,23 @@ public:
         }
 
         // Check unknown keys
+        size_t unknown_count = 0;
         for (auto it = input.begin(); it != input.end(); ++it) {
             if (properties_.find(it.key()) == properties_.end()) {
-                if (effective_unknown_key_mode() == UnknownKeyMode::Reject) {
+                unknown_count++;
+            }
+        }
+        for (auto it = input.begin(); it != input.end(); ++it) {
+            if (properties_.find(it.key()) == properties_.end()) {
+                auto mode = (!unknown_key_mode_explicit_ && unknown_count > 1)
+                    ? UnknownKeyMode::Reject
+                    : effective_unknown_key_mode();
+                if (mode == UnknownKeyMode::Reject) {
                     ctx.push_path(it.key());
                     ctx.add_issue(issue_codes::UNKNOWN_KEY, "undefined", it.key());
                     ctx.pop_path();
                     has_errors = true;
-                } else if (effective_unknown_key_mode() == UnknownKeyMode::Allow) {
+                } else if (mode == UnknownKeyMode::Allow) {
                     result[it.key()] = it.value();
                 }
                 // Strip mode: just don't add it

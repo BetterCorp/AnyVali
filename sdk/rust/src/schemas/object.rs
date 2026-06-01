@@ -204,9 +204,15 @@ impl Schema for ObjectSchema {
         }
 
         // Check unknown keys
+        let unknown_count = obj.keys().filter(|key| !self.properties.contains_key(*key)).count();
         for key in obj.keys() {
             if !self.properties.contains_key(key) {
-                match self.effective_unknown_keys() {
+                let mode = if !self.unknown_keys_explicit && unknown_count > 1 {
+                    UnknownKeyMode::Reject
+                } else {
+                    self.effective_unknown_keys()
+                };
+                match mode {
                     UnknownKeyMode::Reject => {
                         let mut key_path = path.to_vec();
                         key_path.push(PathSegment::Key(key.clone()));
