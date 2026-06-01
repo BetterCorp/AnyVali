@@ -2,6 +2,9 @@ use regex::Regex;
 
 /// Validate a string value against a named format.
 pub fn validate_format(format: &str, value: &str) -> bool {
+    if format.is_empty() || format.chars().any(|c| c.is_control() || c.is_whitespace()) {
+        return false;
+    }
     match format {
         "email" => validate_email(value),
         "url" => validate_url(value),

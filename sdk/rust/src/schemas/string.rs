@@ -178,26 +178,27 @@ impl Schema for StringSchema {
         };
 
         let mut issues = Vec::new();
+        let length = s.chars().count();
 
         if let Some(min) = self.min_length {
-            if s.len() < min {
+            if length < min {
                 issues.push(ValidationIssue {
                     code: TOO_SMALL.to_string(),
                     path: path.to_vec(),
                     expected: min.to_string(),
-                    received: s.len().to_string(),
+                    received: length.to_string(),
                     meta: None,
                 });
             }
         }
 
         if let Some(max) = self.max_length {
-            if s.len() > max {
+            if length > max {
                 issues.push(ValidationIssue {
                     code: TOO_LARGE.to_string(),
                     path: path.to_vec(),
                     expected: max.to_string(),
-                    received: s.len().to_string(),
+                    received: length.to_string(),
                     meta: None,
                 });
             }
