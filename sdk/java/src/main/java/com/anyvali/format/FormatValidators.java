@@ -63,11 +63,25 @@ public final class FormatValidators {
      * Unknown formats pass (lenient).
      */
     public static boolean validate(String format, String value) {
+        if (!isSafeFormatName(format)) {
+            return false;
+        }
         var validator = VALIDATORS.get(format);
         if (validator == null) {
             return true; // Unknown formats pass
         }
         return validator.test(value);
+    }
+
+    private static boolean isSafeFormatName(String format) {
+        if (format == null || format.isEmpty()) return false;
+        for (int i = 0; i < format.length(); i++) {
+            char c = format.charAt(i);
+            if (Character.isISOControl(c) || Character.isWhitespace(c)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean validateEmail(String value) {

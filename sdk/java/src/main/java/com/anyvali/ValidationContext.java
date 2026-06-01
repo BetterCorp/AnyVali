@@ -2,8 +2,10 @@ package com.anyvali;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Internal context for collecting validation issues during parsing.
@@ -12,16 +14,23 @@ public class ValidationContext {
     private final List<Object> path;
     private final List<ValidationIssue> issues;
     private final Map<String, Schema<?>> definitions;
+    private final Set<String> activeRefs;
 
     public ValidationContext() {
-        this(new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+        this(new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashSet<>());
     }
 
     public ValidationContext(List<Object> path, List<ValidationIssue> issues,
                              Map<String, Schema<?>> definitions) {
+        this(path, issues, definitions, new HashSet<>());
+    }
+
+    private ValidationContext(List<Object> path, List<ValidationIssue> issues,
+                             Map<String, Schema<?>> definitions, Set<String> activeRefs) {
         this.path = path;
         this.issues = issues;
         this.definitions = definitions;
+        this.activeRefs = activeRefs;
     }
 
     public void addIssue(String code, String message, Object expected, Object received) {
@@ -45,7 +54,7 @@ public class ValidationContext {
     public ValidationContext child(Object key) {
         var childPath = new ArrayList<>(this.path);
         childPath.add(key);
-        return new ValidationContext(childPath, this.issues, this.definitions);
+        return new ValidationContext(childPath, this.issues, this.definitions, this.activeRefs);
     }
 
     public List<Object> getPath() {
@@ -66,5 +75,13 @@ public class ValidationContext {
 
     public Map<String, Schema<?>> getDefinitions() {
         return definitions;
+    }
+
+    public boolean enterRef(String ref) {
+        return activeRefs.add(ref);
+    }
+
+    public void exitRef(String ref) {
+        activeRefs.remove(ref);
     }
 }

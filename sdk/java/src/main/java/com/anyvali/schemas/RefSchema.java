@@ -60,16 +60,26 @@ public class RefSchema extends Schema<Object> {
     @Override
     public Object runPipeline(Object input, ValidationContext ctx) {
         Schema<?> r = getResolved();
+        if (r == null) {
+            // Try context definitions
+            String refName = normalizedRef();
+            if (ctx.getDefinitions().containsKey(refName)) {
+                r = ctx.getDefinitions().get(refName);
+            }
+        }
+
         if (r != null) {
-            return r.runPipeline(input, ctx);
-        }
-        // Try context definitions
-        String refName = ref;
-        if (refName.startsWith("#/definitions/")) {
-            refName = refName.substring("#/definitions/".length());
-        }
-        if (ctx.getDefinitions().containsKey(refName)) {
-            return ctx.getDefinitions().get(refName).runPipeline(input, ctx);
+            String refName = normalizedRef();
+            if (!ctx.enterRef(refName)) {
+                ctx.addIssue(IssueCodes.INVALID_TYPE,
+                        "Recursive reference detected: " + ref, ref, null);
+                return null;
+            }
+            try {
+                return r.runPipeline(input, ctx);
+            } finally {
+                ctx.exitRef(refName);
+            }
         }
         ctx.addIssue(IssueCodes.INVALID_TYPE,
                 "Unresolved reference: " + ref, ref, null);
@@ -101,6 +111,13 @@ public class RefSchema extends Schema<Object> {
     }
 
     public String getRef() {
+        return ref;
+    }
+
+    private String normalizedRef() {
+        if (ref.startsWith("#/definitions/")) {
+            return ref.substring("#/definitions/".length());
+        }
         return ref;
     }
 }

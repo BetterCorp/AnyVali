@@ -88,16 +88,18 @@ public class StringSchema extends Schema<String> {
             return null;
         }
 
-        if (minLength != null && s.length() < minLength) {
+        int length = s.codePointCount(0, s.length());
+
+        if (minLength != null && length < minLength) {
             ctx.addIssue(IssueCodes.TOO_SMALL,
                     "String must have at least " + minLength + " character(s)",
-                    minLength, s.length());
+                    minLength, length);
         }
 
-        if (maxLength != null && s.length() > maxLength) {
+        if (maxLength != null && length > maxLength) {
             ctx.addIssue(IssueCodes.TOO_LARGE,
                     "String must have at most " + maxLength + " character(s)",
-                    maxLength, s.length());
+                    maxLength, length);
         }
 
         if (pattern != null) {
