@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.1...js-v0.3.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **release:** use npm trusted publishing ([204fdff](https://github.com/BetterCorp/AnyVali/commit/204fdff45b38bc1de06c374a488f6ba601c7d829))
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.3.1](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.0...js-v0.3.1) (2026-03-31)
 
 
