@@ -73,7 +73,7 @@ jobs:
           echo "Found tag: $tag"
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: binaries
           merge-multiple: true
