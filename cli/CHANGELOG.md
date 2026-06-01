@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5](https://github.com/BetterCorp/AnyVali/compare/cli-v0.0.4...cli-v0.0.5) (2026-06-01)
+
+
+### Bug Fixes
+
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.0.4](https://github.com/BetterCorp/AnyVali/compare/cli-v0.0.3...cli-v0.0.4) (2026-03-31)
 
 

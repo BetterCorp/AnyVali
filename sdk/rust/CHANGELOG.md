@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.2](https://github.com/BetterCorp/AnyVali/compare/rust-v0.2.1...rust-v0.2.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **ci:** align remaining SDK behavior ([399b6fd](https://github.com/BetterCorp/AnyVali/commit/399b6fdfb8e839da6a337f53bc27d99796310869))
+* **ci:** close remaining SDK failures ([ce261a9](https://github.com/BetterCorp/AnyVali/commit/ce261a95753ff5da66ab7bcaf0e5c53746cdb8e2))
+* **ci:** repair SDK build failures ([f42677e](https://github.com/BetterCorp/AnyVali/commit/f42677e4fc6810bf734099300a039a9281f99521))
+* **rust:** construct parse context via helper ([32c71c6](https://github.com/BetterCorp/AnyVali/commit/32c71c6ec124718896beb9cfbcc10a757f71cd9e))
+* **rust:** harden string validation ([1adf584](https://github.com/BetterCorp/AnyVali/commit/1adf584ea4455418106b31730e385dc39c69b8eb))
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/rust-v0.2.0...rust-v0.2.1) (2026-03-31)
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.1...java-v0.1.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **ci:** align remaining SDK behavior ([399b6fd](https://github.com/BetterCorp/AnyVali/commit/399b6fdfb8e839da6a337f53bc27d99796310869))
+* **java:** harden string and ref validation ([bee6279](https://github.com/BetterCorp/AnyVali/commit/bee62790979acd15e64439cba66306c61180b85a))
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.0...java-v0.1.1) (2026-03-31)
 
 

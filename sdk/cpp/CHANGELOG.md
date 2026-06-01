@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.2.1...cpp-v0.2.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **ci:** align remaining SDK behavior ([399b6fd](https://github.com/BetterCorp/AnyVali/commit/399b6fdfb8e839da6a337f53bc27d99796310869))
+* **ci:** repair SDK build failures ([f42677e](https://github.com/BetterCorp/AnyVali/commit/f42677e4fc6810bf734099300a039a9281f99521))
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.2.1](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.2.0...cpp-v0.2.1) (2026-03-31)
 
 

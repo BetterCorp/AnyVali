@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/go-v0.1.1...go-v0.1.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **security:** harden SDK validation ([35df244](https://github.com/BetterCorp/AnyVali/commit/35df24482f2f25efa23246f9932733a89fa47174))
+
 ## [0.1.1](https://github.com/BetterCorp/AnyVali/compare/go-v0.1.0...go-v0.1.1) (2026-03-31)
 
 
