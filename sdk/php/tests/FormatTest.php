@@ -150,6 +150,13 @@ final class FormatTest extends TestCase
         $this->assertFalse($result->success);
     }
 
+    public function testDateRejectsImpossibleCalendarDate(): void
+    {
+        $s = AnyVali::string()->format('date');
+        $result = $s->safeParse('2024-04-31');
+        $this->assertFalse($result->success);
+    }
+
     public function testDateRejectsBadFormat(): void
     {
         $this->assertFalse(FormatValidators::isDate('2024/02/29'));
@@ -176,6 +183,13 @@ final class FormatTest extends TestCase
     {
         $s = AnyVali::string()->format('date-time');
         $result = $s->safeParse('2024-01-15T10:30:00');
+        $this->assertFalse($result->success);
+    }
+
+    public function testDateTimeRejectsImpossibleCalendarDate(): void
+    {
+        $s = AnyVali::string()->format('date-time');
+        $result = $s->safeParse('2024-04-31T10:30:00Z');
         $this->assertFalse($result->success);
     }
 

@@ -63,7 +63,7 @@ Validate JSON data against an inline schema document. The request body contains 
         "email": { "kind": "string", "format": "email" }
       },
       "required": ["name", "email"],
-      "unknownKeys": "reject"
+      "unknownKeys": "strip"
     },
     "definitions": {},
     "extensions": {}

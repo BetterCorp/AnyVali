@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-npm install @anyvali/js
+npm install anyvali
 ```
 
 AnyVali requires Node.js 22 or later.
@@ -40,19 +40,19 @@ import {
   // Errors
   ValidationError,
   ISSUE_CODES,
-} from "@anyvali/js";
+} from "anyvali";
 ```
 
 The forms layer is available from a separate entry point:
 
 ```typescript
-import { initForm, createFormBindings } from "@anyvali/js/forms";
+import { initForm, createFormBindings } from "anyvali/forms";
 ```
 
 ## Quick Start
 
 ```typescript
-import { object, string, int, enum_, type Infer } from "@anyvali/js";
+import { object, string, int, enum_, type Infer } from "anyvali";
 
 // 1. Define a schema
 const UserSchema = object({
@@ -90,7 +90,7 @@ AnyVali provides full static type inference via the `Infer<T>` utility type. Thi
 ### Basic Usage
 
 ```typescript
-import { string, int, bool, type Infer } from "@anyvali/js";
+import { string, int, bool, type Infer } from "anyvali";
 
 const NameSchema = string();
 type Name = Infer<typeof NameSchema>; // string
@@ -107,7 +107,7 @@ type Active = Infer<typeof ActiveSchema>; // boolean
 Object schemas infer a full object type. Required fields become required properties; optional fields become optional properties with `| undefined`.
 
 ```typescript
-import { object, string, int, optional, type Infer } from "@anyvali/js";
+import { object, string, int, optional, type Infer } from "anyvali";
 
 const UserSchema = object({
   name: string(),
@@ -126,7 +126,7 @@ const user = UserSchema.parse({ name: "Alice", email: "a@b.com" });
 ### Array and Tuple Inference
 
 ```typescript
-import { array, tuple, string, int, bool, type Infer } from "@anyvali/js";
+import { array, tuple, string, int, bool, type Infer } from "anyvali";
 
 const TagsSchema = array(string());
 type Tags = Infer<typeof TagsSchema>; // string[]
@@ -141,7 +141,7 @@ type Coord = Infer<typeof CoordSchema>; // [number, number, string]
 import {
   union, intersection, object, string, int, literal,
   type Infer,
-} from "@anyvali/js";
+} from "anyvali";
 
 // Union infers to a union type
 const IdSchema = union([string(), int()]);
@@ -157,7 +157,7 @@ type Person = Infer<typeof Person>; // { name: string } & { age: number }
 ### Literal and Enum Inference
 
 ```typescript
-import { literal, enum_, type Infer } from "@anyvali/js";
+import { literal, enum_, type Infer } from "anyvali";
 
 const StatusSchema = literal("active");
 type Status = Infer<typeof StatusSchema>; // "active"
@@ -171,7 +171,7 @@ Pass `as const` to `enum_()` to infer narrow literal union types instead of `str
 ### Nullable and Optional Inference
 
 ```typescript
-import { nullable, optional, string, type Infer } from "@anyvali/js";
+import { nullable, optional, string, type Infer } from "anyvali";
 
 const NullableName = nullable(string());
 type NullableName = Infer<typeof NullableName>; // string | null
@@ -185,7 +185,7 @@ type OptionalName = Infer<typeof OptionalName>; // string | undefined
 `InferInput<T>` extracts the input type (what goes into `parse()`), which may differ from the output type when coercion or defaults are in play.
 
 ```typescript
-import { string, type Infer, type InferInput } from "@anyvali/js";
+import { string, type Infer, type InferInput } from "anyvali";
 
 const Schema = string().default("anonymous");
 type Output = Infer<typeof Schema>;      // string
@@ -195,7 +195,7 @@ type Input = InferInput<typeof Schema>;   // string (the input is still expected
 ### Record Inference
 
 ```typescript
-import { record, int, type Infer } from "@anyvali/js";
+import { record, int, type Infer } from "anyvali";
 
 const ScoresSchema = record(int());
 type Scores = Infer<typeof ScoresSchema>; // Record<string, number>
@@ -386,7 +386,7 @@ mixed.parse(["hello", 42, true]); // => ["hello", 42, true]
 
 #### object(shape, options?)
 
-Creates a schema for objects with named properties. By default, all properties are required and unknown keys are rejected.
+Creates a schema for objects with named properties. By default, all properties are required and unknown keys are stripped.
 
 ```typescript
 const user = object({
@@ -396,7 +396,7 @@ const user = object({
 
 user.parse({ name: "Alice", age: 30 });          // => { name: "Alice", age: 30 }
 user.parse({ name: "Alice" });                    // throws: Required property "age" is missing
-user.parse({ name: "Alice", age: 30, extra: 1 }); // throws: Unknown key "extra"
+user.parse({ name: "Alice", age: 30, extra: 1 }); // => { name: "Alice", age: 30 }
 ```
 
 Mark fields as optional using the `optional()` wrapper:
@@ -572,13 +572,13 @@ The `unknownKeys` option controls how keys not declared in the shape are handled
 
 | Mode | Behavior |
 |---|---|
-| `"reject"` (default) | Produces an `unknown_key` issue for each extra key |
-| `"strip"` | Silently removes extra keys from the output |
+| `"strip"` (default) | Silently removes extra keys from the output |
+| `"reject"` | Produces an `unknown_key` issue for each extra key |
 | `"allow"` | Passes extra keys through to the output |
 
 ```typescript
-const strict = object({ name: string() }); // unknownKeys defaults to "reject"
-const lenient = object({ name: string() }, { unknownKeys: "strip" });
+const stripped = object({ name: string() }); // unknownKeys defaults to "strip"
+const strict = object({ name: string() }, { unknownKeys: "reject" });
 const passthrough = object({ name: string() }, { unknownKeys: "allow" });
 ```
 
@@ -697,7 +697,7 @@ AnyVali schemas can be exported to a portable JSON document and imported back in
 Exports a schema to an `AnyValiDocument` object.
 
 ```typescript
-import { object, string, int, exportSchema } from "@anyvali/js";
+import { object, string, int, exportSchema } from "anyvali";
 
 const schema = object({
   name: string().minLength(1),
@@ -737,7 +737,7 @@ The document structure:
 Imports an `AnyValiDocument` into a live schema that can be used for parsing.
 
 ```typescript
-import { importSchema } from "@anyvali/js";
+import { importSchema } from "anyvali";
 
 const doc = {
   anyvaliVersion: "1.0",
@@ -749,7 +749,7 @@ const doc = {
       age: { kind: "int", min: 0 },
     },
     required: ["name", "age"],
-    unknownKeys: "reject",
+    unknownKeys: "strip",
   },
   definitions: {},
   extensions: {},
@@ -773,7 +773,7 @@ const user = schema.parse({ name: "Alice", age: 30 });
 When `parse()` fails, it throws a `ValidationError` containing a list of issues:
 
 ```typescript
-import { string, ValidationError } from "@anyvali/js";
+import { string, ValidationError } from "anyvali";
 
 try {
   string().minLength(5).parse("hi");
@@ -849,7 +849,7 @@ const result = schema.safeParse({
 All issue codes are available as constants via `ISSUE_CODES`:
 
 ```typescript
-import { ISSUE_CODES } from "@anyvali/js";
+import { ISSUE_CODES } from "anyvali";
 ```
 
 | Code | When |
@@ -876,7 +876,7 @@ import { ISSUE_CODES } from "@anyvali/js";
 Use `unknownKeys: "strip"` when parsing objects that contain many extra keys you don't care about, like `process.env`:
 
 ```typescript
-import { object, string, int, optional, type Infer } from "@anyvali/js";
+import { object, string, int, optional, type Infer } from "anyvali";
 
 const EnvSchema = object({
   NODE_ENV: optional(string()).default("development"),
@@ -891,12 +891,12 @@ const env = EnvSchema.parse(process.env);
 // Returns only { NODE_ENV, PORT, DATABASE_URL } -- all other env vars are stripped
 ```
 
-Without `"strip"`, parse would fail with `unknown_key` issues for every other variable in `process.env` (PATH, HOME, etc.) because the default mode is `"reject"`.
+`"strip"` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `"reject"` (default) | Parse fails with `unknown_key` issues |
-| `"strip"` | Extra keys silently removed from output |
+| `"strip"` (default) | Extra keys silently removed from output |
+| `"reject"` | Parse fails with `unknown_key` issues |
 | `"allow"` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -921,15 +921,15 @@ Eagerly evaluated defaults export portably -- the stored string travels in the J
 
 ## Forms
 
-The `@anyvali/js/forms` entry point provides a browser-side forms integration layer that connects AnyVali schemas to HTML forms, including native constraint validation and htmx support.
+The `anyvali/forms` entry point provides a browser-side forms integration layer that connects AnyVali schemas to HTML forms, including native constraint validation and htmx support.
 
 ### createFormBindings(options)
 
 Generates HTML attribute objects for form fields and error slots based on a schema.
 
 ```typescript
-import { createFormBindings } from "@anyvali/js/forms";
-import { object, string, int } from "@anyvali/js";
+import { createFormBindings } from "anyvali/forms";
+import { object, string, int } from "anyvali";
 
 const schema = object({
   name: string().minLength(1).maxLength(100),
@@ -955,7 +955,7 @@ const nameError = form.errorSlot("name");
 Attaches live validation to a `<form>` element. Returns a `FormController`.
 
 ```typescript
-import { initForm } from "@anyvali/js/forms";
+import { initForm } from "anyvali/forms";
 
 const controller = initForm("#my-form", {
   schema: UserSchema,

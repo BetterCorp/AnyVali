@@ -80,6 +80,16 @@ final class NumberSchema extends Schema
         }
 
         $numericValue = (float)$value;
+        if (is_nan($numericValue) || is_infinite($numericValue)) {
+            return ParseResult::fail([new ValidationIssue(
+                code: IssueCodes::INVALID_NUMBER,
+                message: "{$this->kind} must be finite",
+                path: $ctx->path,
+                expected: $this->kind,
+                received: self::formatNum($numericValue),
+            )]);
+        }
+
         $issues = [];
 
         if ($this->min !== null && $numericValue < $this->min) {
@@ -160,6 +170,7 @@ final class NumberSchema extends Schema
         if ($this->multipleOf !== null) $node['multipleOf'] = $this->multipleOf;
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
         if ($this->coerce !== null) $node['coerce'] = $this->coerce;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

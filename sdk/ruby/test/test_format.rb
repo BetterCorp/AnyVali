@@ -94,6 +94,12 @@ class TestFormat < Minitest::Test
     assert result.failure?
   end
 
+  def test_date_invalid_impossible_calendar_date
+    s = AnyVali.string.format("date")
+    result = s.safe_parse("2024-04-31")
+    assert result.failure?
+  end
+
   def test_datetime_valid_z
     s = AnyVali.string.format("date-time")
     assert_equal "2024-01-15T10:30:00Z", s.parse("2024-01-15T10:30:00Z")
@@ -107,6 +113,12 @@ class TestFormat < Minitest::Test
   def test_datetime_rejects_no_timezone
     s = AnyVali.string.format("date-time")
     result = s.safe_parse("2024-01-15T10:30:00")
+    assert result.failure?
+  end
+
+  def test_datetime_rejects_impossible_calendar_date
+    s = AnyVali.string.format("date-time")
+    result = s.safe_parse("2024-04-31T10:30:00Z")
     assert result.failure?
   end
 end

@@ -10,6 +10,24 @@ func newNullableSchema(inner Schema) *NullableSchema {
 	return &NullableSchema{inner: inner}
 }
 
+func (s *NullableSchema) Describe(description string, opts ...DescribeOpts) *NullableSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *NullableSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *NullableSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *NullableSchema) Default(value any) *NullableSchema {
 	s.setDefault(value)
 	return s
@@ -42,5 +60,6 @@ func (s *NullableSchema) ToNode() map[string]any {
 		"schema": s.inner.ToNode(),
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

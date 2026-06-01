@@ -66,8 +66,14 @@ class TestObject:
         assert not result.success
         assert any(i.code == v.REQUIRED for i in result.issues)
 
-    def test_unknown_keys_reject(self):
+    def test_unknown_keys_strip_by_default(self):
         schema = v.object_({"name": v.string()})
+        result = schema.safe_parse({"name": "Alice", "extra": 1})
+        assert result.success
+        assert result.data == {"name": "Alice"}
+
+    def test_unknown_keys_reject(self):
+        schema = v.object_({"name": v.string()}, unknown_keys="reject")
         result = schema.safe_parse({"name": "Alice", "extra": 1})
         assert not result.success
         assert any(i.code == v.UNKNOWN_KEY for i in result.issues)
@@ -95,6 +101,21 @@ class TestObject:
     def test_invalid_type(self):
         schema = v.object_({"name": v.string()})
         result = schema.safe_parse("not-an-object")
+        assert not result.success
+
+    def test_recursive_schema_cyclic_input_fails_without_recursion_error(self):
+        node_ref = v.ref("#/definitions/Node")
+        schema = v.object_(
+            {"value": v.string(), "next": node_ref},
+            required=["value"],
+            unknown_keys="reject",
+        )
+        node_ref.set_definitions({"Node": schema})
+
+        input_value = {"value": "root"}
+        input_value["next"] = input_value
+
+        result = schema.safe_parse(input_value)
         assert not result.success
 
 

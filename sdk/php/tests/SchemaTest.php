@@ -90,6 +90,14 @@ final class SchemaTest extends TestCase
         $this->assertSame(IssueCodes::INVALID_STRING, $result->issues[0]->code);
     }
 
+    public function testStringInvalidPatternFailsWithoutThrowing(): void
+    {
+        $s = AnyVali::string()->pattern('(');
+        $result = $s->safeParse('abc');
+        $this->assertFalse($result->success);
+        $this->assertSame(IssueCodes::INVALID_STRING, $result->issues[0]->code);
+    }
+
     public function testStringStartsWith(): void
     {
         $s = AnyVali::string()->startsWith('hello');
@@ -651,9 +659,16 @@ final class SchemaTest extends TestCase
 
     // ── Object Unknown Keys ──────────────────────────
 
-    public function testObjectRejectsUnknownKeysByDefault(): void
+    public function testObjectStripsUnknownKeysByDefault(): void
     {
         $s = AnyVali::object(['name' => AnyVali::string()], ['name']);
+        $result = $s->parse(['name' => 'Alice', 'extra' => 'value']);
+        $this->assertSame(['name' => 'Alice'], $result);
+    }
+
+    public function testObjectRejectsUnknownKeysWhenConfigured(): void
+    {
+        $s = AnyVali::object(['name' => AnyVali::string()], ['name'], UnknownKeyMode::Reject);
         $result = $s->safeParse(['name' => 'Alice', 'extra' => 'value']);
         $this->assertFalse($result->success);
         $this->assertSame(IssueCodes::UNKNOWN_KEY, $result->issues[0]->code);

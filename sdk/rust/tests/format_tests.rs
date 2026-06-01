@@ -115,6 +115,13 @@ fn date_format_rejects_invalid_leap_day() {
 }
 
 #[test]
+fn date_format_rejects_impossible_calendar_date() {
+    let s = string().format("date");
+    let result = s.safe_parse(&json!("2024-04-31"));
+    assert!(!result.success);
+}
+
+#[test]
 fn datetime_format_valid_z() {
     let s = string().format("date-time");
     assert!(s.parse(&json!("2024-01-15T10:30:00Z")).is_ok());
@@ -130,6 +137,14 @@ fn datetime_format_valid_offset() {
 fn datetime_format_rejects_no_timezone() {
     let s = string().format("date-time");
     let result = s.safe_parse(&json!("2024-01-15T10:30:00"));
+    assert!(!result.success);
+    assert_eq!(result.issues[0].expected, "date-time");
+}
+
+#[test]
+fn datetime_format_rejects_impossible_calendar_date() {
+    let s = string().format("date-time");
+    let result = s.safe_parse(&json!("2024-04-31T10:30:00Z"));
     assert!(!result.success);
     assert_eq!(result.issues[0].expected, "date-time");
 }

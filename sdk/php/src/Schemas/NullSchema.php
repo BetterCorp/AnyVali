@@ -36,6 +36,8 @@ final class NullSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'null'];
+        $node = ['kind' => 'null'];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

@@ -58,9 +58,11 @@ final class UnionSchema extends Schema
 
     public function exportNode(): array
     {
-        return [
+        $node = [
             'kind' => 'union',
             'variants' => array_map(fn(Schema $s) => $s->exportNode(), $this->variants),
         ];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

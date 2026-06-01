@@ -77,6 +77,8 @@ final class RefSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'ref', 'ref' => $this->ref];
+        $node = ['kind' => 'ref', 'ref' => $this->ref];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

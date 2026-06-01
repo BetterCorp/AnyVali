@@ -115,7 +115,7 @@ Node shape:
 
 | Kind | Semantics |
 |----------|-----------|
-| `object` | Accepts JSON objects. Each key listed in `properties` is validated against the corresponding schema. Keys listed in `required` MUST be present; absent required keys produce a `required` issue. Unknown keys are handled according to `unknownKeys` mode (default: `reject`). |
+| `object` | Accepts JSON objects. Each key listed in `properties` is validated against the corresponding schema. Keys listed in `required` MUST be present; absent required keys produce a `required` issue. Unknown keys are handled according to `unknownKeys` mode (default: `strip`). |
 
 Node shape:
 ```json
@@ -123,7 +123,7 @@ Node shape:
   "kind": "object",
   "properties": { "name": { "kind": "string" } },
   "required": ["name"],
-  "unknownKeys": "reject"
+  "unknownKeys": "strip"
 }
 ```
 
@@ -439,11 +439,11 @@ Object schemas support three modes for handling keys not listed in `properties`.
 
 | Mode | Semantics |
 |----------|-----------|
-| `reject` | Unknown keys cause an `unknown_key` issue for each. This is the DEFAULT. |
-| `strip` | Unknown keys are silently removed from the output. No issue is produced. |
+| `reject` | Unknown keys cause an `unknown_key` issue for each. |
+| `strip` | Unknown keys are silently removed from the output. No issue is produced. This is the DEFAULT. |
 | `allow` | Unknown keys are passed through to the output unchanged. No issue is produced. |
 
-The mode is specified via `unknownKeys` on the object node. If omitted, `reject`
+The mode is specified via `unknownKeys` on the object node. If omitted, `strip`
 is used.
 
 ---
@@ -591,6 +591,75 @@ SDKs MUST reject documents with an `anyvaliVersion` they do not support.
 ### 13.2 `schemaVersion`
 
 The `schemaVersion` field identifies the interchange format version within
-the specification family. For this specification: `"1"`.
+the specification family. For this specification: `"1.1"`.
 
 SDKs MUST reject documents with a `schemaVersion` they do not support.
+
+---
+
+## 14. Schema Metadata
+
+### 14.1 Overview
+
+Every schema node MAY carry a `metadata` object containing descriptive, non-validation
+information. Metadata has **zero effect** on parsing or validation — it is purely
+informational and always portable.
+
+Metadata enables schemas to serve as self-documenting contracts, carrying
+documentation, lifecycle signals, and tooling hints alongside validation rules.
+
+### 14.2 Reserved Keys (Describe Properties)
+
+The following metadata keys are reserved and type-checked by SDKs via the
+`describe()` method. SDKs MUST reject values of the wrong type at build time.
+
+| Key | Type | Semantics |
+|---------------------|---------|-----------|
+| `title` | string | Short human-readable label (e.g., "Email"). |
+| `description` | string | Full human-readable explanation of the field. |
+| `deprecated` | boolean | Indicates the field is deprecated and should not be used. |
+| `deprecatedMessage` | string | Migration guidance. MUST only be present when `deprecated` is `true`. |
+| `notStable` | boolean | Indicates the field's contract may change in future versions. |
+| `since` | string | Version identifier when this field was introduced (e.g., "2.1.0"). |
+| `sensitive` | boolean | Indicates the field contains PII or secrets. Consumers SHOULD mask in logs and redact in error messages. |
+| `readonly` | boolean | Indicates the field is computed/server-generated and should not be written by consumers. |
+| `writeonly` | boolean | Indicates the field is accepted on input but never returned (e.g., passwords). |
+| `examples` | array | Sample values. Each element SHOULD be valid against the schema. |
+
+Cross-field rules:
+- `deprecatedMessage` without `deprecated: true` MUST produce an error.
+- `readonly: true` and `writeonly: true` on the same node MUST produce an error.
+
+### 14.3 The `describe()` Method
+
+All SDKs MUST implement a `describe(description, options?)` method on all schema types.
+
+- The first parameter is the `description` string (REQUIRED).
+- The second parameter is an optional object/struct containing any combination
+  of the other reserved keys listed in Section 14.2.
+- `describe()` MUST validate the types of all provided reserved keys at build time.
+- `describe()` writes to the same internal metadata storage. Multiple calls merge
+  (later values for the same key win).
+- Returns a new schema instance (immutable).
+
+### 14.4 The `metadata()` Method
+
+All SDKs MUST implement a `metadata(meta, options?)` method on all schema types.
+
+- The first parameter is an arbitrary key-value map.
+- Keys that are reserved (Section 14.2) MUST be rejected with an error directing
+  the user to use `describe()` instead.
+- The `options` parameter supports a `replace` flag (default: `false`).
+  - When `false`: shallow-merge into existing metadata (top-level keys only; later wins).
+  - When `true`: replace all existing non-reserved metadata entirely.
+- Returns a new schema instance (immutable).
+
+### 14.5 Portability
+
+Metadata is always portable. It carries no validation semantics and MUST be
+included in both `portable` and `extended` export modes when present.
+
+### 14.6 Metadata in the Parse Pipeline
+
+Metadata MUST NOT affect the 5-step parse pipeline (Section 2) in any way.
+It is never read during parsing or validation.

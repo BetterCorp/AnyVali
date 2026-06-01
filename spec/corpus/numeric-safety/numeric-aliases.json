@@ -1,0 +1,217 @@
+{
+  "suite": "numeric-aliases",
+  "cases": [
+    {
+      "description": "SPEC §Numeric: number alias accepts same values as float64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "min": 0.0, "max": 100.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 50.5,
+      "valid": true,
+      "output": 50.5,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: float64 alias accepts same values as number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64", "min": 0.0, "max": 100.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 50.5,
+      "valid": true,
+      "output": 50.5,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: number with constraints rejects same as float64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "min": 0.0, "max": 100.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 150.0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: float64 with constraints rejects same as number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64", "min": 0.0, "max": 100.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 150.0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: int alias accepts same values as int64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 0, "max": 1000 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 500,
+      "valid": true,
+      "output": 500,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: int64 alias accepts same values as int",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int64", "min": 0, "max": 1000 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 500,
+      "valid": true,
+      "output": 500,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: int with constraints rejects same as int64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "min": 0, "max": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 200,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: int64 with constraints rejects same as int",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int64", "min": 0, "max": 100 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 200,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: number with multipleOf works like float64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "multipleOf": 0.5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 3.5,
+      "valid": true,
+      "output": 3.5,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: float64 with multipleOf works like number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64", "multipleOf": 0.5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 3.5,
+      "valid": true,
+      "output": 3.5,
+      "issues": []
+    },
+    {
+      "description": "SPEC §Numeric: int with exclusiveMin works like int64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int", "exclusiveMin": 5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: int64 with exclusiveMin works like int",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "int64", "exclusiveMin": 5 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 5,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_small", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: number with exclusiveMax works like float64",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "number", "exclusiveMax": 10.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 10.0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    },
+    {
+      "description": "SPEC §Numeric: float64 with exclusiveMax works like number",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1",
+        "root": { "kind": "float64", "exclusiveMax": 10.0 },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": 10.0,
+      "valid": false,
+      "output": null,
+      "issues": [
+        { "code": "too_large", "path": [] }
+      ]
+    }
+  ]
+}

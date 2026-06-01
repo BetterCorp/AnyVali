@@ -28,6 +28,6 @@ public sealed class NullSchema : Schema<object?>
 
     internal override Schema Clone() => new NullSchema
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

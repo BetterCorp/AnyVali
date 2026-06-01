@@ -40,6 +40,7 @@ final class NullableSchema extends Schema
     {
         $node = ['kind' => 'nullable', 'schema' => $this->innerSchema->exportNode()];
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

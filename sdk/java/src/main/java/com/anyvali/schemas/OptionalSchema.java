@@ -25,6 +25,7 @@ public class OptionalSchema extends Schema<Object> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.inner = other.inner;
     }
 

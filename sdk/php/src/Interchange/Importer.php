@@ -168,7 +168,9 @@ final class Importer
      */
     private static function importArray2(array $node, array $definitions): ArraySchema
     {
-        $items = self::importNode($node['items'] ?? ['kind' => 'any'], $definitions);
+        // Accept "items", "item", and "array.items" keys for compatibility
+        $itemsNode = $node['items'] ?? $node['item'] ?? $node['array.items'] ?? ['kind' => 'any'];
+        $items = self::importNode($itemsNode, $definitions);
         $schema = new ArraySchema($items);
         if (isset($node['minItems'])) $schema = $schema->minItems((int)$node['minItems']);
         if (isset($node['maxItems'])) $schema = $schema->maxItems((int)$node['maxItems']);
@@ -200,10 +202,10 @@ final class Importer
         }
 
         $required = $node['required'] ?? [];
-        $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'reject')
-            ?? UnknownKeyMode::Reject;
+        $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'strip')
+            ?? UnknownKeyMode::Strip;
 
-        return new ObjectSchema($properties, $required, $unknownKeys);
+        return new ObjectSchema($properties, $required, $unknownKeys, true);
     }
 
     /**
@@ -222,9 +224,11 @@ final class Importer
      */
     private static function importUnion(array $node, array $definitions): UnionSchema
     {
+        // Accept "variants", "schemas", and "union.variants" keys for compatibility
+        $variantsData = $node['variants'] ?? $node['schemas'] ?? $node['union.variants'] ?? [];
         $variants = array_map(
             fn(array $v) => self::importNode($v, $definitions),
-            $node['variants'] ?? [],
+            $variantsData,
         );
         return new UnionSchema($variants);
     }

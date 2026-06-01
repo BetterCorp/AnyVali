@@ -13,7 +13,13 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-from ..issue_codes import COERCION_FAILED, DEFAULT_INVALID
+from ..issue_codes import COERCION_FAILED, DEFAULT_INVALID, TOO_DEEP
+
+# Maximum validation recursion depth. Bounds recursion through recursive
+# ``$ref`` schemas (and deeply nested data) so a crafted payload cannot
+# exhaust the call stack. Kept below CPython's native recursion limit so the
+# guard trips deterministically before a RecursionError.
+MAX_DEPTH = 200
 from ..types import (
     AnyValiDocument,
     ExportMode,
@@ -61,6 +67,7 @@ class ValidationContext:
     path: list[str | int] = field(default_factory=list)
     issues: list[ValidationIssue] = field(default_factory=list)
     definitions: dict[str, Any] = field(default_factory=dict)
+    depth: int = 0
 
     def add_issue(
         self,
@@ -87,11 +94,20 @@ class ValidationContext:
             path=[*self.path, key],
             issues=self.issues,
             definitions=self.definitions,
+            depth=self.depth,
         )
+        # Propagate circular reference tracker
+        if hasattr(self, '_seen'):
+            ctx._seen = self._seen  # type: ignore[attr-defined]
         return ctx
 
 
 _SENTINEL = object()
+
+_RESERVED_METADATA_KEYS = frozenset({
+    'title', 'description', 'deprecated', 'deprecatedMessage',
+    'notStable', 'since', 'sensitive', 'readonly', 'writeonly', 'examples',
+})
 
 
 class BaseSchema(ABC, Generic[T]):
@@ -100,11 +116,13 @@ class BaseSchema(ABC, Generic[T]):
     _coercion: CoercionConfig | None
     _default_value: Any
     _has_default: bool
+    _metadata: dict[str, Any] | None
 
     def __init__(self) -> None:
         self._coercion = None
         self._default_value = _SENTINEL
         self._has_default = False
+        self._metadata = None
 
     def _copy(self) -> BaseSchema[T]:
         return copy.deepcopy(self)
@@ -119,9 +137,28 @@ class BaseSchema(ABC, Generic[T]):
         return result.data  # type: ignore[return-value]
 
     def safe_parse(self, input: Any) -> ParseResult[T]:
-        """Parse input, returning a ParseResult."""
+        """Parse input, returning a ParseResult.
+
+        Never raises: the depth guard bounds recursion, and a RecursionError
+        backstop converts any residual stack exhaustion into a TOO_DEEP issue
+        so a crafted deeply nested payload cannot crash the caller (DoS).
+        """
         ctx = ValidationContext()
-        value = self._run_pipeline(input, ctx)
+        try:
+            value = self._run_pipeline(input, ctx)
+        except RecursionError:
+            return ParseResult(
+                success=False,
+                issues=[
+                    ValidationIssue(
+                        code=TOO_DEEP,
+                        message="Maximum validation depth exceeded",
+                        path=[],
+                        expected="bounded nesting",
+                        received="too deep",
+                    )
+                ],
+            )
         if ctx.issues:
             return ParseResult(success=False, issues=ctx.issues)
         return ParseResult(success=True, data=value)
@@ -129,6 +166,25 @@ class BaseSchema(ABC, Generic[T]):
     # ── 5-step pipeline ───────────────────────────────────────────
 
     def _run_pipeline(self, input: Any, ctx: ValidationContext) -> Any:
+        # Depth guard: bound recursion (recursive $ref + deep data) so a
+        # crafted payload cannot exhaust the call stack. Returns a clean issue
+        # instead of letting safe_parse raise RecursionError.
+        ctx.depth += 1
+        if ctx.depth > MAX_DEPTH:
+            ctx.add_issue(
+                TOO_DEEP,
+                f"Maximum validation depth of {MAX_DEPTH} exceeded",
+                expected=f"<= {MAX_DEPTH} levels",
+                received="too deep",
+            )
+            ctx.depth -= 1
+            return None
+        try:
+            return self._run_pipeline_inner(input, ctx)
+        finally:
+            ctx.depth -= 1
+
+    def _run_pipeline_inner(self, input: Any, ctx: ValidationContext) -> Any:
         # Step 1: presence check
         is_absent = input is _SENTINEL or input is None and not self._accepts_none()
 
@@ -190,6 +246,70 @@ class BaseSchema(ABC, Generic[T]):
         result = apply_coercion(value, self._coercion, ctx)
         return result
 
+    # ── Private helpers ────────────────────────────────────────────
+
+    def _validate_describe_opts(
+        self,
+        description: str,
+        *,
+        title: str | None = None,
+        deprecated: bool | None = None,
+        deprecated_message: str | None = None,
+        not_stable: bool | None = None,
+        since: str | None = None,
+        sensitive: bool | None = None,
+        readonly: bool | None = None,
+        writeonly: bool | None = None,
+        examples: list | None = None,
+    ) -> dict[str, Any]:
+        if not isinstance(description, str):
+            raise TypeError("describe(): description must be a string")
+
+        meta: dict[str, Any] = {"description": description}
+
+        if title is not None:
+            if not isinstance(title, str):
+                raise TypeError("describe(): title must be a string")
+            meta["title"] = title
+        if deprecated is not None:
+            if not isinstance(deprecated, bool):
+                raise TypeError("describe(): deprecated must be a bool")
+            meta["deprecated"] = deprecated
+        if deprecated_message is not None:
+            if not isinstance(deprecated_message, str):
+                raise TypeError("describe(): deprecatedMessage must be a string")
+            if not deprecated:
+                raise ValueError("describe(): deprecatedMessage requires deprecated=True")
+            meta["deprecatedMessage"] = deprecated_message
+        if not_stable is not None:
+            if not isinstance(not_stable, bool):
+                raise TypeError("describe(): notStable must be a bool")
+            meta["notStable"] = not_stable
+        if since is not None:
+            if not isinstance(since, str):
+                raise TypeError("describe(): since must be a string")
+            meta["since"] = since
+        if sensitive is not None:
+            if not isinstance(sensitive, bool):
+                raise TypeError("describe(): sensitive must be a bool")
+            meta["sensitive"] = sensitive
+        if readonly is not None:
+            if not isinstance(readonly, bool):
+                raise TypeError("describe(): readonly must be a bool")
+            meta["readonly"] = readonly
+        if writeonly is not None:
+            if not isinstance(writeonly, bool):
+                raise TypeError("describe(): writeonly must be a bool")
+            meta["writeonly"] = writeonly
+        if readonly and writeonly:
+            raise ValueError("describe(): readonly and writeonly cannot both be True")
+        if examples is not None:
+            if not isinstance(examples, list):
+                raise TypeError("describe(): examples must be a list")
+            meta["examples"] = examples
+
+        return meta
+
     # ── Abstract ──────────────────────────────────────────────────
 
     @abstractmethod
@@ -241,6 +361,61 @@ class BaseSchema(ABC, Generic[T]):
         )
         return new
 
+    def describe(
+        self,
+        description: str,
+        *,
+        title: str | None = None,
+        deprecated: bool | None = None,
+        deprecated_message: str | None = None,
+        not_stable: bool | None = None,
+        since: str | None = None,
+        sensitive: bool | None = None,
+        readonly: bool | None = None,
+        writeonly: bool | None = None,
+        examples: list | None = None,
+    ) -> BaseSchema[T]:
+        reserved_meta = self._validate_describe_opts(
+            description,
+            title=title,
+            deprecated=deprecated,
+            deprecated_message=deprecated_message,
+            not_stable=not_stable,
+            since=since,
+            sensitive=sensitive,
+            readonly=readonly,
+            writeonly=writeonly,
+            examples=examples,
+        )
+        new = self._copy()
+        existing = new._metadata or {}
+        new._metadata = {**existing, **reserved_meta}
+        return new
+
+    def metadata(
+        self,
+        meta: dict[str, Any],
+        *,
+        replace: bool = False,
+    ) -> BaseSchema[T]:
+        """Attach arbitrary metadata to this schema. Reserved keys must use describe()."""
+        for key in meta:
+            if key in _RESERVED_METADATA_KEYS:
+                raise ValueError(
+                    f'metadata(): "{key}" is a reserved key. Use describe() instead.'
+                )
+        new = self._copy()
+        if replace:
+            # Keep reserved keys from existing metadata, replace the rest
+            existing = new._metadata or {}
+            reserved = {k: v for k, v in existing.items() if k in _RESERVED_METADATA_KEYS}
+            new._metadata = {**reserved, **meta}
+        else:
+            # Shallow merge (default)
+            existing = new._metadata or {}
+            new._metadata = {**existing, **meta}
+        return new
+
     # ── Export ─────────────────────────────────────────────────────
 
     def export(self, mode: ExportMode = "portable") -> dict[str, Any]:
@@ -269,4 +444,6 @@ class BaseSchema(ABC, Generic[T]):
                 coerce_dict["upper"] = True
             if coerce_dict:
                 node["coerce"] = coerce_dict
+        if self._metadata:
+            node["metadata"] = dict(self._metadata)
         return node

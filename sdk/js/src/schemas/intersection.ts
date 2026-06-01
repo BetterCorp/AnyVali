@@ -32,6 +32,11 @@ export class IntersectionSchema<
       const innerCtx: ParseContext = {
         path: [...ctx.path],
         issues: [],
+        // Propagate recursion depth and circular-reference tracking so the
+        // depth guard is not reset (and bypassed) at each intersection member.
+        definitions: ctx.definitions,
+        seen: ctx.seen,
+        depth: ctx.depth,
       };
       const validated = schema._runPipeline(input, innerCtx);
 

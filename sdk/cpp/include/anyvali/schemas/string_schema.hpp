@@ -58,8 +58,14 @@ public:
             return nullptr;
         }
         if (pattern_.has_value()) {
-            std::regex re(pattern_.value());
-            if (!std::regex_match(s, re)) {
+            try {
+                std::regex re(pattern_.value());
+                if (!std::regex_match(s, re)) {
+                    ctx.add_issue(issue_codes::INVALID_STRING, pattern_.value(), s);
+                    return nullptr;
+                }
+            } catch (const std::regex_error&) {
+                // Invalid regex pattern - treat as validation failure
                 ctx.add_issue(issue_codes::INVALID_STRING, pattern_.value(), s);
                 return nullptr;
             }

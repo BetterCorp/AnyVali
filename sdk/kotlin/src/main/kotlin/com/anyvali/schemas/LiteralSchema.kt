@@ -8,6 +8,16 @@ data class LiteralSchema(
 ) : Schema<Any?>() {
     override val kind: String = "literal"
 
+    fun describe(description: String, opts: DescribeOptions? = null): LiteralSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): LiteralSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun validateValue(input: Any?, ctx: ValidationContext): List<ValidationIssue> {
         if (!valuesEqual(input, value)) {
             return listOf(
@@ -33,6 +43,7 @@ data class LiteralSchema(
             is Double -> put("value", JsonPrimitive(value))
             is Number -> put("value", JsonPrimitive(value.toDouble()))
         }
+        addMetadataToNode(this)
     }
 
     private fun valuesEqual(a: Any?, b: Any?): Boolean {

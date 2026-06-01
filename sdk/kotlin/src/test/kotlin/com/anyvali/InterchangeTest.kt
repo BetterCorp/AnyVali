@@ -22,7 +22,7 @@ class InterchangeTest {
         val s = string().minLength(1).maxLength(100)
         val doc = s.export()
         assertEquals("1.0", doc.anyvaliVersion)
-        assertEquals("1", doc.schemaVersion)
+        assertEquals("1.1", doc.schemaVersion)
         val root = doc.root
         assertEquals("string", root["kind"]?.jsonPrimitive?.content)
         assertEquals(1, root["minLength"]?.jsonPrimitive?.int)
@@ -57,6 +57,7 @@ class InterchangeTest {
         assertEquals("object", root["kind"]?.jsonPrimitive?.content)
         assertTrue(root["properties"] is JsonObject)
         assertTrue(root["required"] is JsonArray)
+        assertEquals("strip", root["unknownKeys"]?.jsonPrimitive?.content)
     }
 
     @Test
@@ -946,10 +947,10 @@ class InterchangeTest {
         """.trimIndent()
         val (schema, _) = Importer.importFromJson(jsonStr)
         assertIs<ObjectSchema>(schema)
-        // Default unknown key mode should be reject
+        // Default unknown key mode should be strip
         val result = schema.safeParse(mapOf("name" to "Alice", "extra" to "val"))
-        assertIs<ParseResult.Failure>(result)
-        assertEquals(IssueCodes.UNKNOWN_KEY, result.issues[0].code)
+        assertIs<ParseResult.Success<*>>(result)
+        assertEquals(mapOf("name" to "Alice"), result.data)
     }
 
     @Test
@@ -982,6 +983,61 @@ class InterchangeTest {
         assertEquals("z", s.endsWith)
         assertEquals("m", s.includes)
         assertEquals("email", s.format)
+    }
+
+    @Test
+    fun `import string with invalid pattern fails without throwing`() {
+        val jsonStr = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": { "kind": "string", "pattern": "(" },
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        val (schema, _) = Importer.importFromJson(jsonStr)
+        val result = schema.safeParse("abc")
+        assertIs<ParseResult.Failure>(result)
+        assertEquals(IssueCodes.INVALID_STRING, result.issues[0].code)
+    }
+
+    @Test
+    fun `import array with canonical items key`() {
+        val jsonStr = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": { "kind": "array", "array.items": { "kind": "int" } },
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        val (schema, _) = Importer.importFromJson(jsonStr)
+        assertEquals(listOf(1L, 2L, 3L), schema.parse(listOf(1L, 2L, 3L)))
+        val result = schema.safeParse(listOf("a"))
+        assertIs<ParseResult.Failure>(result)
+    }
+
+    @Test
+    fun `import union with canonical variants key`() {
+        val jsonStr = """
+        {
+            "anyvaliVersion": "1.0",
+            "schemaVersion": "1",
+            "root": {
+                "kind": "union",
+                "union.variants": [{ "kind": "string" }, { "kind": "int" }]
+            },
+            "definitions": {},
+            "extensions": {}
+        }
+        """.trimIndent()
+        val (schema, _) = Importer.importFromJson(jsonStr)
+        assertEquals("hello", schema.parse("hello"))
+        assertEquals(42L, schema.parse(42L))
+        val result = schema.safeParse(true)
+        assertIs<ParseResult.Failure>(result)
     }
 
     @Test

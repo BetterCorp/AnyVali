@@ -156,9 +156,14 @@ final class AnyVali
     public static function object(
         array $properties,
         array $required = [],
-        UnknownKeyMode $unknownKeys = UnknownKeyMode::Reject,
+        ?UnknownKeyMode $unknownKeys = null,
     ): ObjectSchema {
-        return new ObjectSchema($properties, $required, $unknownKeys);
+        return new ObjectSchema(
+            $properties,
+            $required,
+            $unknownKeys ?? UnknownKeyMode::Strip,
+            $unknownKeys !== null,
+        );
     }
 
     public static function record(Schema $valueSchema): RecordSchema

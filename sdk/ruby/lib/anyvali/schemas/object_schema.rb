@@ -4,23 +4,24 @@ module AnyVali
   class ObjectSchema < Schema
     attr_reader :properties, :required_keys, :unknown_keys
 
-    def initialize(properties:, required: [], unknown_keys: "reject", **kwargs)
+    def initialize(properties:, required: [], unknown_keys: "strip", unknown_keys_explicit: false, **kwargs)
       @properties = properties.freeze
       @required_keys = required.freeze
       @unknown_keys = unknown_keys
+      @unknown_keys_explicit = unknown_keys_explicit
       super(kind: "object", **kwargs)
     end
 
     def strict
-      dup_with(unknown_keys: "reject")
+      dup_with(unknown_keys: "reject", unknown_keys_explicit: true)
     end
 
     def strip_unknown
-      dup_with(unknown_keys: "strip")
+      dup_with(unknown_keys: "strip", unknown_keys_explicit: true)
     end
 
     def allow_unknown
-      dup_with(unknown_keys: "allow")
+      dup_with(unknown_keys: "allow", unknown_keys_explicit: true)
     end
 
     def to_node
@@ -31,7 +32,7 @@ module AnyVali
       end
       node["properties"] = props
       node["required"] = @required_keys
-      node["unknownKeys"] = @unknown_keys
+      node["unknownKeys"] = export_unknown_keys
       node
     end
 
@@ -103,7 +104,7 @@ module AnyVali
 
       # Handle unknown keys
       unknown = input.keys - @properties.keys
-      case @unknown_keys
+      case effective_unknown_keys
       when "reject"
         unknown.each do |key|
           issues << ValidationIssue.new(
@@ -137,6 +138,7 @@ module AnyVali
         properties: @properties,
         required: @required_keys,
         unknown_keys: @unknown_keys,
+        unknown_keys_explicit: @unknown_keys_explicit,
         kind: @kind,
         constraints: @constraints,
         coerce_config: @coerce_config,
@@ -145,6 +147,16 @@ module AnyVali
         custom_validators: @custom_validators
       }.merge(overrides)
       self.class.new(**attrs)
+    end
+
+    private
+
+    def effective_unknown_keys
+      @unknown_keys_explicit ? @unknown_keys : "strip"
+    end
+
+    def export_unknown_keys
+      @unknown_keys_explicit ? @unknown_keys : "strip"
     end
   end
 end

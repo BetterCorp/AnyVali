@@ -111,7 +111,11 @@ public static class Importer
                 }
                 case "array":
                 {
-                    var items = node.TryGetValue("items", out var it) ? ImportNode(it) : new AnySchema();
+                    // Accept both "items" and "array.items" keys for compatibility
+                    var itemsNode = node.TryGetValue("items", out var it) ? it
+                        : node.TryGetValue("item", out var it2) ? it2
+                        : node.TryGetValue("array.items", out var it3) ? it3 : null;
+                    var items = itemsNode is not null ? ImportNode(itemsNode) : new AnySchema();
                     var s = new ArraySchema(items);
                     if (node.TryGetValue("minItems", out var mi) && mi is not null)
                         s = s.MinItems(ToInt(mi));
@@ -150,7 +154,7 @@ public static class Importer
                             shape[propKey] = propSchema;
                         }
                     }
-                    var ukMode = UnknownKeyMode.Reject;
+                    var ukMode = UnknownKeyMode.Strip;
                     if (node.TryGetValue("unknownKeys", out var uk) && uk is string uks)
                     {
                         ukMode = uks switch
@@ -173,7 +177,11 @@ public static class Importer
                 }
                 case "union":
                 {
-                    var variants = node.TryGetValue("variants", out var v) && v is List<object?> list
+                    // Accept both "variants", "schemas", and "union.variants" keys for compatibility
+                    var variantsObj = node.TryGetValue("variants", out var v) ? v
+                        : node.TryGetValue("schemas", out var s) ? s
+                        : node.TryGetValue("union.variants", out var uv) ? uv : null;
+                    var variants = variantsObj is List<object?> list
                         ? list.Select(ImportNode).ToArray()
                         : Array.Empty<Schema>();
                     schema = new UnionSchema(variants);

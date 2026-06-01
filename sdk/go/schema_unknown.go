@@ -9,6 +9,24 @@ func newUnknownSchema() *UnknownSchema {
 	return &UnknownSchema{}
 }
 
+func (s *UnknownSchema) Describe(description string, opts ...DescribeOpts) *UnknownSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *UnknownSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *UnknownSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *UnknownSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -26,5 +44,7 @@ func (s *UnknownSchema) validate(value any) (any, []ValidationIssue) {
 }
 
 func (s *UnknownSchema) ToNode() map[string]any {
-	return map[string]any{"kind": "unknown"}
+	node := map[string]any{"kind": "unknown"}
+	s.addMetadataNode(node)
+	return node
 }

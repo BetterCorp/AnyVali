@@ -310,20 +310,20 @@ The `UnknownKeys` option controls how keys not declared in the shape are handled
 
 | Mode | Behavior |
 |---|---|
-| `Reject` (default) | Produces an `unknown_key` issue for each extra key |
-| `Strip` | Silently removes extra keys from the output |
+| `Strip` (default) | Silently removes extra keys from the output |
+| `Reject` | Produces an `unknown_key` issue for each extra key |
 | `Allow` | Passes extra keys through to the output |
 
 ```go
-// Reject unknown keys (default)
+// Strip unknown keys (default)
+stripped := v.Object(map[string]v.Schema{
+    "name": v.String(),
+})
+
+// Reject unknown keys explicitly
 strict := v.Object(map[string]v.Schema{
     "name": v.String(),
 }).UnknownKeys(v.Reject)
-
-// Strip unknown keys silently
-stripped := v.Object(map[string]v.Schema{
-    "name": v.String(),
-}).UnknownKeys(v.Strip)
 
 // Allow unknown keys to pass through
 loose := v.Object(map[string]v.Schema{
@@ -426,7 +426,7 @@ Output:
       "email": { "kind": "string", "format": "email" }
     },
     "required": ["name", "email"],
-    "unknownKeys": "reject"
+    "unknownKeys": "strip"
   },
   "definitions": {},
   "extensions": {}
@@ -544,7 +544,7 @@ envSchema := av.Object(map[string]av.Schema{
 }).UnknownKeys(av.UnknownKeysStrip)
 ```
 
-Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+`Strip` is the default, so this option is only needed when you want to be explicit.
 
 ### Eagerly Evaluated vs Lazy Defaults
 

@@ -5,9 +5,9 @@ namespace AnyVali;
 /// </summary>
 public enum UnknownKeyMode
 {
-    /// <summary>Reject unknown keys (default).</summary>
+    /// <summary>Reject unknown keys.</summary>
     Reject,
-    /// <summary>Remove unknown keys from output.</summary>
+    /// <summary>Remove unknown keys from output (default).</summary>
     Strip,
     /// <summary>Pass unknown keys through.</summary>
     Allow

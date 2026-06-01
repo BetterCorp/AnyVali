@@ -8,6 +8,7 @@ type ObjectSchema struct {
 	properties  map[string]Schema
 	required    map[string]bool
 	unknownKeys UnknownKeyMode
+	unknownKeysExplicit bool
 }
 
 func newObjectSchema(props map[string]Schema) *ObjectSchema {
@@ -18,7 +19,8 @@ func newObjectSchema(props map[string]Schema) *ObjectSchema {
 	return &ObjectSchema{
 		properties:  props,
 		required:    required,
-		unknownKeys: Reject,
+		unknownKeys: Strip,
+		unknownKeysExplicit: false,
 	}
 }
 
@@ -34,6 +36,39 @@ func (s *ObjectSchema) Required(fields ...string) *ObjectSchema {
 // UnknownKeys sets the unknown key handling mode.
 func (s *ObjectSchema) UnknownKeys(mode UnknownKeyMode) *ObjectSchema {
 	s.unknownKeys = mode
+	s.unknownKeysExplicit = true
+	return s
+}
+
+func (s *ObjectSchema) effectiveUnknownKeys() UnknownKeyMode {
+	if s.unknownKeysExplicit {
+		return s.unknownKeys
+	}
+	return Strip
+}
+
+func (s *ObjectSchema) exportUnknownKeys() UnknownKeyMode {
+	if s.unknownKeysExplicit {
+		return s.unknownKeys
+	}
+	return Strip
+}
+
+func (s *ObjectSchema) Describe(description string, opts ...DescribeOpts) *ObjectSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *ObjectSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *ObjectSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
 	return s
 }
 
@@ -102,7 +137,7 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 		if _, known := s.properties[key]; known {
 			continue
 		}
-		switch s.unknownKeys {
+		switch s.effectiveUnknownKeys() {
 		case Reject:
 			issues = append(issues, ValidationIssue{
 				Code:    IssueUnknownKey,
@@ -139,9 +174,10 @@ func (s *ObjectSchema) ToNode() map[string]any {
 		"kind":        "object",
 		"properties":  props,
 		"required":    requiredList,
-		"unknownKeys": string(s.unknownKeys),
+		"unknownKeys": string(s.exportUnknownKeys()),
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

@@ -24,7 +24,7 @@ final class InterchangeTest extends TestCase
         $doc = $s->export();
 
         $this->assertSame('1.0', $doc->anyvaliVersion);
-        $this->assertSame('1', $doc->schemaVersion);
+        $this->assertSame('1.1', $doc->schemaVersion);
         $this->assertSame('string', $doc->root['kind']);
         $this->assertSame(1, $doc->root['minLength']);
         $this->assertSame(100, $doc->root['maxLength']);
@@ -115,7 +115,7 @@ final class InterchangeTest extends TestCase
         $this->assertSame('object', $doc->root['kind']);
         $this->assertSame('string', $doc->root['properties']['name']['kind']);
         $this->assertSame(['name'], $doc->root['required']);
-        $this->assertSame('reject', $doc->root['unknownKeys']);
+        $this->assertSame('strip', $doc->root['unknownKeys']);
     }
 
     public function testExportRecordSchema(): void
@@ -202,6 +202,15 @@ final class InterchangeTest extends TestCase
         $this->assertFalse($result->success);
     }
 
+    public function testImportStringSchemaWithInvalidPatternFailsWithoutThrowing(): void
+    {
+        $doc = new AnyValiDocument(root: ['kind' => 'string', 'pattern' => '(']);
+        $s = AnyVali::import($doc);
+        $result = $s->safeParse('abc');
+        $this->assertFalse($result->success);
+        $this->assertSame(IssueCodes::INVALID_STRING, $result->issues[0]->code);
+    }
+
     public function testImportNumberSchema(): void
     {
         $s = AnyVali::import(['anyvaliVersion' => '1.0', 'schemaVersion' => '1',
@@ -250,6 +259,22 @@ final class InterchangeTest extends TestCase
         $s = AnyVali::import($doc);
         $this->assertSame('hello', $s->parse('hello'));
         $this->assertSame(42, $s->parse(42));
+    }
+
+    public function testImportUnionSchemaWithCanonicalVariantsKey(): void
+    {
+        $doc = new AnyValiDocument(root: [
+            'kind' => 'union',
+            'union.variants' => [
+                ['kind' => 'string'],
+                ['kind' => 'int'],
+            ],
+        ]);
+        $s = AnyVali::import($doc);
+        $this->assertSame('hello', $s->parse('hello'));
+        $this->assertSame(42, $s->parse(42));
+        $result = $s->safeParse(true);
+        $this->assertFalse($result->success);
     }
 
     public function testImportWithDefault(): void
@@ -398,6 +423,17 @@ final class InterchangeTest extends TestCase
         ]));
         $this->assertSame([1, 2], $s->parse([1, 2]));
         $result = $s->safeParse([]);
+        $this->assertFalse($result->success);
+    }
+
+    public function testImportArraySchemaWithCanonicalItemsKey(): void
+    {
+        $s = AnyVali::import(new AnyValiDocument(root: [
+            'kind' => 'array',
+            'array.items' => ['kind' => 'int'],
+        ]));
+        $this->assertSame([1, 2], $s->parse([1, 2]));
+        $result = $s->safeParse(['a']);
         $this->assertFalse($result->success);
     }
 

@@ -27,7 +27,7 @@ For full API reference, specification, and guides, see the documentation site:
 ## Install
 
 ```
-npm install @anyvali/js          # JavaScript / TypeScript
+npm install anyvali          # JavaScript / TypeScript
 pip install anyvali              # Python
 go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali                # Rust
@@ -43,7 +43,7 @@ All 10 SDKs provide static type inference. In TypeScript, use `Infer<T>` to extr
 ## Quick Example (TypeScript)
 
 ```typescript
-import { object, string, int64, importSchema } from "@anyvali/js";
+import { object, string, int64, importSchema } from "anyvali";
 
 const User = object({
   id: int64(),

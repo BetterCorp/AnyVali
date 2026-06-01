@@ -37,7 +37,7 @@ class AnyValiDocument:
     """Top-level AnyVali interchange document."""
 
     anyvali_version: str = "1.0"
-    schema_version: str = "1"
+    schema_version: str = "1.1"
     root: dict[str, Any] = field(default_factory=dict)
     definitions: dict[str, Any] = field(default_factory=dict)
     extensions: dict[str, Any] = field(default_factory=dict)
@@ -58,7 +58,7 @@ class AnyValiDocument:
     def from_dict(cls, d: dict[str, Any]) -> AnyValiDocument:
         return cls(
             anyvali_version=d.get("anyvaliVersion", "1.0"),
-            schema_version=d.get("schemaVersion", "1"),
+            schema_version=d.get("schemaVersion", "1.1"),
             root=d.get("root", {}),
             definitions=d.get("definitions", {}),
             extensions=d.get("extensions", {}),

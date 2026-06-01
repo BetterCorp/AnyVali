@@ -72,6 +72,15 @@ public class StringSchemaTests
     }
 
     [Fact]
+    public void InvalidPatternFailsWithoutThrowing()
+    {
+        var s = V.String().Pattern("(");
+        var result = s.SafeParse("abc");
+        Assert.False(result.Success);
+        Assert.Equal(IssueCodes.InvalidString, result.Issues[0].Code);
+    }
+
+    [Fact]
     public void StartsWithValidation()
     {
         var s = V.String().StartsWith("hello");
@@ -592,12 +601,24 @@ public class ObjectSchemaTests
     }
 
     [Fact]
-    public void UnknownKeysRejectedByDefault()
+    public void UnknownKeysStrippedByDefault()
     {
         var s = V.Object(new Dictionary<string, Schema>
         {
             ["name"] = V.String(),
         });
+        var input = new Dictionary<string, object?> { ["name"] = "Alice", ["extra"] = "val" };
+        var result = (Dictionary<string, object?>)s.Parse(input)!;
+        Assert.Single(result);
+        Assert.Equal("Alice", result["name"]);
+    }
+
+    [Fact]
+    public void UnknownKeysRejectedWhenConfigured()
+    {
+        var s = V.Object(
+            new Dictionary<string, Schema> { ["name"] = V.String() },
+            UnknownKeyMode.Reject);
         var input = new Dictionary<string, object?> { ["name"] = "Alice", ["extra"] = "val" };
         var result = s.SafeParse(input);
         Assert.False(result.Success);

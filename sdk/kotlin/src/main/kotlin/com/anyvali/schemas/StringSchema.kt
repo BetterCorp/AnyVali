@@ -28,6 +28,16 @@ data class StringSchema(
     fun default(v: String) = copy(defaultValue = v)
     fun coerce(vararg c: String) = copy(coerce = c.toList())
 
+    fun describe(description: String, opts: DescribeOptions? = null): StringSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): StringSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<String> {
         var value = input
 
@@ -89,7 +99,19 @@ data class StringSchema(
             }
         }
         pattern?.let {
-            if (!Regex(it).containsMatchIn(value)) {
+            try {
+                if (!Regex(it).containsMatchIn(value)) {
+                    issues.add(
+                        ValidationIssue(
+                            code = IssueCodes.INVALID_STRING,
+                            path = ctx.path,
+                            expected = it,
+                            received = value
+                        )
+                    )
+                }
+            } catch (_: Exception) {
+                // Invalid regex pattern - treat as validation failure
                 issues.add(
                     ValidationIssue(
                         code = IssueCodes.INVALID_STRING,
@@ -166,6 +188,7 @@ data class StringSchema(
             if (coerce.size == 1) put("coerce", JsonPrimitive(coerce[0]))
             else put("coerce", JsonArray(coerce.map { JsonPrimitive(it) }))
         }
+        addMetadataToNode(this)
     }
 
     companion object {

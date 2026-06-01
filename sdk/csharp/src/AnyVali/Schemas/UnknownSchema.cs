@@ -13,6 +13,6 @@ public sealed class UnknownSchema : Schema<object?>
 
     internal override Schema Clone() => new UnknownSchema
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

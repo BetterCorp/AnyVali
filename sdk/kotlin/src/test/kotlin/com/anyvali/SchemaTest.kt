@@ -125,6 +125,14 @@ class SchemaTest {
     }
 
     @Test
+    fun `invalid pattern fails without throwing`() {
+        val s = string().pattern("(")
+        val result = s.safeParse("abc")
+        assertIs<ParseResult.Failure>(result)
+        assertEquals(IssueCodes.INVALID_STRING, result.issues[0].code)
+    }
+
+    @Test
     fun `startsWith passes`() {
         val s = string().startsWith("hello")
         assertEquals("hello world", s.parse("hello world"))
@@ -922,10 +930,21 @@ class SchemaTest {
     // ---- Unknown keys ----
 
     @Test
-    fun `reject mode rejects unknown keys by default`() {
+    fun `default mode strips unknown keys`() {
         val o = obj(
             properties = mapOf("name" to string()),
             required = setOf("name")
+        )
+        val result = o.parse(mapOf("name" to "Alice", "extra" to "value")) as Map<*, *>
+        assertEquals(mapOf("name" to "Alice"), result)
+    }
+
+    @Test
+    fun `reject mode rejects unknown keys when configured`() {
+        val o = obj(
+            properties = mapOf("name" to string()),
+            required = setOf("name"),
+            unknownKeys = UnknownKeyMode.REJECT
         )
         val result = o.safeParse(mapOf("name" to "Alice", "extra" to "value"))
         assertIs<ParseResult.Failure>(result)
@@ -1243,7 +1262,7 @@ class SchemaTest {
         val s = string().minLength(1)
         val doc = s.export()
         assertEquals("1.0", doc.anyvaliVersion)
-        assertEquals("1", doc.schemaVersion)
+        assertEquals("1.1", doc.schemaVersion)
     }
 
     @Test

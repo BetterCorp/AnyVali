@@ -169,7 +169,7 @@ class TestObjectExport:
         node = v.object_({"name": v.string()})._to_node()
         assert node["kind"] == "object"
         assert "name" in node["properties"]
-        assert node["unknownKeys"] == "reject"
+        assert node["unknownKeys"] == "strip"
 
     def test_with_required(self):
         schema = v.object_({"a": v.string(), "b": v.int_()}, required=["a"])

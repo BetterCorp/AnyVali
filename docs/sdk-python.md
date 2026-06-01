@@ -464,8 +464,8 @@ The `unknown_keys` parameter controls how keys not declared in the properties ar
 
 | Mode | Behavior |
 |---|---|
-| `"reject"` (default) | Produces an `unknown_key` issue for each extra key |
-| `"strip"` | Silently removes extra keys from the output |
+| `"strip"` (default) | Silently removes extra keys from the output |
+| `"reject"` | Produces an `unknown_key` issue for each extra key |
 | `"allow"` | Passes extra keys through to the output |
 
 ## Coercion
@@ -629,7 +629,7 @@ doc = {
             "age": {"kind": "int", "min": 0},
         },
         "required": ["name", "age"],
-        "unknownKeys": "reject",
+        "unknownKeys": "strip",
     },
     "definitions": {},
     "extensions": {},
@@ -780,12 +780,12 @@ env = env_schema.parse(dict(os.environ))
 # Returns only { "NODE_ENV", "PORT", "DATABASE_URL" } -- all other env vars are stripped
 ```
 
-Without `"strip"`, parse would raise with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `"reject"`.
+`"strip"` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `"reject"` (default) | Parse fails with `unknown_key` issues |
-| `"strip"` | Extra keys silently removed from output |
+| `"strip"` (default) | Extra keys silently removed from output |
+| `"reject"` | Parse fails with `unknown_key` issues |
 | `"allow"` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -836,7 +836,7 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 | `v.enum_(values)` | `EnumSchema` | One of the listed values |
 | `v.array(items)` | `ArraySchema` | List of uniform type |
 | `v.tuple_(items)` | `TupleSchema` | Fixed-length typed list |
-| `v.object_(properties, *, required=None, unknown_keys="reject")` | `ObjectSchema` | Dict with named properties |
+| `v.object_(properties, *, required=None, unknown_keys="strip")` | `ObjectSchema` | Dict with named properties |
 | `v.record(value_schema)` | `RecordSchema` | Dict with uniform value type |
 | `v.union(schemas)` | `UnionSchema` | First-match union |
 | `v.intersection(schemas)` | `IntersectionSchema` | All-match intersection |

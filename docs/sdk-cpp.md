@@ -161,17 +161,16 @@ auto user = object()
     ->required({"name", "email"});
 
 // Unknown key handling
-// Reject: error on unexpected keys (default)
+// Strip: silently remove unexpected keys (default)
+auto stripped = object()
+    ->prop("name", string_())
+    ->required({"name"});
+
+// Reject: error on unexpected keys
 auto strict = object()
     ->prop("name", string_())
     ->required({"name"})
     ->unknown_keys(UnknownKeyMode::Reject);
-
-// Strip: silently remove unexpected keys
-auto stripped = object()
-    ->prop("name", string_())
-    ->required({"name"})
-    ->unknown_keys(UnknownKeyMode::Strip);
 
 // Allow: keep unexpected keys as-is
 auto passthrough = object()
@@ -501,7 +500,7 @@ std::cout << doc.dump(2) << "\n";
 //       "name": { "kind": "string", "minLength": 1, "maxLength": 100 }
 //     },
 //     "required": ["id", "name"],
-//     "unknownKeys": "reject"
+//     "unknownKeys": "strip"
 //   },
 //   "definitions": {},
 //   "extensions": {}
@@ -761,12 +760,12 @@ auto env_schema = anyvali::object()
     ->unknown_keys(anyvali::UnknownKeyMode::Strip);
 ```
 
-Without `Strip`, parse would fail with `unknown_key` issues for every extra key because the default mode is `Reject`.
+`Strip` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `Reject` (default) | Parse fails with `unknown_key` issues |
-| `Strip` | Extra keys silently removed from output |
+| `Strip` (default) | Extra keys silently removed from output |
+| `Reject` | Parse fails with `unknown_key` issues |
 | `Allow` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -880,8 +879,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `UnknownKeyMode::Reject` | Error on unexpected keys (default) |
-| `UnknownKeyMode::Strip` | Silently remove unexpected keys |
+| `UnknownKeyMode::Strip` | Silently remove unexpected keys (default) |
+| `UnknownKeyMode::Reject` | Error on unexpected keys |
 | `UnknownKeyMode::Allow` | Keep unexpected keys as-is |
 
 ### ExportMode (Enum)

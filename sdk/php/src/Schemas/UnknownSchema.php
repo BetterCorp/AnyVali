@@ -25,6 +25,8 @@ final class UnknownSchema extends Schema
 
     public function exportNode(): array
     {
-        return ['kind' => 'unknown'];
+        $node = ['kind' => 'unknown'];
+        $this->addMetadataToNode($node);
+        return $node;
     }
 }

@@ -14,32 +14,49 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
     private final Map<String, Schema<?>> properties;
     private final Set<String> required;
     private final UnknownKeyMode unknownKeys;
+    private final boolean unknownKeysExplicit;
 
     /**
      * Create an object schema. If required is null, all properties are required by default.
      */
     public ObjectSchema(Map<String, ? extends Schema<?>> properties, Set<String> required,
                         UnknownKeyMode unknownKeys) {
+        this(properties, required, unknownKeys, true);
+    }
+
+    private ObjectSchema(Map<String, ? extends Schema<?>> properties, Set<String> required,
+                         UnknownKeyMode unknownKeys, boolean unknownKeysExplicit) {
         this.properties = new LinkedHashMap<>(properties);
         this.required = required != null ? new LinkedHashSet<>(required) : new LinkedHashSet<>(properties.keySet());
-        this.unknownKeys = unknownKeys != null ? unknownKeys : UnknownKeyMode.REJECT;
+        this.unknownKeys = unknownKeys != null ? unknownKeys : UnknownKeyMode.STRIP;
+        this.unknownKeysExplicit = unknownKeysExplicit;
     }
 
     public ObjectSchema(Map<String, ? extends Schema<?>> properties) {
-        this(properties, null, UnknownKeyMode.REJECT);
+        this(properties, null, UnknownKeyMode.STRIP, false);
     }
 
     public ObjectSchema(Map<String, ? extends Schema<?>> properties, Set<String> required) {
-        this(properties, required, UnknownKeyMode.REJECT);
+        this(properties, required, UnknownKeyMode.STRIP, false);
     }
 
     private ObjectSchema(ObjectSchema other) {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.properties = new LinkedHashMap<>(other.properties);
         this.required = new LinkedHashSet<>(other.required);
         this.unknownKeys = other.unknownKeys;
+        this.unknownKeysExplicit = other.unknownKeysExplicit;
+    }
+
+    private UnknownKeyMode effectiveUnknownKeys() {
+        return unknownKeysExplicit ? unknownKeys : UnknownKeyMode.STRIP;
+    }
+
+    private UnknownKeyMode exportUnknownKeys() {
+        return unknownKeysExplicit ? unknownKeys : UnknownKeyMode.STRIP;
     }
 
     @Override
@@ -89,7 +106,7 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
         Set<String> known = properties.keySet();
         for (String key : map.keySet()) {
             if (!known.contains(key)) {
-                switch (unknownKeys) {
+                switch (effectiveUnknownKeys()) {
                     case REJECT -> {
                         var childCtx = ctx.child(key);
                         childCtx.addIssue(IssueCodes.UNKNOWN_KEY,
@@ -116,7 +133,7 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
         node.put("kind", "object");
         node.put("properties", props);
         node.put("required", new ArrayList<>(required).stream().sorted().toList());
-        node.put("unknownKeys", unknownKeys.getValue());
+        node.put("unknownKeys", exportUnknownKeys().getValue());
         return addCommonNodeFields(node);
     }
 
@@ -134,6 +151,6 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
     }
 
     public UnknownKeyMode getUnknownKeys() {
-        return unknownKeys;
+        return effectiveUnknownKeys();
     }
 }

@@ -67,6 +67,12 @@ public final class Importer {
             schema.applyImportedCoercion(parseCoercion(node.get("coerce")));
         }
 
+        if (node.containsKey("metadata")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> meta = (Map<String, Object>) node.get("metadata");
+            schema.applyImportedMetadata(new LinkedHashMap<>(meta));
+        }
+
         return schema;
     }
 
@@ -155,7 +161,11 @@ public final class Importer {
             case "literal" -> new LiteralSchema(node.get("value"));
             case "enum" -> new EnumSchema((List<Object>) node.get("values"));
             case "array" -> {
-                Schema<?> items = importNode((Map<String, Object>) node.get("items"), definitions);
+                // Accept "items", "item", and "array.items" keys for compatibility
+                Object itemsNode = node.containsKey("items") ? node.get("items")
+                        : node.containsKey("item") ? node.get("item")
+                        : node.containsKey("array.items") ? node.get("array.items") : null;
+                Schema<?> items = itemsNode != null ? importNode((Map<String, Object>) itemsNode, definitions) : new AnySchema();
                 Integer minItems = node.containsKey("minItems") ? toInt(node.get("minItems")) : null;
                 Integer maxItems = node.containsKey("maxItems") ? toInt(node.get("maxItems")) : null;
                 yield new ArraySchema(items, minItems, maxItems);
@@ -180,7 +190,7 @@ public final class Importer {
                     required = new LinkedHashSet<>((List<String>) node.get("required"));
                 }
                 UnknownKeyMode ukm = UnknownKeyMode.fromString(
-                        (String) node.getOrDefault("unknownKeys", "reject"));
+                        (String) node.getOrDefault("unknownKeys", "strip"));
                 yield new ObjectSchema(props, required, ukm);
             }
             case "record" -> {
@@ -188,8 +198,9 @@ public final class Importer {
                 yield new RecordSchema(valueSchema);
             }
             case "union" -> {
+                // Accept "variants", "schemas", and "union.variants" keys for compatibility
                 List<Map<String, Object>> variants = (List<Map<String, Object>>) node.getOrDefault("variants",
-                        node.getOrDefault("schemas", List.of()));
+                        node.getOrDefault("schemas", node.getOrDefault("union.variants", List.of())));
                 List<Schema<?>> schemas = new ArrayList<>();
                 for (Map<String, Object> v : variants) {
                     schemas.add(importNode(v, definitions));

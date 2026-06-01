@@ -15,19 +15,19 @@ public record AnyValiDocument(
 ) {
     public AnyValiDocument {
         anyvaliVersion = anyvaliVersion != null ? anyvaliVersion : "1.0";
-        schemaVersion = schemaVersion != null ? schemaVersion : "1";
+        schemaVersion = schemaVersion != null ? schemaVersion : "1.1";
         root = root != null ? root : Map.of();
         definitions = definitions != null ? definitions : Map.of();
         extensions = extensions != null ? extensions : Map.of();
     }
 
     public AnyValiDocument(Map<String, Object> root) {
-        this("1.0", "1", root, Map.of(), Map.of());
+        this("1.0", "1.1", root, Map.of(), Map.of());
     }
 
     public AnyValiDocument(Map<String, Object> root, Map<String, Object> definitions,
                            Map<String, Object> extensions) {
-        this("1.0", "1", root, definitions, extensions);
+        this("1.0", "1.1", root, definitions, extensions);
     }
 
     /**

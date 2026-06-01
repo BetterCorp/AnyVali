@@ -49,6 +49,6 @@ public sealed class RecordSchema : Schema<Dictionary<string, object?>>
 
     internal override Schema Clone() => new RecordSchema(_valueSchema)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

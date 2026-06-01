@@ -64,6 +64,20 @@ func TestObjectSchemaRequiredOverride(t *testing.T) {
 func TestObjectSchemaUnknownKeysReject(t *testing.T) {
 	s := Object(map[string]Schema{
 		"name": String(),
+	})
+	r := s.SafeParse(map[string]any{"name": "Alice", "extra": "val"})
+	if !r.Success {
+		t.Fatalf("expected success with default strip mode, got %v", r.Issues)
+	}
+	obj := r.Data.(map[string]any)
+	if _, ok := obj["extra"]; ok {
+		t.Fatal("expected extra to be stripped")
+	}
+}
+
+func TestObjectSchemaUnknownKeysRejectWhenConfigured(t *testing.T) {
+	s := Object(map[string]Schema{
+		"name": String(),
 	}).UnknownKeys(Reject)
 	r := s.SafeParse(map[string]any{"name": "Alice", "extra": "val"})
 	if r.Success {

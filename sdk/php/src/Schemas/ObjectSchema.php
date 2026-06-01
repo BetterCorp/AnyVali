@@ -21,6 +21,7 @@ final class ObjectSchema extends Schema
     /** @var string[] */
     private readonly array $required;
     private UnknownKeyMode $unknownKeys;
+    private bool $unknownKeysExplicit;
 
     /**
      * @param array<string, Schema> $properties
@@ -29,11 +30,13 @@ final class ObjectSchema extends Schema
     public function __construct(
         array $properties,
         array $required = [],
-        UnknownKeyMode $unknownKeys = UnknownKeyMode::Reject,
+        UnknownKeyMode $unknownKeys = UnknownKeyMode::Strip,
+        bool $unknownKeysExplicit = false,
     ) {
         $this->properties = $properties;
         $this->required = $required;
         $this->unknownKeys = $unknownKeys;
+        $this->unknownKeysExplicit = $unknownKeysExplicit;
     }
 
     public function getKind(): string
@@ -60,7 +63,18 @@ final class ObjectSchema extends Schema
     {
         $clone = clone $this;
         $clone->unknownKeys = $mode;
+        $clone->unknownKeysExplicit = true;
         return $clone;
+    }
+
+    private function effectiveUnknownKeys(): UnknownKeyMode
+    {
+        return $this->unknownKeysExplicit ? $this->unknownKeys : UnknownKeyMode::Strip;
+    }
+
+    private function exportUnknownKeys(): UnknownKeyMode
+    {
+        return $this->unknownKeysExplicit ? $this->unknownKeys : UnknownKeyMode::Strip;
     }
 
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
@@ -140,7 +154,7 @@ final class ObjectSchema extends Schema
         $knownKeys = array_keys($this->properties);
         foreach ($value as $key => $v) {
             if (!in_array($key, $knownKeys, true)) {
-                switch ($this->unknownKeys) {
+                switch ($this->effectiveUnknownKeys()) {
                     case UnknownKeyMode::Reject:
                         $issues[] = new ValidationIssue(
                             code: IssueCodes::UNKNOWN_KEY,
@@ -181,7 +195,7 @@ final class ObjectSchema extends Schema
 
     public function getUnknownKeys(): UnknownKeyMode
     {
-        return $this->unknownKeys;
+        return $this->effectiveUnknownKeys();
     }
 
     public function exportNode(): array
@@ -194,9 +208,10 @@ final class ObjectSchema extends Schema
             'kind' => 'object',
             'properties' => $props,
             'required' => $this->required,
-            'unknownKeys' => $this->unknownKeys->value,
+            'unknownKeys' => $this->exportUnknownKeys()->value,
         ];
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

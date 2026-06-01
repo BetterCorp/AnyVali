@@ -93,6 +93,13 @@ class TestStringSchema < Minitest::Test
     assert_equal "invalid_string", result.issues.first.code
   end
 
+  def test_invalid_pattern_fails_without_raising
+    s = AnyVali.string.pattern("(")
+    result = s.safe_parse("abc")
+    assert result.failure?
+    assert_equal "invalid_string", result.issues.first.code
+  end
+
   def test_starts_with_passes
     s = AnyVali.string.starts_with("hello")
     assert_equal "hello world", s.parse("hello world")
@@ -130,6 +137,25 @@ class TestStringSchema < Minitest::Test
   def test_parse_raises_on_invalid
     s = AnyVali.string
     assert_raises(AnyVali::ValidationError) { s.parse(42) }
+  end
+
+  def test_recursive_schema_cyclic_input_fails_without_raising
+    node_ref = AnyVali.ref("#/definitions/Node")
+    schema = AnyVali.object(
+      properties: {
+        "value" => AnyVali.string,
+        "next" => node_ref
+      },
+      required: ["value"],
+      unknown_keys: "reject"
+    )
+    context = AnyVali::ValidationContext.new(definitions: { "Node" => schema })
+
+    input = { "value" => "root" }
+    input["next"] = input
+
+    result = schema.safe_parse(input, context: context)
+    assert result.failure?
   end
 
   def test_pattern_with_regexp
@@ -766,10 +792,21 @@ class TestObjectSchema < Minitest::Test
     assert_equal "object", result.issues.first.expected
   end
 
-  def test_unknown_keys_reject_default
+  def test_unknown_keys_strip_default
     s = AnyVali.object(
       properties: { "name" => AnyVali.string },
       required: ["name"]
+    )
+    result = s.safe_parse({ "name" => "Alice", "extra" => "value" })
+    assert result.success?
+    assert_equal({ "name" => "Alice" }, result.value)
+  end
+
+  def test_unknown_keys_reject_when_configured
+    s = AnyVali.object(
+      properties: { "name" => AnyVali.string },
+      required: ["name"],
+      unknown_keys: "reject"
     )
     result = s.safe_parse({ "name" => "Alice", "extra" => "value" })
     assert result.failure?

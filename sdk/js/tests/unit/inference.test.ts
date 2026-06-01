@@ -276,8 +276,18 @@ describe("Type Inference", () => {
       }
     });
 
-    it("object safeParse rejects invalid and unknown properties", () => {
+    it("object safeParse strips unknown properties by default", () => {
       const schema = object({ a: string() });
+      const result = schema.safeParse({ a: "hello", b: "extra" });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual({ a: "hello" });
+        expect("b" in result.data).toBe(false);
+      }
+    });
+
+    it("object safeParse rejects unknown properties when unknownKeys('reject')", () => {
+      const schema = object({ a: string() }).unknownKeys("reject");
       const result = schema.safeParse({ a: "hello", b: "extra" });
       expect(result.success).toBe(false);
       if (!result.success) {

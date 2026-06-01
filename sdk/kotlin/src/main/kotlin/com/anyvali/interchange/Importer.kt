@@ -172,7 +172,10 @@ object Importer {
     }
 
     private fun importArraySchema(node: JsonObject, definitions: Map<String, Schema<*>>): ArraySchema {
-        val items = importNode(node["items"]!!.jsonObject, definitions)
+        // Accept "items", "item", and "array.items" keys for compatibility
+        val itemsNode = node["items"] ?: node["item"] ?: node["array.items"]
+            ?: throw IllegalArgumentException("Array schema missing 'items' field")
+        val items = importNode(itemsNode.jsonObject, definitions)
         var schema = ArraySchema(items)
         node["minItems"]?.jsonPrimitive?.int?.let { schema = schema.copy(minItems = it) }
         node["maxItems"]?.jsonPrimitive?.int?.let { schema = schema.copy(maxItems = it) }
@@ -187,9 +190,9 @@ object Importer {
     private fun importObjectSchema(node: JsonObject, definitions: Map<String, Schema<*>>): ObjectSchema {
         val props = node["properties"]?.jsonObject?.mapValues { importNode(it.value.jsonObject, definitions) } ?: emptyMap()
         val required = node["required"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet() ?: emptySet()
-        val unknownKeysStr = node["unknownKeys"]?.jsonPrimitive?.content ?: "reject"
+        val unknownKeysStr = node["unknownKeys"]?.jsonPrimitive?.content ?: "strip"
         val unknownKeys = UnknownKeyMode.fromValue(unknownKeysStr)
-        return ObjectSchema(props, required, unknownKeys)
+        return ObjectSchema(props, required, unknownKeys, true)
     }
 
     private fun importRecordSchema(node: JsonObject, definitions: Map<String, Schema<*>>): RecordSchema {
@@ -198,7 +201,10 @@ object Importer {
     }
 
     private fun importUnionSchema(node: JsonObject, definitions: Map<String, Schema<*>>): UnionSchema {
-        val variants = node["variants"]!!.jsonArray.map { importNode(it.jsonObject, definitions) }
+        // Accept "variants", "schemas", and "union.variants" keys for compatibility
+        val variantsNode = node["variants"] ?: node["schemas"] ?: node["union.variants"]
+            ?: throw IllegalArgumentException("Union schema missing 'variants' field")
+        val variants = variantsNode.jsonArray.map { importNode(it.jsonObject, definitions) }
         return UnionSchema(variants)
     }
 

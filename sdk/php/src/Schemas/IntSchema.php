@@ -206,6 +206,7 @@ final class IntSchema extends Schema
         if ($this->multipleOf !== null) $node['multipleOf'] = $this->multipleOf;
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
         if ($this->coerce !== null) $node['coerce'] = $this->coerce;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

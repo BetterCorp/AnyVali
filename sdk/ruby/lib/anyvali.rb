@@ -132,8 +132,13 @@ module AnyVali
     TupleSchema.new(elements: elements.flatten)
   end
 
-  def object(properties:, required: [], unknown_keys: "reject")
-    ObjectSchema.new(properties: properties, required: required, unknown_keys: unknown_keys)
+  def object(properties:, required: [], unknown_keys: nil)
+    ObjectSchema.new(
+      properties: properties,
+      required: required,
+      unknown_keys: unknown_keys || "strip",
+      unknown_keys_explicit: !unknown_keys.nil?
+    )
   end
 
   def record(values)

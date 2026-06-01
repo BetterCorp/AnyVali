@@ -21,6 +21,24 @@ func (s *BoolSchema) Coerce(c CoercionType) *BoolSchema {
 	return s
 }
 
+func (s *BoolSchema) Describe(description string, opts ...DescribeOpts) *BoolSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *BoolSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *BoolSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *BoolSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -50,5 +68,6 @@ func (s *BoolSchema) ToNode() map[string]any {
 	node := map[string]any{"kind": "bool"}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

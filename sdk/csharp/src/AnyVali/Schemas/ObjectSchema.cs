@@ -12,10 +12,22 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
 
     private readonly Dictionary<string, PropertyDef> _properties;
     private UnknownKeyMode _unknownKeys;
+    private bool _unknownKeysExplicit;
 
-    public ObjectSchema(Dictionary<string, Schema> shape, UnknownKeyMode unknownKeys = UnknownKeyMode.Reject)
+    public ObjectSchema(Dictionary<string, Schema> shape)
+        : this(shape, UnknownKeyMode.Strip, false)
+    {
+    }
+
+    public ObjectSchema(Dictionary<string, Schema> shape, UnknownKeyMode unknownKeys)
+        : this(shape, unknownKeys, true)
+    {
+    }
+
+    private ObjectSchema(Dictionary<string, Schema> shape, UnknownKeyMode unknownKeys, bool unknownKeysExplicit)
     {
         _unknownKeys = unknownKeys;
+        _unknownKeysExplicit = unknownKeysExplicit;
         _properties = new Dictionary<string, PropertyDef>();
 
         foreach (var (key, schema) in shape)
@@ -30,18 +42,26 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
     }
 
     // Internal constructor for cloning
-    private ObjectSchema(Dictionary<string, PropertyDef> properties, UnknownKeyMode unknownKeys)
+    private ObjectSchema(Dictionary<string, PropertyDef> properties, UnknownKeyMode unknownKeys, bool unknownKeysExplicit)
     {
         _properties = properties;
         _unknownKeys = unknownKeys;
+        _unknownKeysExplicit = unknownKeysExplicit;
     }
 
     public ObjectSchema UnknownKeys(UnknownKeyMode mode)
     {
         var c = (ObjectSchema)Clone();
         c._unknownKeys = mode;
+        c._unknownKeysExplicit = true;
         return c;
     }
+
+    private UnknownKeyMode EffectiveUnknownKeys() =>
+        _unknownKeysExplicit ? _unknownKeys : UnknownKeyMode.Strip;
+
+    private UnknownKeyMode ExportUnknownKeys() =>
+        _unknownKeysExplicit ? _unknownKeys : UnknownKeyMode.Strip;
 
     public new ObjectSchema Default(object? value) => (ObjectSchema)base.Default(value);
 
@@ -102,7 +122,7 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
         // Handle unknown keys
         foreach (var key in inputKeys)
         {
-            switch (_unknownKeys)
+            switch (EffectiveUnknownKeys())
             {
                 case UnknownKeyMode.Reject:
                     ctx.Issues.Add(new ValidationIssue
@@ -142,7 +162,7 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
             ["kind"] = "object",
             ["properties"] = properties,
             ["required"] = required,
-            ["unknownKeys"] = _unknownKeys switch
+            ["unknownKeys"] = ExportUnknownKeys() switch
             {
                 UnknownKeyMode.Reject => "reject",
                 UnknownKeyMode.Strip => "strip",
@@ -154,8 +174,8 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
         return node;
     }
 
-    internal override Schema Clone() => new ObjectSchema(_properties, _unknownKeys)
+    internal override Schema Clone() => new ObjectSchema(_properties, _unknownKeys, _unknownKeysExplicit)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

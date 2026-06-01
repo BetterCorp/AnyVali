@@ -8,6 +8,16 @@ data class TupleSchema(
 ) : Schema<List<Any?>>() {
     override val kind: String = "tuple"
 
+    fun describe(description: String, opts: DescribeOptions? = null): TupleSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): TupleSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<List<Any?>> {
         if (input !is List<*>) {
             return ParseResult.Failure(
@@ -68,5 +78,6 @@ data class TupleSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("tuple"))
         put("elements", JsonArray(elements.map { it.exportNode() }))
+        addMetadataToNode(this)
     }
 }

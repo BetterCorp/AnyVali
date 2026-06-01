@@ -11,7 +11,7 @@ class Schema;
 
 struct AnyValiDocument {
     std::string anyvali_version = "1.0";
-    std::string schema_version = "1";
+    std::string schema_version = "1.1";
     std::shared_ptr<Schema> root;
     std::map<std::string, std::shared_ptr<Schema>> definitions;
     nlohmann::json extensions;

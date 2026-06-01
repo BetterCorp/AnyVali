@@ -108,7 +108,7 @@ class TestAnyValiDocument:
         doc = AnyValiDocument(root={"kind": "string"})
         d = doc.to_dict()
         assert d["anyvaliVersion"] == "1.0"
-        assert d["schemaVersion"] == "1"
+        assert d["schemaVersion"] == "1.1"
         assert d["root"] == {"kind": "string"}
         assert "definitions" not in d
         assert "extensions" not in d
@@ -147,7 +147,7 @@ class TestAnyValiDocument:
     def test_from_dict_defaults(self):
         doc = AnyValiDocument.from_dict({})
         assert doc.anyvali_version == "1.0"
-        assert doc.schema_version == "1"
+        assert doc.schema_version == "1.1"
         assert doc.root == {}
         assert doc.definitions == {}
         assert doc.extensions == {}

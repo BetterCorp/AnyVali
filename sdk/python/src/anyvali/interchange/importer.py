@@ -222,7 +222,7 @@ def _build_schema(
         for pname, pnode in node.get("properties", {}).items():
             props[pname] = _import_node(pnode, definitions)
         required = node.get("required")
-        unknown_keys = node.get("unknownKeys", "reject")
+        unknown_keys = node.get("unknownKeys", "strip")
         return ObjectSchema(props, required=required, unknown_keys=unknown_keys)
     elif kind == "record":
         value_schema = _import_node(node["values"], definitions)

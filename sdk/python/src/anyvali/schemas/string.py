@@ -8,6 +8,9 @@ from typing import Any
 from ..issue_codes import INVALID_STRING, INVALID_TYPE, TOO_LARGE, TOO_SMALL
 from .base import BaseSchema, ValidationContext, _anyvali_type_name
 
+# Sentinel marking a pattern that failed to compile.
+_INVALID_PATTERN = object()
+
 
 class StringSchema(BaseSchema[str]):
     """Schema for string values with optional constraints."""
@@ -31,6 +34,18 @@ class StringSchema(BaseSchema[str]):
         self._ends_with = ends_with
         self._includes = includes
         self._format = format_
+        # Lazily compiled pattern cache: None = not compiled,
+        # _INVALID_PATTERN = compilation failed, else a compiled re.Pattern.
+        self._pattern_re: Any = None
+
+    def _get_pattern_re(self) -> Any:
+        """Lazily compile and cache the pattern. Returns _INVALID_PATTERN if invalid."""
+        if self._pattern_re is None:
+            try:
+                self._pattern_re = re.compile(self._pattern)
+            except re.error:
+                self._pattern_re = _INVALID_PATTERN
+        return self._pattern_re
 
     def min_length(self, n: int) -> StringSchema:
         new = self._copy()
@@ -48,6 +63,7 @@ class StringSchema(BaseSchema[str]):
         new = self._copy()
         assert isinstance(new, StringSchema)
         new._pattern = p
+        new._pattern_re = None  # reset cache inherited via _copy()
         return new
 
     def starts_with(self, s: str) -> StringSchema:
@@ -86,8 +102,12 @@ class StringSchema(BaseSchema[str]):
         if self._max_length is not None and len(input) > self._max_length:
             ctx.add_issue(TOO_LARGE, f"String must have at most {self._max_length} character(s)", expected=self._max_length, received=len(input))
 
-        if self._pattern is not None and not re.search(self._pattern, input):
-            ctx.add_issue(INVALID_STRING, f"String does not match pattern '{self._pattern}'", expected=self._pattern, received=input)
+        if self._pattern is not None:
+            compiled = self._get_pattern_re()
+            if compiled is _INVALID_PATTERN:
+                ctx.add_issue(INVALID_STRING, f"Invalid regex pattern: '{self._pattern}'", expected=self._pattern, received=input)
+            elif not compiled.search(input):
+                ctx.add_issue(INVALID_STRING, f"String does not match pattern '{self._pattern}'", expected=self._pattern, received=input)
 
         if self._starts_with is not None and not input.startswith(self._starts_with):
             ctx.add_issue(INVALID_STRING, f"String must start with '{self._starts_with}'", expected=self._starts_with, received=input)

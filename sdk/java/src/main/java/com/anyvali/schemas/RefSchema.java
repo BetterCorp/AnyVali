@@ -23,6 +23,7 @@ public class RefSchema extends Schema<Object> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.ref = other.ref;
         this.resolved = other.resolved;
         this.definitions = other.definitions;

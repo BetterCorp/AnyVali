@@ -38,6 +38,7 @@ final class OptionalSchema extends Schema
     {
         $node = ['kind' => 'optional', 'schema' => $this->innerSchema->exportNode()];
         if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        $this->addMetadataToNode($node);
         return $node;
     }
 }

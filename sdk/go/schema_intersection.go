@@ -10,6 +10,24 @@ func newIntersectionSchema(schemas []Schema) *IntersectionSchema {
 	return &IntersectionSchema{schemas: schemas}
 }
 
+func (s *IntersectionSchema) Describe(description string, opts ...DescribeOpts) *IntersectionSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *IntersectionSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *IntersectionSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *IntersectionSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -68,6 +86,7 @@ func (s *IntersectionSchema) ToNode() map[string]any {
 		"schemas": schemas,
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }
 

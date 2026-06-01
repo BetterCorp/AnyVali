@@ -132,7 +132,12 @@ inline std::shared_ptr<Schema> import_node(const nlohmann::json& node) {
         }
 
         case SchemaKind::Array: {
-            auto items = import_node(node["items"]);
+            // Accept "items", "item", and "array.items" keys for compatibility
+            const auto& items_node = node.contains("items") ? node["items"]
+                : node.contains("item") ? node["item"]
+                : node.contains("array.items") ? node["array.items"]
+                : throw std::runtime_error("Array schema missing 'items' field");
+            auto items = import_node(items_node);
             auto as = std::make_shared<ArraySchema>(items);
             if (node.contains("minItems")) as->minItems(node["minItems"].get<int64_t>());
             if (node.contains("maxItems")) as->maxItems(node["maxItems"].get<int64_t>());
@@ -169,7 +174,6 @@ inline std::shared_ptr<Schema> import_node(const nlohmann::json& node) {
                 else if (mode == "allow") os->unknownKeys(UnknownKeyMode::Allow);
                 else os->unknownKeys(UnknownKeyMode::Reject);
             }
-            // default unknownKeys is reject (already set)
             schema = os;
             break;
         }
@@ -181,8 +185,13 @@ inline std::shared_ptr<Schema> import_node(const nlohmann::json& node) {
         }
 
         case SchemaKind::Union: {
+            // Accept "variants", "schemas", and "union.variants" keys for compatibility
+            const auto& variants_node = node.contains("variants") ? node["variants"]
+                : node.contains("schemas") ? node["schemas"]
+                : node.contains("union.variants") ? node["union.variants"]
+                : throw std::runtime_error("Union schema missing 'variants' field");
             std::vector<std::shared_ptr<Schema>> variants;
-            for (const auto& v : node["variants"]) {
+            for (const auto& v : variants_node) {
                 variants.push_back(import_node(v));
             }
             schema = std::make_shared<UnionSchema>(std::move(variants));

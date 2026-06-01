@@ -287,8 +287,12 @@ class InterchangeTest {
         void objectSchema() {
             var schema = object_(Map.of("name", string(), "age", int_()));
             var doc = Exporter.exportSchema(schema);
+            @SuppressWarnings("unchecked")
+            var root = (Map<String, Object>) doc.get("root");
+            assertEquals("strip", root.get("unknownKeys"));
             Schema<?> imported = Importer.importSchema(doc);
             assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30)).success());
+            assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30, "extra", "value")).success());
             assertFalse(imported.safeParse(Map.of("name", "Alice")).success());
         }
 
@@ -368,6 +372,56 @@ class InterchangeTest {
             String json = Exporter.exportSchemaJson(schema);
             Schema<?> imported = Importer.importSchema(json);
             assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30)).success());
+            assertTrue(imported.safeParse(Map.of("name", "Alice", "age", 30, "extra", "value")).success());
+        }
+    }
+
+    @Nested
+    class SecurityRegressionTests {
+        @Test
+        void importedInvalidPatternFailsWithoutThrowing() {
+            var doc = new LinkedHashMap<String, Object>();
+            doc.put("anyvaliVersion", "1.0");
+            doc.put("schemaVersion", "1");
+            doc.put("root", Map.of("kind", "string", "pattern", "("));
+            doc.put("definitions", Map.of());
+            doc.put("extensions", Map.of());
+
+            Schema<?> imported = Importer.importSchema(doc);
+            var result = imported.safeParse("abc");
+            assertFalse(result.success());
+            assertEquals(IssueCodes.INVALID_STRING, result.issues().get(0).code());
+        }
+
+        @Test
+        void importArraySchemaWithCanonicalItemsKey() {
+            var doc = new LinkedHashMap<String, Object>();
+            doc.put("anyvaliVersion", "1.0");
+            doc.put("schemaVersion", "1");
+            doc.put("root", Map.of("kind", "array", "array.items", Map.of("kind", "int")));
+            doc.put("definitions", Map.of());
+            doc.put("extensions", Map.of());
+
+            Schema<?> imported = Importer.importSchema(doc);
+            assertTrue(imported.safeParse(List.of(1, 2, 3)).success());
+            assertFalse(imported.safeParse(List.of("a")).success());
+        }
+
+        @Test
+        void importUnionSchemaWithCanonicalVariantsKey() {
+            var doc = new LinkedHashMap<String, Object>();
+            doc.put("anyvaliVersion", "1.0");
+            doc.put("schemaVersion", "1");
+            doc.put("root", Map.of(
+                    "kind", "union",
+                    "union.variants", List.of(Map.of("kind", "string"), Map.of("kind", "int"))));
+            doc.put("definitions", Map.of());
+            doc.put("extensions", Map.of());
+
+            Schema<?> imported = Importer.importSchema(doc);
+            assertTrue(imported.safeParse("hello").success());
+            assertTrue(imported.safeParse(42).success());
+            assertFalse(imported.safeParse(true).success());
         }
     }
 
@@ -452,7 +506,7 @@ class InterchangeTest {
         void documentHasRequiredFields() {
             var doc = string().export();
             assertEquals("1.0", doc.get("anyvaliVersion"));
-            assertEquals("1", doc.get("schemaVersion"));
+            assertEquals("1.1", doc.get("schemaVersion"));
             assertNotNull(doc.get("root"));
         }
 

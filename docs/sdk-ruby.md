@@ -154,7 +154,7 @@ user = AnyVali.object(
 strict = AnyVali.object(
   properties: { name: AnyVali.string },
   required: [:name],
-  unknown_keys: "reject"    # error on unexpected keys (default)
+  unknown_keys: "reject"    # error on unexpected keys
 )
 
 stripped = AnyVali.object(
@@ -458,7 +458,7 @@ puts JSON.pretty_generate(doc)
 #       "name": { "kind": "string", "minLength": 1, "maxLength": 100 }
 #     },
 #     "required": ["id", "name"],
-#     "unknownKeys": "reject"
+#     "unknownKeys": "strip"
 #   },
 #   "definitions": {},
 #   "extensions": {}
@@ -660,12 +660,12 @@ env_schema = AnyVali.object(
 )
 ```
 
-Without `"strip"`, parse would raise with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `"reject"`.
+`"strip"` is the default, so this option is only needed when you want to be explicit.
 
 | Mode | What happens with extra keys |
 |---|---|
-| `"reject"` (default) | Parse fails with `unknown_key` issues |
-| `"strip"` | Extra keys silently removed from output |
+| `"strip"` (default) | Extra keys silently removed from output |
+| `"reject"` | Parse fails with `unknown_key` issues |
 | `"allow"` | Extra keys passed through to output |
 
 ### Eagerly Evaluated vs Lazy Defaults
@@ -766,8 +766,8 @@ This keeps the schema fully portable -- the same JSON document can be imported i
 
 | Value | Description |
 |---|---|
-| `"reject"` | Error on unexpected keys (default) |
-| `"strip"` | Silently remove unexpected keys |
+| `"strip"` | Silently remove unexpected keys (default) |
+| `"reject"` | Error on unexpected keys |
 | `"allow"` | Keep unexpected keys as-is |
 
 ### ParseResult

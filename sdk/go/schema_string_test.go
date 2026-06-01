@@ -78,6 +78,18 @@ func TestStringSchemaPattern(t *testing.T) {
 	}
 }
 
+func TestStringSchemaInvalidPatternDoesNotPanic(t *testing.T) {
+	// Invalid regex patterns should be handled gracefully (no panic)
+	s := String().Pattern(`(`)
+	r := s.SafeParse("abc")
+	if r.Success {
+		t.Fatal("expected failure for invalid regex pattern")
+	}
+	if len(r.Issues) == 0 || r.Issues[0].Code != IssueInvalidString {
+		t.Fatalf("expected invalid_string issue, got %#v", r.Issues)
+	}
+}
+
 func TestStringSchemaStartsWith(t *testing.T) {
 	s := String().StartsWith("pre")
 	if r := s.SafeParse("prefix"); !r.Success {

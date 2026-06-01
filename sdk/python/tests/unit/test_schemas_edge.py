@@ -376,7 +376,8 @@ class TestObjectEdgeCases:
         assert result.data["name"] == "anon"
 
     def test_multiple_unknown_keys_sorted(self):
-        schema = v.object_({"a": v.string()})
+        # Unknown keys are stripped by default; reject must be explicit.
+        schema = v.object_({"a": v.string()}, unknown_keys="reject")
         result = schema.safe_parse({"a": "x", "c": 1, "b": 2})
         assert not result.success
         unknown_keys = [i.received for i in result.issues if i.code == v.UNKNOWN_KEY]

@@ -5,27 +5,33 @@ This document describes how code gets from a developer's machine to published pa
 ## Flow
 
 ```
-branch (develop/feature/hotfix)
+develop / feature / hotfix branch
   │
-  └─ PR to master ─── CI runs ─── merge
+  └─ PR to master
        │
-       └─ Build Release opens a release PR
+       ├─ CI + CodeQL run (must pass)
+       │
+       └─ Merge
             │
-            ├─ Version bump + changelog
-            ├─ CI runs on the release PR
+            ├─ Build Release opens a release PR (version bump + changelog)
+            │   CI skips this PR (only config/changelog changes)
             │
-            └─ Merge release PR (CI must pass)
+            └─ Merge release PR when ready to ship
                  │
+                 ├─ CI skips ("chore: release" commit)
                  ├─ GitHub Releases + tags created
-                 └─ Publish workflows dispatched to registries
+                 └─ Packages published to registries
 ```
 
-1. **Create a branch** off `master` (`develop`, `feature/*`, `hotfix/*`, or any branch)
+1. **Create a branch** off `master` (`develop`, `feature/*`, `hotfix/*`)
 2. **Write code** using [conventional commits](#commit-messages)
 3. **Open a PR** targeting `master` — CI runs all SDK tests
-4. **Merge the PR** — Build Release creates a release PR with version bumps and changelogs
-5. **CI runs on the release PR** — verifies the version bump doesn't break anything
-6. **Merge the release PR** (once CI passes) — Build Release creates GitHub Releases with tags and dispatches publish workflows
+4. **Merge the PR** — Build Release creates/updates a release PR with version bumps and changelogs
+5. **Merge the release PR** when you're ready to release — Build Release creates GitHub Releases with tags and publishes to registries
+
+The release PR accumulates changes. You don't have to merge it after every PR — multiple PRs can land on master and the release PR updates automatically. Merge it when you want to cut a release.
+
+CI **does not run** on the release PR (it only changes version numbers and changelogs). CI also skips the merge commit when the release PR lands (the `chore: release` prefix triggers the skip).
 
 Hotfixes follow the same flow — branch off `master`, PR back to `master`.
 
@@ -45,7 +51,7 @@ Version bumps are determined by [Conventional Commits](https://www.conventionalc
 Use the component name in parentheses to scope a commit to a specific SDK:
 
 ```
-fix(js): handle null input in parser       → bumps @anyvali/js only
+fix(js): handle null input in parser       → bumps anyvali only
 feat(python): add date-time coercion       → bumps anyvali (Python) only
 fix(cli): treat bare "-" as stdin arg       → bumps CLI only
 fix: update all SDK releases                → bumps root package + touched paths
@@ -57,7 +63,7 @@ Valid scopes: `js`, `python`, `go`, `java`, `rust`, `php`, `ruby`, `kotlin`, `cs
 
 | Tag | Registry | Package |
 |-----|----------|---------|
-| `js-v*` | npm | `@anyvali/js` |
+| `js-v*` | npm | `anyvali` |
 | `python-v*` | PyPI | `anyvali` |
 | `go-v*` | Go modules | `github.com/BetterCorp/AnyVali/sdk/go` |
 | `rust-v*` | crates.io | `anyvali` |
@@ -89,15 +95,16 @@ The root package (`anyvali-v*`) tracks cross-cutting changes that don't belong t
 
 The build-release workflow uses [Release Please](https://github.com/googleapis/release-please) under the hood:
 
-1. **Your PR merges to master** — Build Release runs and Release Please opens a release PR with version bumps and changelog updates.
-2. **CI runs on the release PR** — the version bump is tested like any other PR.
-3. **You merge the release PR** (once CI passes) — Build Release runs again, Release Please detects the merged release PR, creates GitHub Releases with tags, and dispatches the relevant publish workflows.
+1. **Code PR merges to master** — Build Release runs. Release Please reads conventional commits and opens/updates a release PR with version bumps and changelogs. No releases are created yet.
+2. **Release PR sits open** — it accumulates changes as more PRs merge to master. You merge it when you're ready to ship.
+3. **You merge the release PR** — Build Release runs again. Release Please detects the merged PR, creates GitHub Releases with tags, and dispatches publish workflows for each changed SDK.
 
-The release PR is a normal PR that requires CI to pass before merging. This ensures version bumps don't break anything and gives you a chance to review the changelog before release.
+### What CI skips
 
-### Why CI Skips Release Commits
+CI skips two things to avoid redundant builds:
 
-When the release PR is merged, the commit message starts with `chore: release`. CI checks for this prefix and skips all test jobs to avoid a redundant build cycle (the version bump was already tested on the PR). Build Release still runs because it triggers on every push to master.
+- **The release PR** — detected by branch name `release-please--branches--master`. The PR only changes version numbers and changelogs, not code.
+- **The release merge commit** — detected by `chore: release` commit message prefix. Build Release still runs because it triggers on every push to master regardless.
 
 ### Configuration Files
 

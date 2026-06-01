@@ -12,6 +12,24 @@ func newUnionSchema(schemas []Schema) *UnionSchema {
 	return &UnionSchema{schemas: schemas}
 }
 
+func (s *UnionSchema) Describe(description string, opts ...DescribeOpts) *UnionSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *UnionSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *UnionSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *UnionSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -56,5 +74,6 @@ func (s *UnionSchema) ToNode() map[string]any {
 		"schemas": schemas,
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

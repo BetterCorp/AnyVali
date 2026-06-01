@@ -7,7 +7,6 @@ func TestValidateFormatEmail(t *testing.T) {
 		"test@example.com",
 		"user.name+tag@domain.co.uk",
 		"a@b.c",
-		"user@localhost",
 	}
 	invalid := []string{
 		"",
@@ -16,6 +15,7 @@ func TestValidateFormatEmail(t *testing.T) {
 		"missing@",
 		"user@@domain.com",
 		"spaces in@domain.com",
+		"user@localhost",
 	}
 	for _, v := range valid {
 		if !validateFormat(v, "email") {
@@ -162,6 +162,18 @@ func TestValidateFormatDate(t *testing.T) {
 	}
 }
 
+func TestValidateFormatDateRejectsInvalidCalendarDates(t *testing.T) {
+	invalid := []string{
+		"2023-02-29",
+		"2024-02-30",
+	}
+	for _, v := range invalid {
+		if validateFormat(v, "date") {
+			t.Errorf("expected %q to be rejected as an invalid calendar date", v)
+		}
+	}
+}
+
 func TestValidateFormatDateTime(t *testing.T) {
 	valid := []string{
 		"2024-01-15T10:30:00Z",
@@ -187,6 +199,18 @@ func TestValidateFormatDateTime(t *testing.T) {
 		if validateFormat(v, "date-time") {
 			t.Errorf("expected %q to be invalid date-time", v)
 		}
+	}
+}
+
+func TestValidateFormatDateTimeRejectsInvalidCalendarDates(t *testing.T) {
+	if validateFormat("2024-02-30T10:30:00Z", "date-time") {
+		t.Fatal("expected invalid calendar date-time to be rejected")
+	}
+}
+
+func TestValidateFormatEmailRejectsAddressWithoutDotAfterAt(t *testing.T) {
+	if validateFormat("user@localhost", "email") {
+		t.Fatal("expected email without dot after @ to be rejected")
 	}
 }
 

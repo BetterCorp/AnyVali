@@ -13,6 +13,6 @@ public sealed class AnySchema : Schema<object?>
 
     internal override Schema Clone() => new AnySchema
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

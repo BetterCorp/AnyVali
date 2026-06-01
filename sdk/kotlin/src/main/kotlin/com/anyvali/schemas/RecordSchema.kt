@@ -8,6 +8,16 @@ data class RecordSchema(
 ) : Schema<Map<String, Any?>>() {
     override val kind: String = "record"
 
+    fun describe(description: String, opts: DescribeOptions? = null): RecordSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): RecordSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Map<String, Any?>> {
         if (input !is Map<*, *>) {
             return ParseResult.Failure(
@@ -47,5 +57,6 @@ data class RecordSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("record"))
         put("values", values.exportNode())
+        addMetadataToNode(this)
     }
 }

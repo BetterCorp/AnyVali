@@ -344,24 +344,24 @@ The `unknown_keys` option controls how keys not declared in the schema are handl
 
 | Mode | Behavior |
 |---|---|
-| `UnknownKeyMode::Reject` (default) | Produces an `unknown_key` issue for each extra key |
-| `UnknownKeyMode::Strip` | Silently removes extra keys from the output |
+| `UnknownKeyMode::Strip` (default) | Silently removes extra keys from the output |
+| `UnknownKeyMode::Reject` | Produces an `unknown_key` issue for each extra key |
 | `UnknownKeyMode::Allow` | Passes extra keys through to the output |
 
 ```rust
 use anyvali::*;
 
-// Reject unknown keys (default)
-let strict = object()
-    .field("name", Box::new(string()))
-    .required(vec!["name"])
-    .unknown_keys(UnknownKeyMode::Reject);
-
-// Strip unknown keys silently
+// Strip unknown keys (default)
 let stripped = object()
     .field("name", Box::new(string()))
     .required(vec!["name"])
     .unknown_keys(UnknownKeyMode::Strip);
+
+// Reject unknown keys explicitly
+let strict = object()
+    .field("name", Box::new(string()))
+    .required(vec!["name"])
+    .unknown_keys(UnknownKeyMode::Reject);
 
 // Allow unknown keys to pass through
 let loose = object()
@@ -463,7 +463,7 @@ Output:
       "email": { "kind": "string", "format": "email" }
     },
     "required": ["name", "email"],
-    "unknownKeys": "reject"
+    "unknownKeys": "strip"
   },
   "definitions": {},
   "extensions": {}
@@ -613,7 +613,7 @@ let env_schema = object()
     .unknown_keys(UnknownKeyMode::Strip);
 ```
 
-Without `Strip`, parse would fail with `unknown_key` issues for every other variable in the environment (PATH, HOME, etc.) because the default mode is `Reject`.
+`Strip` is the default, so this option is only needed when you want to be explicit.
 
 ### Eagerly Evaluated vs Lazy Defaults
 
@@ -818,8 +818,8 @@ pub enum ExportMode {
 }
 
 pub enum UnknownKeyMode {
-    Reject,   // default
-    Strip,
+    Strip,    // default
+    Reject,
     Allow,
 }
 

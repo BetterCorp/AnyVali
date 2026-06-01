@@ -6,11 +6,22 @@ import kotlinx.serialization.json.*
 data class ObjectSchema(
     val properties: Map<String, Schema<*>> = emptyMap(),
     val required: Set<String> = emptySet(),
-    val unknownKeys: UnknownKeyMode = UnknownKeyMode.REJECT
+    val unknownKeys: UnknownKeyMode = UnknownKeyMode.STRIP,
+    val unknownKeysExplicit: Boolean = false
 ) : Schema<Map<String, Any?>>() {
     override val kind: String = "object"
 
-    fun unknownKeys(mode: UnknownKeyMode) = copy(unknownKeys = mode)
+    fun unknownKeys(mode: UnknownKeyMode) = copy(unknownKeys = mode, unknownKeysExplicit = true)
+
+    fun describe(description: String, opts: DescribeOptions? = null): ObjectSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): ObjectSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
 
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Map<String, Any?>> {
         if (input !is Map<*, *>) {
@@ -30,6 +41,7 @@ data class ObjectSchema(
         val inputMap = input as Map<String, Any?>
         val issues = mutableListOf<ValidationIssue>()
         val result = mutableMapOf<String, Any?>()
+        val effectiveUnknownKeys = if (unknownKeysExplicit) unknownKeys else UnknownKeyMode.STRIP
 
         // Check required fields
         for (reqKey in required) {
@@ -91,7 +103,7 @@ data class ObjectSchema(
         val knownKeys = properties.keys
         for (key in inputMap.keys) {
             if (key !in knownKeys) {
-                when (unknownKeys) {
+                when (effectiveUnknownKeys) {
                     UnknownKeyMode.REJECT -> {
                         issues.add(
                             ValidationIssue(
@@ -120,7 +132,11 @@ data class ObjectSchema(
         put("kind", JsonPrimitive("object"))
         put("properties", JsonObject(properties.mapValues { it.value.exportNode() }))
         put("required", JsonArray(required.sorted().map { JsonPrimitive(it) }))
-        put("unknownKeys", JsonPrimitive(unknownKeys.value))
+        put(
+            "unknownKeys",
+            JsonPrimitive((if (unknownKeysExplicit) unknownKeys else UnknownKeyMode.STRIP).value)
+        )
+        addMetadataToNode(this)
     }
 
     companion object {

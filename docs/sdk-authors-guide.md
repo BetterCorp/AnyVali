@@ -654,7 +654,7 @@ These languages can infer the full output type from the schema definition at com
 **TypeScript** -- `Infer<T>` utility type. `ObjectSchema` is generic over its shape. Array, tuple, union, intersection, optional, nullable, record, and enum all thread types through.
 
 ```typescript
-import { object, string, int, type Infer } from "@anyvali/js";
+import { object, string, int, type Infer } from "anyvali";
 
 const UserSchema = object({
   name: string(),
@@ -801,7 +801,7 @@ The parse pipeline must collect all validation issues, not stop at the first one
 
 ### Unknown key mode default
 
-The default unknown key mode is `reject`. If your SDK defaults to a permissive mode, you will fail conformance tests. Reject is the safe default.
+The default unknown key mode is `strip`. Conformance tests should treat omitted `unknownKeys` as `strip`, while explicit `reject` and `allow` remain portable and required.
 
 ### Numeric alias resolution
 

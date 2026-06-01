@@ -12,6 +12,24 @@ func newRecordSchema(valueSchema Schema) *RecordSchema {
 	return &RecordSchema{valueSchema: valueSchema}
 }
 
+func (s *RecordSchema) Describe(description string, opts ...DescribeOpts) *RecordSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *RecordSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *RecordSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *RecordSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -62,5 +80,6 @@ func (s *RecordSchema) ToNode() map[string]any {
 		"value": s.valueSchema.ToNode(),
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

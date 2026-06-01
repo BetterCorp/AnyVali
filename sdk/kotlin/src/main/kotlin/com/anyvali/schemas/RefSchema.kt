@@ -8,6 +8,16 @@ data class RefSchema(
 ) : Schema<Any?>() {
     override val kind: String = "ref"
 
+    fun describe(description: String, opts: DescribeOptions? = null): RefSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): RefSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     private fun resolveRef(ctx: ValidationContext): Schema<*> {
         // ref format: "#/definitions/Name"
         val defName = ref.removePrefix("#/definitions/")
@@ -28,5 +38,6 @@ data class RefSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("ref"))
         put("ref", JsonPrimitive(ref))
+        addMetadataToNode(this)
     }
 }

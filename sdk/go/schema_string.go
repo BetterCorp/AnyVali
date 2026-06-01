@@ -35,7 +35,13 @@ func (s *StringSchema) MaxLength(n int) *StringSchema {
 
 func (s *StringSchema) Pattern(p string) *StringSchema {
 	s.pattern = &p
-	s.patternRe = regexp.MustCompile(p)
+	re, err := regexp.Compile(p)
+	if err != nil {
+		// Store nil regex - validation will treat invalid pattern as match failure
+		s.patternRe = nil
+	} else {
+		s.patternRe = re
+	}
 	return s
 }
 
@@ -66,6 +72,24 @@ func (s *StringSchema) Default(value string) *StringSchema {
 
 func (s *StringSchema) Coerce(c CoercionType) *StringSchema {
 	s.addCoercion(c)
+	return s
+}
+
+func (s *StringSchema) Describe(description string, opts ...DescribeOpts) *StringSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *StringSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *StringSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
 	return s
 }
 
@@ -113,7 +137,15 @@ func (s *StringSchema) validate(value any) (any, []ValidationIssue) {
 		})
 	}
 
-	if s.pattern != nil && s.patternRe != nil && !s.patternRe.MatchString(str) {
+	if s.pattern != nil && s.patternRe == nil {
+		// Invalid regex pattern - report as validation failure
+		issues = append(issues, ValidationIssue{
+			Code:     IssueInvalidString,
+			Message:  fmt.Sprintf("invalid regex pattern %q", *s.pattern),
+			Expected: *s.pattern,
+			Received: str,
+		})
+	} else if s.pattern != nil && s.patternRe != nil && !s.patternRe.MatchString(str) {
 		issues = append(issues, ValidationIssue{
 			Code:     IssueInvalidString,
 			Message:  fmt.Sprintf("string does not match pattern %q", *s.pattern),
@@ -197,5 +229,6 @@ func (s *StringSchema) ToNode() map[string]any {
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

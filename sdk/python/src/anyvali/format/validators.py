@@ -33,15 +33,19 @@ _DATETIME_RE = re.compile(
     r"(?:Z|[+-]\d{2}:\d{2})$"
 )
 
+_FORMAT_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
+
 
 def validate_format(fmt: str, value: str) -> bool:
     """Validate a string value against a named format.
 
     Returns True if valid, False otherwise.
     """
+    if _FORMAT_NAME_RE.match(fmt) is None:
+        return False
     validator = _VALIDATORS.get(fmt)
     if validator is None:
-        return True  # Unknown formats pass (lenient)
+        return True  # Valid custom formats pass (lenient)
     return validator(value)
 
 

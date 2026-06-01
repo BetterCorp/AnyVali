@@ -29,7 +29,7 @@ pub fn export_schema(
 
     Ok(AnyValiDocument {
         anyvali_version: "1.0".to_string(),
-        schema_version: "1".to_string(),
+        schema_version: "1.1".to_string(),
         root,
         definitions: defs,
         extensions: serde_json::Map::new(),

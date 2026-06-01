@@ -12,6 +12,24 @@ func newTupleSchema(items []Schema) *TupleSchema {
 	return &TupleSchema{items: items}
 }
 
+func (s *TupleSchema) Describe(description string, opts ...DescribeOpts) *TupleSchema {
+	var o *DescribeOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setDescribe(description, o)
+	return s
+}
+
+func (s *TupleSchema) Metadata(meta map[string]any, opts ...MetadataOpts) *TupleSchema {
+	var o *MetadataOpts
+	if len(opts) > 0 {
+		o = &opts[0]
+	}
+	s.setMetadata(meta, o)
+	return s
+}
+
 func (s *TupleSchema) Parse(input any) (any, error) {
 	result := s.SafeParse(input)
 	if !result.Success {
@@ -75,5 +93,6 @@ func (s *TupleSchema) ToNode() map[string]any {
 		"items": items,
 	}
 	s.addDefaultNode(node)
+	s.addMetadataNode(node)
 	return node
 }

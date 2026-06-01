@@ -104,6 +104,14 @@ fn string_pattern_fails() {
 }
 
 #[test]
+fn string_invalid_pattern_fails_closed() {
+    let s = string().pattern("(");
+    let result = s.safe_parse(&json!("abc"));
+    assert!(!result.success);
+    assert_eq!(result.issues[0].code, "invalid_string");
+}
+
+#[test]
 fn string_starts_with_passes() {
     let s = string().starts_with("hello");
     assert!(s.parse(&json!("hello world")).is_ok());
@@ -842,10 +850,21 @@ fn object_rejects_non_object() {
 }
 
 #[test]
-fn object_unknown_keys_reject_default() {
+fn object_unknown_keys_strip_default() {
     let o = object()
         .field("name", Box::new(string()))
         .required(vec!["name"]);
+    let result = o.safe_parse(&json!({"name": "Alice", "extra": "value"}));
+    assert!(result.success);
+    assert_eq!(result.value.unwrap(), json!({"name": "Alice"}));
+}
+
+#[test]
+fn object_unknown_keys_reject_when_configured() {
+    let o = object()
+        .field("name", Box::new(string()))
+        .required(vec!["name"])
+        .unknown_keys(UnknownKeyMode::Reject);
     let result = o.safe_parse(&json!({"name": "Alice", "extra": "value"}));
     assert!(!result.success);
     assert_eq!(result.issues[0].code, "unknown_key");

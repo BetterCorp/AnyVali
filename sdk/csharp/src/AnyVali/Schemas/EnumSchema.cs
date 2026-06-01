@@ -49,6 +49,6 @@ public sealed class EnumSchema : Schema<object?>
 
     internal override Schema Clone() => new EnumSchema(_values)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

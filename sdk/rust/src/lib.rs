@@ -8,7 +8,7 @@ pub mod typed;
 pub mod types;
 
 // Re-export key types
-pub use schema::{ParseContext, Schema};
+pub use schema::{DescribeOpts, ParseContext, Schema};
 pub use schemas::*;
 pub use typed::{parse_as, TypedSchema};
 

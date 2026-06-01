@@ -42,11 +42,25 @@ import type { StringFormat, UnknownKeyMode } from "../types.js";
 /**
  * Import an AnyValiDocument back into a live Schema.
  */
+/**
+ * Maximum schema-document nesting depth accepted by importSchema. Bounds the
+ * recursive importNode walk so an untrusted, deeply nested document cannot
+ * exhaust the call stack (DoS). Throws a controlled error instead of a
+ * RangeError stack overflow.
+ */
+const MAX_IMPORT_DEPTH = 512;
+
 export function importSchema(doc: AnyValiDocument): BaseSchema {
   const definitions = doc.definitions ?? {};
   const resolvedDefs = new Map<string, BaseSchema>();
 
-  function importNode(node: any): BaseSchema {
+  function importNode(node: any, depth: number = 0): BaseSchema {
+    if (depth > MAX_IMPORT_DEPTH) {
+      throw new Error(
+        `Schema document too deeply nested (max depth ${MAX_IMPORT_DEPTH} exceeded)`
+      );
+    }
+    const d = depth + 1;
     let schema: BaseSchema;
 
     switch (node.kind) {
@@ -139,7 +153,7 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
       }
 
       case "array": {
-        let s = new ArraySchema(importNode(node.items));
+        let s = new ArraySchema(importNode(node.items, d));
         if (node.minItems !== undefined) s = s.minItems(node.minItems);
         if (node.maxItems !== undefined) s = s.maxItems(node.maxItems);
         schema = s;
@@ -150,26 +164,33 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
         // Corpus uses "elements", our export uses "items"
         const elements = node.elements ?? node.items;
         schema = new TupleSchema(
-          elements.map((i: any) => importNode(i))
+          elements.map((i: any) => importNode(i, d))
         );
         break;
       }
 
       case "object": {
-        const shape: Record<string, BaseSchema> = {};
+        const shape: Record<string, BaseSchema> = Object.create(null);
         const requiredSet = new Set<string>(node.required ?? []);
         for (const [key, propNode] of Object.entries(
           node.properties ?? {}
         )) {
-          let propSchema = importNode(propNode);
+          let propSchema = importNode(propNode, d);
           if (!requiredSet.has(key)) {
             propSchema = new OptionalSchema(propSchema);
           }
-          shape[key] = propSchema;
+          // Use defineProperty to safely handle __proto__ and other special keys
+          Object.defineProperty(shape, key, {
+            value: propSchema,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
         }
+        Object.setPrototypeOf(shape, Object.prototype);
         schema = new ObjectSchema(shape, {
           unknownKeys:
-            (node.unknownKeys as UnknownKeyMode) ?? "reject",
+            (node.unknownKeys as UnknownKeyMode) ?? "strip",
         });
         break;
       }
@@ -177,20 +198,20 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
       case "record": {
         // Corpus uses "values", our export uses "valueSchema"
         const valueNode = node.values ?? node.valueSchema;
-        schema = new RecordSchema(importNode(valueNode));
+        schema = new RecordSchema(importNode(valueNode, d));
         break;
       }
 
       case "union": {
         schema = new UnionSchema(
-          node.variants.map((v: any) => importNode(v))
+          node.variants.map((v: any) => importNode(v, d))
         );
         break;
       }
 
       case "intersection": {
         schema = new IntersectionSchema(
-          node.allOf.map((s: any) => importNode(s))
+          node.allOf.map((s: any) => importNode(s, d))
         );
         break;
       }
@@ -198,14 +219,14 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
       case "optional": {
         // Corpus uses "schema", our export uses "inner"
         const innerNode = node.schema ?? node.inner;
-        schema = new OptionalSchema(importNode(innerNode));
+        schema = new OptionalSchema(importNode(innerNode, d));
         break;
       }
 
       case "nullable": {
         // Corpus uses "schema", our export uses "inner"
         const innerNode = node.schema ?? node.inner;
-        schema = new NullableSchema(importNode(innerNode));
+        schema = new NullableSchema(importNode(innerNode, d));
         break;
       }
 

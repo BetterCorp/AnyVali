@@ -26,9 +26,15 @@ public abstract class Schema<T> {
         }
     };
 
+    private static final java.util.Set<String> RESERVED_METADATA_KEYS = java.util.Set.of(
+        "title", "description", "deprecated", "deprecatedMessage",
+        "notStable", "since", "sensitive", "readonly", "writeonly", "examples"
+    );
+
     protected CoercionConfig coercion;
     protected Object defaultValue = ABSENT;
     protected boolean hasDefault = false;
+    protected Map<String, Object> metadata;
 
     protected Schema() {
     }
@@ -180,6 +186,114 @@ public abstract class Schema<T> {
         return copy;
     }
 
+    // ---- Describe & Metadata ----
+
+    /**
+     * Options for the describe() method.
+     */
+    public static class DescribeOptions {
+        private String title;
+        private Boolean deprecated;
+        private String deprecatedMessage;
+        private Boolean notStable;
+        private String since;
+        private Boolean sensitive;
+        private Boolean readonly;
+        private Boolean writeonly;
+        private java.util.List<Object> examples;
+
+        public DescribeOptions title(String t) { this.title = t; return this; }
+        public DescribeOptions deprecated(boolean d) { this.deprecated = d; return this; }
+        public DescribeOptions deprecatedMessage(String m) { this.deprecatedMessage = m; return this; }
+        public DescribeOptions notStable(boolean n) { this.notStable = n; return this; }
+        public DescribeOptions since(String s) { this.since = s; return this; }
+        public DescribeOptions sensitive(boolean s) { this.sensitive = s; return this; }
+        public DescribeOptions readonly(boolean r) { this.readonly = r; return this; }
+        public DescribeOptions writeonly(boolean w) { this.writeonly = w; return this; }
+        public DescribeOptions examples(java.util.List<Object> e) { this.examples = e; return this; }
+    }
+
+    /**
+     * Add documentation metadata. Returns a new schema instance.
+     */
+    public Schema<T> describe(String description) {
+        return describe(description, null);
+    }
+
+    /**
+     * Add documentation metadata with options. Returns a new schema instance.
+     */
+    public Schema<T> describe(String description, DescribeOptions opts) {
+        if (description == null) throw new IllegalArgumentException("describe(): description must not be null");
+        Schema<T> copy = copy();
+        if (copy.metadata == null) copy.metadata = new LinkedHashMap<>();
+        copy.metadata.put("description", description);
+        if (opts != null) {
+            if (opts.title != null) copy.metadata.put("title", opts.title);
+            if (opts.deprecated != null) copy.metadata.put("deprecated", opts.deprecated);
+            if (opts.deprecatedMessage != null) {
+                if (opts.deprecated == null || !opts.deprecated) {
+                    throw new IllegalArgumentException("describe(): deprecatedMessage requires deprecated to be true");
+                }
+                copy.metadata.put("deprecatedMessage", opts.deprecatedMessage);
+            }
+            if (opts.notStable != null) copy.metadata.put("notStable", opts.notStable);
+            if (opts.since != null) copy.metadata.put("since", opts.since);
+            if (opts.sensitive != null) copy.metadata.put("sensitive", opts.sensitive);
+            if (opts.readonly != null) copy.metadata.put("readonly", opts.readonly);
+            if (opts.writeonly != null) copy.metadata.put("writeonly", opts.writeonly);
+            if (Boolean.TRUE.equals(opts.readonly) && Boolean.TRUE.equals(opts.writeonly)) {
+                throw new IllegalArgumentException("describe(): readonly and writeonly cannot both be true");
+            }
+            if (opts.examples != null) copy.metadata.put("examples", new java.util.ArrayList<>(opts.examples));
+        }
+        return copy;
+    }
+
+    /**
+     * Attach arbitrary metadata. Reserved keys must use describe().
+     */
+    public Schema<T> metadata(Map<String, Object> meta) {
+        return metadata(meta, false);
+    }
+
+    /**
+     * Attach arbitrary metadata. If replace is true, replaces non-reserved metadata.
+     */
+    public Schema<T> metadata(Map<String, Object> meta, boolean replace) {
+        for (String key : meta.keySet()) {
+            if (RESERVED_METADATA_KEYS.contains(key)) {
+                throw new IllegalArgumentException(
+                    "metadata(): \"" + key + "\" is a reserved key. Use describe() instead."
+                );
+            }
+        }
+        Schema<T> copy = copy();
+        if (replace) {
+            Map<String, Object> preserved = new LinkedHashMap<>();
+            if (copy.metadata != null) {
+                for (var entry : copy.metadata.entrySet()) {
+                    if (RESERVED_METADATA_KEYS.contains(entry.getKey())) {
+                        preserved.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+            preserved.putAll(meta);
+            copy.metadata = preserved;
+        } else {
+            if (copy.metadata == null) copy.metadata = new LinkedHashMap<>();
+            copy.metadata.putAll(meta);
+        }
+        return copy;
+    }
+
+    /**
+     * Get the metadata map.
+     */
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
     // ---- Export ----
 
     /**
@@ -217,6 +331,9 @@ public abstract class Schema<T> {
                 node.put("coerce", coerceMap);
             }
         }
+        if (metadata != null && !metadata.isEmpty()) {
+            node.put("metadata", new LinkedHashMap<>(metadata));
+        }
         return node;
     }
 
@@ -244,6 +361,10 @@ public abstract class Schema<T> {
 
     public void applyImportedCoercion(CoercionConfig config) {
         coercion = config;
+    }
+
+    public void applyImportedMetadata(Map<String, Object> meta) {
+        this.metadata = meta;
     }
 
     // ---- Utility ----

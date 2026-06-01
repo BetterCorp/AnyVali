@@ -8,6 +8,16 @@ data class UnionSchema(
 ) : Schema<Any?>() {
     override val kind: String = "union"
 
+    fun describe(description: String, opts: DescribeOptions? = null): UnionSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): UnionSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         for (variant in variants) {
             val result = variant.safeParseWithContext(input, ctx)
@@ -34,5 +44,6 @@ data class UnionSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("union"))
         put("variants", JsonArray(variants.map { it.exportNode() }))
+        addMetadataToNode(this)
     }
 }

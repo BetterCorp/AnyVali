@@ -309,7 +309,7 @@ Each schema node should be data-only and use explicit discriminators:
     "name": { "kind": "string", "minLength": 1 }
   },
   "required": ["id", "name"],
-  "unknownKeys": "reject"
+  "unknownKeys": "strip"
 }
 ```
 
@@ -520,7 +520,7 @@ Every SDK must run the same corpus.
 
 #### Objects
 
-- unknown keys rejected by default
+- unknown keys stripped by default
 - unknown keys stripped when configured
 - unknown keys allowed when configured
 
@@ -610,7 +610,7 @@ The spec should require three doc tracks:
 - v1 includes portable coercions only, not arbitrary transforms.
 - `number` defaults to `float64`.
 - `int` defaults to `int64`.
-- Unknown object keys are rejected by default.
+- Unknown object keys are stripped by default.
 - Custom validators are local-only and non-exportable in portable mode.
 - Initial first-class SDK matrix is:
   - JS/TS

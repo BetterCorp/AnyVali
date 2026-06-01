@@ -8,6 +8,16 @@ data class IntersectionSchema(
 ) : Schema<Any?>() {
     override val kind: String = "intersection"
 
+    fun describe(description: String, opts: DescribeOptions? = null): IntersectionSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): IntersectionSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Any?> {
         val allIssues = mutableListOf<ValidationIssue>()
         var mergedResult: Any? = input
@@ -46,5 +56,6 @@ data class IntersectionSchema(
     override fun exportNode(): JsonObject = buildJsonObject {
         put("kind", JsonPrimitive("intersection"))
         put("allOf", JsonArray(allOf.map { it.exportNode() }))
+        addMetadataToNode(this)
     }
 }

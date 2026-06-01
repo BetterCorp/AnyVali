@@ -21,6 +21,7 @@ public class RecordSchema extends Schema<Map<String, Object>> {
         this.coercion = other.coercion;
         this.defaultValue = other.defaultValue;
         this.hasDefault = other.hasDefault;
+        this.metadata = other.metadata;
         this.valueSchema = other.valueSchema;
     }
 

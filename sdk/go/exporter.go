@@ -8,7 +8,7 @@ func Export(schema Schema, mode ExportMode) (*Document, error) {
 
 	doc := &Document{
 		AnyvaliVersion: "1.0",
-		SchemaVersion:  "1",
+		SchemaVersion:  "1.1",
 		Root:           node,
 		Definitions:    make(map[string]map[string]any),
 		Extensions:     make(map[string]any),

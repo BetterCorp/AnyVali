@@ -13,6 +13,7 @@ export const ISSUE_CODES = {
   UNSUPPORTED_SCHEMA_KIND: "unsupported_schema_kind",
   COERCION_FAILED: "coercion_failed",
   DEFAULT_INVALID: "default_invalid",
+  TOO_DEEP: "too_deep",
 } as const;
 
 export type IssueCode = (typeof ISSUE_CODES)[keyof typeof ISSUE_CODES];

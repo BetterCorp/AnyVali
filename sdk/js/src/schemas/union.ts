@@ -18,6 +18,11 @@ export class UnionSchema<
       const innerCtx: ParseContext = {
         path: [...ctx.path],
         issues: [],
+        // Propagate recursion depth and circular-reference tracking so the
+        // depth guard is not reset (and bypassed) at each union boundary.
+        definitions: ctx.definitions,
+        seen: ctx.seen,
+        depth: ctx.depth,
       };
       const result = variant._runPipeline(input, innerCtx);
       if (innerCtx.issues.length === 0) {

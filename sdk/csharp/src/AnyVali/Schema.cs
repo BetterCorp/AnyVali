@@ -8,11 +8,18 @@ namespace AnyVali;
 public abstract class Schema
 {
     internal const string AnyvaliVersionValue = "1.0";
-    internal const string SchemaVersionValue = "1";
+    internal const string SchemaVersionValue = "1.1";
+
+    private static readonly HashSet<string> ReservedMetadataKeys = new()
+    {
+        "title", "description", "deprecated", "deprecatedMessage",
+        "notStable", "since", "sensitive", "readonly", "writeonly", "examples"
+    };
 
     internal object? DefaultValue { get; set; } = Absent.Value;
     internal CoercionConfig? CoercionCfg { get; set; }
     internal bool IsPortable { get; set; } = true;
+    internal Dictionary<string, object?>? MetadataMap { get; set; }
 
     // ---- Public API ----
 
@@ -146,6 +153,75 @@ public abstract class Schema
     }
 
     /// <summary>
+    /// Add documentation metadata. Returns a clone.
+    /// </summary>
+    public Schema Describe(string description, DescribeOptions? opts = null)
+    {
+        if (description == null) throw new ArgumentNullException(nameof(description));
+
+        var clone = Clone();
+        clone.MetadataMap ??= new Dictionary<string, object?>();
+        clone.MetadataMap["description"] = description;
+
+        if (opts != null)
+        {
+            if (opts.Title != null) clone.MetadataMap["title"] = opts.Title;
+            if (opts.Deprecated.HasValue) clone.MetadataMap["deprecated"] = opts.Deprecated.Value;
+            if (opts.DeprecatedMessage != null)
+            {
+                if (opts.Deprecated != true)
+                    throw new ArgumentException("describe(): deprecatedMessage requires deprecated to be true");
+                clone.MetadataMap["deprecatedMessage"] = opts.DeprecatedMessage;
+            }
+            if (opts.NotStable.HasValue) clone.MetadataMap["notStable"] = opts.NotStable.Value;
+            if (opts.Since != null) clone.MetadataMap["since"] = opts.Since;
+            if (opts.Sensitive.HasValue) clone.MetadataMap["sensitive"] = opts.Sensitive.Value;
+            if (opts.Readonly.HasValue) clone.MetadataMap["readonly"] = opts.Readonly.Value;
+            if (opts.Writeonly.HasValue) clone.MetadataMap["writeonly"] = opts.Writeonly.Value;
+            if (opts.Readonly == true && opts.Writeonly == true)
+                throw new ArgumentException("describe(): readonly and writeonly cannot both be true");
+            if (opts.Examples != null) clone.MetadataMap["examples"] = new List<object?>(opts.Examples);
+        }
+
+        return clone;
+    }
+
+    /// <summary>
+    /// Attach arbitrary metadata. Reserved keys must use Describe().
+    /// </summary>
+    public Schema Metadata(Dictionary<string, object?> meta, bool replace = false)
+    {
+        foreach (var key in meta.Keys)
+        {
+            if (ReservedMetadataKeys.Contains(key))
+                throw new ArgumentException($"Metadata(): \"{key}\" is a reserved key. Use Describe() instead.");
+        }
+
+        var clone = Clone();
+        if (replace)
+        {
+            var preserved = new Dictionary<string, object?>();
+            if (clone.MetadataMap != null)
+            {
+                foreach (var kvp in clone.MetadataMap)
+                {
+                    if (ReservedMetadataKeys.Contains(kvp.Key))
+                        preserved[kvp.Key] = kvp.Value;
+                }
+            }
+            foreach (var kvp in meta) preserved[kvp.Key] = kvp.Value;
+            clone.MetadataMap = preserved;
+        }
+        else
+        {
+            clone.MetadataMap ??= new Dictionary<string, object?>();
+            foreach (var kvp in meta) clone.MetadataMap[kvp.Key] = kvp.Value;
+        }
+
+        return clone;
+    }
+
+    /// <summary>
     /// Export to AnyValiDocument.
     /// </summary>
     public AnyValiDocument Export(ExportMode mode = ExportMode.Portable)
@@ -182,6 +258,8 @@ public abstract class Schema
             if (CoercionCfg.Upper) coerce["upper"] = true;
             node["coerce"] = coerce;
         }
+        if (MetadataMap is { Count: > 0 })
+            node["metadata"] = new Dictionary<string, object?>(MetadataMap);
     }
 
     internal static string DescribeType(object? value)
@@ -304,4 +382,20 @@ public abstract class Schema<T> : Schema
         // Handle numeric type conversions (e.g., long -> double for IntSchema via NumberSchema)
         return (T)Convert.ChangeType(data, Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
     }
+}
+
+/// <summary>
+/// Options for the Describe() method.
+/// </summary>
+public class DescribeOptions
+{
+    public string? Title { get; set; }
+    public bool? Deprecated { get; set; }
+    public string? DeprecatedMessage { get; set; }
+    public bool? NotStable { get; set; }
+    public string? Since { get; set; }
+    public bool? Sensitive { get; set; }
+    public bool? Readonly { get; set; }
+    public bool? Writeonly { get; set; }
+    public List<object?>? Examples { get; set; }
 }

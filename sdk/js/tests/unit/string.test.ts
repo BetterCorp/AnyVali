@@ -47,6 +47,16 @@ describe("StringSchema", () => {
     }
   });
 
+  it("fails invalid regex patterns without throwing", () => {
+    const s = string().pattern("(");
+    expect(() => s.safeParse("abc")).not.toThrow();
+    const result = s.safeParse("abc");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues[0].code).toBe("invalid_string");
+    }
+  });
+
   it("validates startsWith", () => {
     const s = string().startsWith("hello");
     expect(s.parse("hello world")).toBe("hello world");

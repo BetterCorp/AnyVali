@@ -33,7 +33,7 @@ public static class V
 
     public static ObjectSchema Object(
         Dictionary<string, Schema> shape,
-        UnknownKeyMode unknownKeys = UnknownKeyMode.Reject) => new(shape, unknownKeys);
+        UnknownKeyMode? unknownKeys = null) => unknownKeys is null ? new(shape) : new(shape, unknownKeys.Value);
 
     public static RecordSchema Record(Schema valueSchema) => new(valueSchema);
     public static UnionSchema Union(params Schema[] variants) => new(variants);

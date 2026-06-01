@@ -74,6 +74,6 @@ public sealed class TupleSchema : Schema<List<object?>>
 
     internal override Schema Clone() => new TupleSchema(_items)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
     };
 }

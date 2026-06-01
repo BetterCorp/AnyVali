@@ -24,6 +24,16 @@ data class NumberSchema(
     fun default(v: Number) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
 
+    fun describe(description: String, opts: DescribeOptions? = null): NumberSchema {
+        applyDescribe(description, opts)
+        return this
+    }
+
+    fun metadata(meta: Map<String, Any?>, replace: Boolean = false): NumberSchema {
+        applyMetadata(meta, replace)
+        return this
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Double> {
         var value = input
@@ -177,6 +187,7 @@ data class NumberSchema(
             }
         }
         coerce?.let { put("coerce", JsonPrimitive(it)) }
+        addMetadataToNode(this)
     }
 
     companion object {

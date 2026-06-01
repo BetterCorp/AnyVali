@@ -89,6 +89,14 @@ TEST("string: pattern fail") {
     ASSERT(result.issues[0].code == "invalid_string");
 }
 
+TEST("string: invalid pattern fails without throwing") {
+    auto s = string_();
+    s->pattern("(");
+    auto result = s->safe_parse(json("abc"));
+    ASSERT(!result.success);
+    ASSERT(result.issues[0].code == "invalid_string");
+}
+
 TEST("string: startsWith pass") {
     auto s = string_();
     s->startsWith("hello");
@@ -692,10 +700,20 @@ TEST("object: rejects non-object") {
     ASSERT(!s->safe_parse(json("not an object")).success);
 }
 
-TEST("object: rejects unknown keys by default") {
+TEST("object: strips unknown keys by default") {
     auto s = object();
     s->prop("name", string_());
     s->required({"name"});
+    auto result = s->safe_parse(json::object({{"name", "Alice"}, {"extra", "value"}}));
+    ASSERT(result.success);
+    ASSERT(!result.value.contains("extra"));
+}
+
+TEST("object: reject mode rejects unknown keys") {
+    auto s = object();
+    s->prop("name", string_());
+    s->required({"name"});
+    s->unknownKeys(UnknownKeyMode::Reject);
     auto result = s->safe_parse(json::object({{"name", "Alice"}, {"extra", "value"}}));
     ASSERT(!result.success);
     ASSERT(result.issues[0].code == "unknown_key");

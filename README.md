@@ -12,7 +12,7 @@
   <a href="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml"><img src="https://github.com/BetterCorp/AnyVali/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://codecov.io/gh/BetterCorp/AnyVali"><img src="https://codecov.io/gh/BetterCorp/AnyVali/graph/badge.svg?token=3H068H51QN" alt="codecov" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <a href="https://www.npmjs.com/package/@anyvali/js"><img src="https://img.shields.io/npm/v/%40anyvali%2Fjs.svg?label=npm" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/anyvali"><img src="https://img.shields.io/npm/v/anyvali.svg?label=npm" alt="npm" /></a>
   <a href="https://pypi.org/project/anyvali/"><img src="https://img.shields.io/pypi/v/anyvali.svg?label=pypi" alt="PyPI" /></a>
   <a href="https://crates.io/crates/anyvali"><img src="https://img.shields.io/crates/v/anyvali.svg?label=crates.io" alt="crates.io" /></a>
   <a href="https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go"><img src="https://img.shields.io/badge/go-pkg.go.dev-blue.svg" alt="Go" /></a>
@@ -42,7 +42,7 @@ AnyVali lets you write validation schemas in your language, then share them acro
 ## Install
 
 ```bash
-npm install @anyvali/js      # JavaScript / TypeScript
+npm install anyvali          # JavaScript / TypeScript
 pip install anyvali           # Python
 go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali             # Rust
@@ -86,7 +86,7 @@ Define a schema, parse input, get structured errors or clean data.
 <td>
 
 ```typescript
-import { string, int, object, array } from "@anyvali/js";
+import { string, int, object, array } from "anyvali";
 
 const User = object({
   name:  string().minLength(1),
@@ -158,7 +158,7 @@ if !result.Success {
 All 10 SDKs now provide static type inference, so parsed values carry the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
 
 ```typescript
-import { object, string, int, type Infer } from "@anyvali/js";
+import { object, string, int, type Infer } from "anyvali";
 
 const User = object({
   name: string().minLength(1),
@@ -207,8 +207,8 @@ result = schema.safe_parse(request_body)  # Same validation rules!
 The JS SDK also ships a small forms layer for browser-native fields, HTML5 attributes, and AnyVali validation.
 
 ```typescript
-import { object, string, int } from "@anyvali/js";
-import { initForm } from "@anyvali/js/forms";
+import { object, string, int } from "anyvali";
+import { initForm } from "anyvali/forms";
 
 const Signup = object({
   email: string().format("email"),
@@ -229,8 +229,8 @@ initForm("#signup", { schema: Signup });
 For JSX-style attribute binding:
 
 ```tsx
-import { object, string } from "@anyvali/js";
-import { createFormBindings } from "@anyvali/js/forms";
+import { object, string } from "anyvali";
+import { createFormBindings } from "anyvali/forms";
 
 const Signup = object({
   email: string().format("email"),
@@ -254,7 +254,7 @@ The portable JSON format:
       "email": { "kind": "string", "format": "email" }
     },
     "required": ["name", "email"],
-    "unknownKeys": "reject"
+    "unknownKeys": "strip"
   },
   "definitions": {},
   "extensions": {}
@@ -265,7 +265,7 @@ The portable JSON format:
 
 | Language | Package | Status |
 |----------|---------|--------|
-| JavaScript / TypeScript | [`@anyvali/js`](https://www.npmjs.com/package/@anyvali/js) | v0.0.1 |
+| JavaScript / TypeScript | [`anyvali`](https://www.npmjs.com/package/anyvali) | v0.0.1 |
 | Python | [`anyvali`](https://pypi.org/project/anyvali/) | v0.0.1 |
 | Go | [`github.com/BetterCorp/AnyVali/sdk/go`](https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go) | v0.0.1 |
 | Java | `com.anyvali:anyvali` | v0.0.1 |
