@@ -33,6 +33,115 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      - name: Add release PR summary
+        if: steps.release.outputs.prs_created == 'true'
+        uses: actions/github-script@v8
+        env:
+          RELEASE_PRS: ${{ steps.release.outputs.prs }}
+        with:
+          script: |
+            const prs = JSON.parse(process.env.RELEASE_PRS || '[]');
+            const markerStart = '<!-- anyvali-release-summary -->';
+            const markerEnd = '<!-- /anyvali-release-summary -->';
+            const labels = {
+              anyvali: { area: 'Core release', publish: 'GitHub release only' },
+              js: { area: 'JavaScript SDK', publish: 'npm' },
+              python: { area: 'Python SDK', publish: 'PyPI' },
+              go: { area: 'Go SDK', publish: 'Go module tag' },
+              rust: { area: 'Rust SDK', publish: 'crates.io' },
+              java: { area: 'Java SDK', publish: 'Maven Central' },
+              kotlin: { area: 'Kotlin SDK', publish: 'Maven Central' },
+              csharp: { area: 'C# SDK', publish: 'NuGet' },
+              ruby: { area: 'Ruby SDK', publish: 'RubyGems' },
+              php: { area: 'PHP SDK', publish: 'GitHub release only' },
+              cpp: { area: 'C++ SDK', publish: 'GitHub release only' },
+              cli: { area: 'CLI binaries', publish: 'GitHub release assets' },
+            };
+
+            function releaseRows(body) {
+              const rows = [];
+              const re = /<details><summary>([^:<]+):\s*([^<]+)<\/summary>/g;
+              for (const match of body.matchAll(re)) {
+                const component = match[1].trim();
+                const version = match[2].trim();
+                const meta = labels[component] || {
+                  area: component,
+                  publish: 'GitHub release',
+                };
+                rows.push(
+                  `| ${meta.area} | \`v${version.replace(/^v/, '')}\` | ${meta.publish} |`
+                );
+              }
+              return rows;
+            }
+
+            function changedAreas(files) {
+              const areas = new Set();
+              for (const file of files) {
+                const path = file.filename;
+                if (path === 'CHANGELOG.md' || path === '.release-please-manifest.json') areas.add('anyvali');
+                else if (path.startsWith('sdk/js/')) areas.add('js');
+                else if (path.startsWith('sdk/python/')) areas.add('python');
+                else if (path.startsWith('sdk/go/')) areas.add('go');
+                else if (path.startsWith('sdk/rust/')) areas.add('rust');
+                else if (path.startsWith('sdk/java/')) areas.add('java');
+                else if (path.startsWith('sdk/kotlin/')) areas.add('kotlin');
+                else if (path.startsWith('sdk/csharp/')) areas.add('csharp');
+                else if (path.startsWith('sdk/ruby/')) areas.add('ruby');
+                else if (path.startsWith('sdk/php/')) areas.add('php');
+                else if (path.startsWith('sdk/cpp/')) areas.add('cpp');
+                else if (path.startsWith('cli/')) areas.add('cli');
+              }
+              return [...areas].map(area => labels[area]?.area || area).sort();
+            }
+
+            for (const pr of prs) {
+              const number = pr.number;
+              const { data: pull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: number,
+              });
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: number,
+                per_page: 100,
+              });
+
+              const rows = releaseRows(pull.body || '');
+              const areas = changedAreas(files);
+              const summary = [
+                markerStart,
+                '## Release Impact',
+                '',
+                rows.length
+                  ? '| Package | Version | Publish after merge |\n| --- | --- | --- |\n' + rows.join('\n')
+                  : '_No package release entries were found in the generated release notes._',
+                '',
+                `Changed release areas: ${areas.length ? areas.map(a => `\`${a}\``).join(', ') : '`none detected`'}.`,
+                '',
+                'Merging this PR creates the listed GitHub releases and starts only the matching publish jobs.',
+                markerEnd,
+              ].join('\n');
+
+              const current = pull.body || '';
+              const block = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`);
+              let body;
+              if (block.test(current)) {
+                body = current.replace(block, summary);
+              } else {
+                body = current.replace(/---\n/, `---\n\n${summary}\n\n`);
+              }
+
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: number,
+                body,
+              });
+            }
+
   # --- Publish jobs: only run when releases are actually created ---
   # Releases are created when the release PR is merged.
   # On a normal push: Release Please creates/updates the release PR (no releases).
