@@ -1,5 +1,6 @@
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
 
 use crate::types::{ParseResult, PathSegment, ValidationError, ValidationIssue};
 
@@ -7,13 +8,23 @@ use crate::types::{ParseResult, PathSegment, ValidationError, ValidationIssue};
 #[derive(Debug, Clone)]
 pub struct ParseContext {
     pub definitions: HashMap<String, Box<dyn Schema>>,
+    active_refs: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ParseContext {
     pub fn new() -> Self {
         ParseContext {
             definitions: HashMap::new(),
+            active_refs: Arc::new(Mutex::new(HashSet::new())),
         }
+    }
+
+    pub fn enter_ref(&self, key: String) -> bool {
+        self.active_refs.lock().unwrap().insert(key)
+    }
+
+    pub fn exit_ref(&self, key: &str) {
+        self.active_refs.lock().unwrap().remove(key);
     }
 }
 

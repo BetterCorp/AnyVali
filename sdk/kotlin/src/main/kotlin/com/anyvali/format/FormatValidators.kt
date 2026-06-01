@@ -11,6 +11,9 @@ object FormatValidators {
     private val DATETIME_REGEX = Regex("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$")
 
     fun validate(format: String, value: String): Boolean {
+        if (format.isEmpty() || format.any { it.isISOControl() || it.isWhitespace() }) {
+            return false
+        }
         return when (format) {
             "email" -> isValidEmail(value)
             "url" -> isValidUrl(value)

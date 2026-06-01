@@ -134,24 +134,30 @@ final class CoercionTest extends TestCase
     {
         $s = AnyVali::int()->coerce('string->int');
         $result = $s->safeParse(42);
-        $this->assertFalse($result->success);
-        $this->assertSame(IssueCodes::COERCION_FAILED, $result->issues[0]->code);
+        // SPEC §Coercions: string->int only coerces strings; non-string input
+        // bypasses coercion and is validated as-is.
+        $this->assertTrue($result->success);
+        $this->assertSame(42, $result->value);
     }
 
     public function testStringToNumberNonStringInput(): void
     {
         $s = AnyVali::number()->coerce('string->number');
         $result = $s->safeParse(3.14);
-        $this->assertFalse($result->success);
-        $this->assertSame(IssueCodes::COERCION_FAILED, $result->issues[0]->code);
+        // SPEC §Coercions: string->number only coerces strings; non-string
+        // input bypasses coercion and is validated as-is.
+        $this->assertTrue($result->success);
+        $this->assertSame(3.14, $result->value);
     }
 
     public function testStringToBoolNonStringInput(): void
     {
         $s = AnyVali::bool()->coerce('string->bool');
         $result = $s->safeParse(true);
-        $this->assertFalse($result->success);
-        $this->assertSame(IssueCodes::COERCION_FAILED, $result->issues[0]->code);
+        // SPEC §Coercions: string->bool only coerces strings; non-string input
+        // bypasses coercion and is validated as-is.
+        $this->assertTrue($result->success);
+        $this->assertTrue($result->value);
     }
 
     public function testTrimNonStringPassesThrough(): void

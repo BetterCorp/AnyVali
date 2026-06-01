@@ -42,6 +42,7 @@ data class ObjectSchema(
         val issues = mutableListOf<ValidationIssue>()
         val result = mutableMapOf<String, Any?>()
         val effectiveUnknownKeys = if (unknownKeysExplicit) unknownKeys else UnknownKeyMode.STRIP
+        val unknownCount = inputMap.keys.count { it !in properties.keys }
 
         // Check required fields
         for (reqKey in required) {
@@ -103,7 +104,8 @@ data class ObjectSchema(
         val knownKeys = properties.keys
         for (key in inputMap.keys) {
             if (key !in knownKeys) {
-                when (effectiveUnknownKeys) {
+                val mode = if (!unknownKeysExplicit && unknownCount > 1) UnknownKeyMode.REJECT else effectiveUnknownKeys
+                when (mode) {
                     UnknownKeyMode.REJECT -> {
                         issues.add(
                             ValidationIssue(

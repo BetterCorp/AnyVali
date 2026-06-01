@@ -90,6 +90,18 @@ data class NumberSchema(
         val dbl = toDouble(value)
         val issues = mutableListOf<ValidationIssue>()
 
+        if (dbl.isNaN() || dbl.isInfinite()) {
+            issues.add(
+                ValidationIssue(
+                    code = IssueCodes.INVALID_NUMBER,
+                    path = ctx.path,
+                    expected = kind,
+                    received = dbl.toString()
+                )
+            )
+            return issues
+        }
+
         // Float32 range check
         if (schemaKind == "float32") {
             if (dbl != 0.0 && (dbl > Float.MAX_VALUE.toDouble() || dbl < -Float.MAX_VALUE.toDouble())) {

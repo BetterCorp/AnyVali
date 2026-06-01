@@ -73,27 +73,28 @@ data class StringSchema(
             )
         }
         val issues = mutableListOf<ValidationIssue>()
+        val length = value.codePointCount(0, value.length)
 
         minLength?.let {
-            if (value.length < it) {
+            if (length < it) {
                 issues.add(
                     ValidationIssue(
                         code = IssueCodes.TOO_SMALL,
                         path = ctx.path,
                         expected = it.toString(),
-                        received = value.length.toString()
+                        received = length.toString()
                     )
                 )
             }
         }
         maxLength?.let {
-            if (value.length > it) {
+            if (length > it) {
                 issues.add(
                     ValidationIssue(
                         code = IssueCodes.TOO_LARGE,
                         path = ctx.path,
                         expected = it.toString(),
-                        received = value.length.toString()
+                        received = length.toString()
                     )
                 )
             }

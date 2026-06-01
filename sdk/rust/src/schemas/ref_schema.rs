@@ -2,8 +2,8 @@ use serde_json::{json, Value};
 
 use crate::issue_codes::*;
 use crate::schema::{
-    ParseContext, Schema, DescribeOpts, add_metadata_to_node, build_describe_metadata,
-    merge_metadata, reserved_metadata_keys, validate_metadata_keys,
+    add_metadata_to_node, build_describe_metadata, merge_metadata, reserved_metadata_keys,
+    validate_metadata_keys, DescribeOpts, ParseContext, Schema,
 };
 use crate::types::{PathSegment, ValidationIssue};
 
@@ -81,7 +81,21 @@ impl Schema for RefSchema {
     ) -> Result<Value, Vec<ValidationIssue>> {
         let name = self.definition_name();
         match ctx.definitions.get(name) {
-            Some(schema) => schema.parse_value(input, path, ctx),
+            Some(schema) => {
+                let key = format!("{}@{:p}", name, input);
+                if !ctx.enter_ref(key.clone()) {
+                    return Err(vec![ValidationIssue {
+                        code: INVALID_TYPE.to_string(),
+                        path: path.to_vec(),
+                        expected: format!("ref({})", self.ref_path),
+                        received: "recursive reference".to_string(),
+                        meta: None,
+                    }]);
+                }
+                let result = schema.parse_value(input, path, ctx);
+                ctx.exit_ref(&key);
+                result
+            }
             None => Err(vec![ValidationIssue {
                 code: UNSUPPORTED_SCHEMA_KIND.to_string(),
                 path: path.to_vec(),
