@@ -174,9 +174,9 @@ fn cve_2003_1564_parse_time_self_cycle_does_not_hang_runtime() {
     let handle = std::thread::Builder::new()
         .stack_size(1024 * 1024)
         .spawn(move || {
-            let schema = import(json_str).expect("import");
+            let (schema, ctx) = import(json_str).expect("import");
             // Result here is irrelevant; we only need this call to *terminate*.
-            let _ = schema.safe_parse(&json!("anything"));
+            let _ = schema.safe_parse_with_context(&json!("anything"), &ctx);
         })
         .expect("spawn");
 
@@ -422,8 +422,8 @@ fn cwe_20_format_bypass_imported_tampered_email_format_not_unconstrained() {
         "definitions": {},
         "extensions": {}
     }"#;
-    let schema = import(json_str).expect("import");
-    let result = schema.safe_parse(&json!("not-an-email"));
+    let (schema, ctx) = import(json_str).expect("import");
+    let result = schema.safe_parse_with_context(&json!("not-an-email"), &ctx);
     assert!(
         !result.success,
         "imported tampered format name must not strip email validation"
@@ -565,8 +565,8 @@ fn unicode_length_imported_max_length_uses_code_points() {
         "definitions": {},
         "extensions": {}
     }"#;
-    let schema = import(json_str).expect("import");
-    assert!(schema.safe_parse(&json!("😀")).success);
+    let (schema, ctx) = import(json_str).expect("import");
+    assert!(schema.safe_parse_with_context(&json!("😀"), &ctx).success);
 }
 
 // =============================================================================

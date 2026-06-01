@@ -511,5 +511,5 @@ TEST("import: default unknown keys is strip") {
     auto result = parse_document(imported,
         json::object({{"name", "Alice"}, {"extra", "value"}}));
     ASSERT(result.success);
-    ASSERT(result.output == json::object({{"name", "Alice"}}));
+    ASSERT(result.value == json::object({{"name", "Alice"}}));
 }

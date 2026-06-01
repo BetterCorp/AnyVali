@@ -154,7 +154,11 @@ final class ObjectSchema extends Schema
         $knownKeys = array_keys($this->properties);
         foreach ($value as $key => $v) {
             if (!in_array($key, $knownKeys, true)) {
-                switch ($this->effectiveUnknownKeys()) {
+                $unknownMode = $this->effectiveUnknownKeys();
+                if (!$this->unknownKeysExplicit && self::isDangerousObjectKey((string)$key)) {
+                    $unknownMode = UnknownKeyMode::Reject;
+                }
+                switch ($unknownMode) {
                     case UnknownKeyMode::Reject:
                         $issues[] = new ValidationIssue(
                             code: IssueCodes::UNKNOWN_KEY,
@@ -179,6 +183,19 @@ final class ObjectSchema extends Schema
         }
 
         return ParseResult::ok($parsed);
+    }
+
+    private static function isDangerousObjectKey(string $key): bool
+    {
+        return in_array($key, [
+            '__proto__',
+            'constructor',
+            'prototype',
+            '__defineGetter__',
+            '__defineSetter__',
+            '__lookupGetter__',
+            '__lookupSetter__',
+        ], true);
     }
 
     /** @return array<string, Schema> */
