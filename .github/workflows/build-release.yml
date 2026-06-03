@@ -194,7 +194,6 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       (inputs.force_publish_all ||
-       inputs.force_publish_js ||
        inputs.force_publish_python ||
        inputs.force_publish_go ||
        inputs.force_publish_java ||
@@ -208,7 +207,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FORCE_ALL: ${{ inputs.force_publish_all }}
-          FORCE_JS: ${{ inputs.force_publish_js }}
           FORCE_PYTHON: ${{ inputs.force_publish_python }}
           FORCE_GO: ${{ inputs.force_publish_go }}
           FORCE_JAVA: ${{ inputs.force_publish_java }}
@@ -228,7 +226,6 @@ jobs:
             fi
           }
 
-          dispatch "$FORCE_JS" release-npm.yml
           dispatch "$FORCE_PYTHON" release-pypi.yml
           dispatch "$FORCE_GO" release-go.yml
           dispatch "$FORCE_JAVA" release-maven.yml
@@ -244,7 +241,10 @@ jobs:
 
   publish-npm:
     needs: build-release
-    if: needs.build-release.outputs.js_released == 'true'
+    if: >-
+      needs.build-release.outputs.js_released == 'true' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.force_publish_all || inputs.force_publish_js))
     uses: ./.github/workflows/release-npm.yml
     secrets: inherit
 
