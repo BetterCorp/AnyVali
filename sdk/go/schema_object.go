@@ -5,9 +5,9 @@ import "fmt"
 // ObjectSchema validates objects (maps) with defined properties.
 type ObjectSchema struct {
 	baseSchema
-	properties  map[string]Schema
-	required    map[string]bool
-	unknownKeys UnknownKeyMode
+	properties          map[string]Schema
+	required            map[string]bool
+	unknownKeys         UnknownKeyMode
 	unknownKeysExplicit bool
 }
 
@@ -17,9 +17,9 @@ func newObjectSchema(props map[string]Schema) *ObjectSchema {
 		required[k] = true
 	}
 	return &ObjectSchema{
-		properties:  props,
-		required:    required,
-		unknownKeys: Strip,
+		properties:          props,
+		required:            required,
+		unknownKeys:         Strip,
 		unknownKeysExplicit: false,
 	}
 }
@@ -107,7 +107,22 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 	for key, schema := range s.properties {
 		val, exists := obj[key]
 		if !exists {
-			if s.required[key] {
+			defaultInfo, canHaveDefault := schema.(interface{ defaultInfo() (any, bool) })
+			hasDefault := false
+			if canHaveDefault {
+				_, hasDefault = defaultInfo.defaultInfo()
+			}
+			if canHaveDefault && hasDefault {
+				result := schema.SafeParse(absentValue)
+				if !result.Success {
+					for _, issue := range result.Issues {
+						issue.Path = append([]any{key}, issue.Path...)
+						issues = append(issues, issue)
+					}
+				} else {
+					parsed[key] = result.Data
+				}
+			} else if s.required[key] {
 				// Check if the schema is optional
 				if _, isOpt := schema.(*OptionalSchema); isOpt {
 					continue

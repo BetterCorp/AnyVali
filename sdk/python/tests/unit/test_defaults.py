@@ -40,3 +40,41 @@ class TestDefaults:
         result = schema.safe_parse({})
         # Default of -1 violates min(0), so validation should fail
         assert not result.success
+
+    def test_null_is_not_absent_for_nullable_default(self):
+        schema = v.object_({
+            "value": v.nullable(v.string()).default("fallback"),
+        })
+        result = schema.safe_parse({"value": None})
+        assert result.success
+        assert result.data == {"value": None}
+
+    def test_falsy_defaults_are_applied(self):
+        schema = v.object_({
+            "count": v.int_().default(0),
+            "name": v.string().default(""),
+            "active": v.bool_().default(False),
+        })
+        result = schema.safe_parse({})
+        assert result.success
+        assert result.data == {"count": 0, "name": "", "active": False}
+
+    def test_nested_object_field_gets_default(self):
+        schema = v.object_({
+            "user": v.object_({
+                "name": v.string(),
+                "role": v.string().default("guest"),
+            }, required=["name"]),
+        }, required=["user"])
+        result = schema.safe_parse({"user": {"name": "Bob"}})
+        assert result.success
+        assert result.data == {"user": {"name": "Bob", "role": "guest"}}
+
+    def test_mutable_default_is_not_shared_between_parses(self):
+        schema = v.object_({
+            "tags": v.array(v.string()).default([]),
+        })
+        first = schema.parse({})
+        first["tags"].append("mutated")
+        second = schema.parse({})
+        assert second == {"tags": []}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { string, int, object, optional } from "../../src/index.js";
+import { string, int, object, optional, nullable, bool } from "../../src/index.js";
 
 describe("Defaults", () => {
   it("applies default when value is absent", () => {
@@ -45,5 +45,33 @@ describe("Defaults", () => {
     });
     const result = s.parse({});
     expect(result).toEqual({ count: 0 });
+  });
+
+  it("does not apply default when nullable field is null", () => {
+    const s = object({
+      value: nullable(string()).default("fallback"),
+    });
+    expect(s.parse({ value: null })).toEqual({ value: null });
+  });
+
+  it("applies falsy defaults", () => {
+    const s = object({
+      count: int().default(0),
+      name: string().default(""),
+      active: bool().default(false),
+    });
+    expect(s.parse({})).toEqual({ count: 0, name: "", active: false });
+  });
+
+  it("applies nested defaults", () => {
+    const s = object({
+      user: object({
+        name: string(),
+        role: string().default("guest"),
+      }),
+    });
+    expect(s.parse({ user: { name: "Bob" } })).toEqual({
+      user: { name: "Bob", role: "guest" },
+    });
   });
 });

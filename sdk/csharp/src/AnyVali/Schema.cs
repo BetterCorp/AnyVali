@@ -81,7 +81,7 @@ public abstract class Schema
         var usedDefault = false;
         if (isAbsent && !Absent.IsAbsent(DefaultValue))
         {
-            value = DefaultValue;
+            value = DeepCopyDefault(DefaultValue);
             usedDefault = true;
         }
 
@@ -346,6 +346,36 @@ public abstract class Schema
             ulong ul => (long)ul,
             _ => 0
         };
+    }
+
+    private static object? DeepCopyDefault(object? value)
+    {
+        switch (value)
+        {
+            case null:
+            case string:
+            case bool:
+            case byte:
+            case sbyte:
+            case short:
+            case ushort:
+            case int:
+            case uint:
+            case long:
+            case ulong:
+            case float:
+            case double:
+            case decimal:
+                return value;
+            case Dictionary<string, object?> dict:
+                return dict.ToDictionary(kvp => kvp.Key, kvp => DeepCopyDefault(kvp.Value));
+            case List<object?> list:
+                return list.Select(DeepCopyDefault).ToList();
+            case object?[] array:
+                return array.Select(DeepCopyDefault).ToArray();
+            default:
+                return value;
+        }
     }
 }
 

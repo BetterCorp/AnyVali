@@ -103,3 +103,49 @@ func TestDefaultObjectSchema(t *testing.T) {
 		t.Fatalf("expected success with default, got issues: %v", r.Issues)
 	}
 }
+
+func TestObjectFieldDefaultDoesNotOverrideNull(t *testing.T) {
+	s := Object(map[string]Schema{
+		"value": Nullable(String()).Default("fallback"),
+	})
+	r := s.SafeParse(map[string]any{"value": nil})
+	if !r.Success {
+		t.Fatalf("expected success, got issues: %v", r.Issues)
+	}
+	if r.Data.(map[string]any)["value"] != nil {
+		t.Fatalf("expected nil to remain present, got %v", r.Data)
+	}
+}
+
+func TestObjectFieldFalsyDefaults(t *testing.T) {
+	s := Object(map[string]Schema{
+		"count":  Int().Default(0),
+		"name":   String().Default(""),
+		"active": Bool().Default(false),
+	})
+	r := s.SafeParse(map[string]any{})
+	if !r.Success {
+		t.Fatalf("expected success, got issues: %v", r.Issues)
+	}
+	got := r.Data.(map[string]any)
+	if got["count"] != int64(0) || got["name"] != "" || got["active"] != false {
+		t.Fatalf("unexpected defaults: %#v", got)
+	}
+}
+
+func TestNestedObjectFieldDefault(t *testing.T) {
+	s := Object(map[string]Schema{
+		"user": Object(map[string]Schema{
+			"name": String(),
+			"role": String().Default("guest"),
+		}).Required("name"),
+	}).Required("user")
+	r := s.SafeParse(map[string]any{"user": map[string]any{"name": "Bob"}})
+	if !r.Success {
+		t.Fatalf("expected success, got issues: %v", r.Issues)
+	}
+	user := r.Data.(map[string]any)["user"].(map[string]any)
+	if user["role"] != "guest" {
+		t.Fatalf("expected nested default role, got %#v", user)
+	}
+}

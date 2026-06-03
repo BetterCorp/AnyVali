@@ -67,6 +67,10 @@ func (b *baseSchema) setDefault(value any) {
 	b.hasDefault = true
 }
 
+func (b *baseSchema) defaultInfo() (any, bool) {
+	return b.defaultValue, b.hasDefault
+}
+
 // SetCoerce adds a coercion to the schema.
 func (b *baseSchema) addCoercion(c CoercionType) {
 	b.coercions = append(b.coercions, c)
@@ -76,6 +80,7 @@ func (b *baseSchema) addCoercion(c CoercionType) {
 // validateFn performs the actual schema-specific validation and returns (parsedValue, issues).
 func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []ValidationIssue)) ParseResult {
 	value := input
+	usedDefault := false
 
 	// Step 1: presence detection
 	if value == nil || isAbsent(value) {
@@ -86,6 +91,7 @@ func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []Validat
 			// keys) alias the stored default, so without copying a mutation to
 			// one result would corrupt the default for the next parse.
 			value = deepCopyDefault(b.defaultValue)
+			usedDefault = true
 		} else if value == nil {
 			// nil is a present value (null), pass through to validation
 			value = nil
@@ -115,6 +121,16 @@ func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []Validat
 
 	// Step 4: validate
 	parsed, issues := validateFn(value)
+	if usedDefault && len(issues) > 0 {
+		first := issues[0]
+		issues = []ValidationIssue{{
+			Code:     IssueDefaultInvalid,
+			Message:  "default value is invalid",
+			Path:     first.Path,
+			Expected: first.Expected,
+			Received: first.Received,
+		}}
+	}
 
 	// Step 5: return result
 	if len(issues) > 0 {
