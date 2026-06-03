@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.5](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.4...anyvali-v0.3.5) (2026-06-03)
+
+
+### Bug Fixes
+
+* **defaults:** honor optional wrapper defaults ([1897554](https://github.com/BetterCorp/AnyVali/commit/1897554fa7d8a2cc86d98315dd9df01e208807bb))
+* **defaults:** honor optional wrapper defaults ([a2df41e](https://github.com/BetterCorp/AnyVali/commit/a2df41e47f3c4cfd4cd9fcea435df484001819ab))
+
 ## [0.3.4](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.3...anyvali-v0.3.4) (2026-06-03)
 
 
