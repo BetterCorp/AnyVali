@@ -27,8 +27,7 @@ class OptionalSchema(BaseSchema[T | None], Generic[T]):
         # If absent (sentinel), return None without error
         if input is _SENTINEL:
             if self._has_default:
-                import copy
-                return copy.deepcopy(self._default_value)
+                return super()._run_pipeline(input, ctx)
             return None
         return self._inner._run_pipeline(input, ctx)
 

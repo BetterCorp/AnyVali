@@ -73,6 +73,53 @@ class TestDefaults < Minitest::Test
     assert_equal({ "count" => 0, "name" => "", "active" => false }, result.value)
   end
 
+  def test_optional_wrapper_field_gets_default
+    schema = AnyVali.object(
+      properties: {
+        "host" => AnyVali.optional(AnyVali.string).default("localhost")
+      }
+    )
+
+    result = schema.safe_parse({})
+
+    assert result.success?, result.issues.map(&:to_h).inspect
+    assert_equal({ "host" => "localhost" }, result.value)
+  end
+
+  def test_optional_wrapper_default_does_not_override_present_field
+    schema = AnyVali.object(
+      properties: {
+        "host" => AnyVali.optional(AnyVali.string).default("localhost")
+      }
+    )
+
+    result = schema.safe_parse({ "host" => "example.com" })
+
+    assert result.success?, result.issues.map(&:to_h).inspect
+    assert_equal({ "host" => "example.com" }, result.value)
+  end
+
+  def test_optional_wrapper_default_is_validated
+    schema = AnyVali.object(
+      properties: {
+        "host" => AnyVali.optional(AnyVali.string.min_length(5)).default("hi")
+      }
+    )
+
+    result = schema.safe_parse({})
+
+    assert result.failure?
+    assert_equal "default_invalid", result.issues.first.code
+    assert_equal ["host"], result.issues.first.path
+  end
+
+  def test_optional_wrapper_default_is_exported
+    doc = AnyVali.optional(AnyVali.string).default("localhost").export
+
+    assert_equal "optional", doc["root"]["kind"]
+    assert_equal "localhost", doc["root"]["default"]
+  end
+
   def test_nested_object_field_gets_default
     schema = AnyVali.object(
       properties: {

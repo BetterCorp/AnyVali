@@ -3,10 +3,10 @@ use serde_json::{json, Value};
 
 use crate::issue_codes::*;
 use crate::schema::{
-    ParseContext, Schema, DescribeOpts, add_metadata_to_node, build_describe_metadata,
-    merge_metadata, reserved_metadata_keys, validate_metadata_keys,
+    add_metadata_to_node, build_describe_metadata, merge_metadata, reserved_metadata_keys,
+    validate_metadata_keys, DescribeOpts, ParseContext, Schema,
 };
-use crate::types::{PathSegment, UnknownKeyMode, ValidationIssue, value_type_name};
+use crate::types::{value_type_name, PathSegment, UnknownKeyMode, ValidationIssue};
 
 /// A field definition in an object schema.
 #[derive(Debug, Clone)]
@@ -173,7 +173,11 @@ impl Schema for ObjectSchema {
                     }
                     Err(mut errs) => issues.append(&mut errs),
                 }
-            } else if let Some(default) = &field_def.default_value {
+            } else if let Some(default) = field_def
+                .default_value
+                .as_ref()
+                .or_else(|| field_def.schema.default_value())
+            {
                 // Field absent, has default - apply default then validate
                 match field_def.schema.parse_value(default, &field_path, ctx) {
                     Ok(v) => {
@@ -204,7 +208,10 @@ impl Schema for ObjectSchema {
         }
 
         // Check unknown keys
-        let unknown_count = obj.keys().filter(|key| !self.properties.contains_key(*key)).count();
+        let unknown_count = obj
+            .keys()
+            .filter(|key| !self.properties.contains_key(*key))
+            .count();
         for key in obj.keys() {
             if !self.properties.contains_key(key) {
                 let mode = if !self.unknown_keys_explicit && unknown_count > 1 {
@@ -245,15 +252,16 @@ impl Schema for ObjectSchema {
         let mut props = json!({});
         for (name, field) in &self.properties {
             let mut node = field.schema.export_node();
-            if let Some(default) = &field.default_value {
+            if let Some(default) = field
+                .default_value
+                .as_ref()
+                .or_else(|| field.schema.default_value())
+            {
                 node.as_object_mut()
                     .unwrap()
                     .insert("default".to_string(), default.clone());
             }
-            props
-                .as_object_mut()
-                .unwrap()
-                .insert(name.clone(), node);
+            props.as_object_mut().unwrap().insert(name.clone(), node);
         }
 
         let mut node = json!({

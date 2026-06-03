@@ -133,6 +133,76 @@ func TestObjectFieldFalsyDefaults(t *testing.T) {
 	}
 }
 
+func TestOptionalWrapperFieldDefault(t *testing.T) {
+	s := Object(map[string]Schema{
+		"host": Optional(String()).Default("localhost"),
+	})
+	r := s.SafeParse(map[string]any{})
+	if !r.Success {
+		t.Fatalf("expected success, got issues: %v", r.Issues)
+	}
+	got := r.Data.(map[string]any)
+	if got["host"] != "localhost" {
+		t.Fatalf("expected localhost, got %#v", got)
+	}
+}
+
+func TestOptionalWrapperDefaultDoesNotOverridePresentField(t *testing.T) {
+	s := Object(map[string]Schema{
+		"host": Optional(String()).Default("localhost"),
+	})
+	r := s.SafeParse(map[string]any{"host": "example.com"})
+	if !r.Success {
+		t.Fatalf("expected success, got issues: %v", r.Issues)
+	}
+	got := r.Data.(map[string]any)
+	if got["host"] != "example.com" {
+		t.Fatalf("expected example.com, got %#v", got)
+	}
+}
+
+func TestOptionalWrapperDefaultIsValidated(t *testing.T) {
+	s := Object(map[string]Schema{
+		"host": Optional(String().MinLength(5)).Default("hi"),
+	})
+	r := s.SafeParse(map[string]any{})
+	if r.Success {
+		t.Fatalf("expected failure")
+	}
+	if r.Issues[0].Code != IssueDefaultInvalid {
+		t.Fatalf("expected default_invalid, got %s", r.Issues[0].Code)
+	}
+}
+
+func TestOptionalWrapperDefaultIsExported(t *testing.T) {
+	node := Optional(String()).Default("localhost").ToNode()
+	if node["kind"] != "optional" || node["default"] != "localhost" {
+		t.Fatalf("unexpected node: %#v", node)
+	}
+}
+
+func TestMutableOptionalWrapperDefaultIsNotSharedBetweenParses(t *testing.T) {
+	s := Object(map[string]Schema{
+		"meta": Optional(Any()).Default(map[string]any{"items": []any{}}),
+	})
+	first := s.SafeParse(map[string]any{})
+	if !first.Success {
+		t.Fatalf("expected success, got issues: %v", first.Issues)
+	}
+	firstMeta := first.Data.(map[string]any)["meta"].(map[string]any)
+	firstItems := firstMeta["items"].([]any)
+	firstMeta["items"] = append(firstItems, "mutated")
+
+	second := s.SafeParse(map[string]any{})
+	if !second.Success {
+		t.Fatalf("expected success, got issues: %v", second.Issues)
+	}
+	secondMeta := second.Data.(map[string]any)["meta"].(map[string]any)
+	if len(secondMeta["items"].([]any)) != 0 {
+		t.Fatalf("expected empty default items, got %#v", secondMeta)
+	}
+}
+
 func TestNestedObjectFieldDefault(t *testing.T) {
 	s := Object(map[string]Schema{
 		"user": Object(map[string]Schema{

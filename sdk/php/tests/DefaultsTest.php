@@ -74,6 +74,51 @@ final class DefaultsTest extends TestCase
         $this->assertSame(['count' => 0, 'name' => '', 'active' => false], $result->value);
     }
 
+    public function testOptionalWrapperFieldGetsDefault(): void
+    {
+        $schema = AnyVali::object([
+            'host' => AnyVali::optional(AnyVali::string())->default('localhost'),
+        ]);
+
+        $result = $schema->safeParse([]);
+
+        $this->assertTrue($result->success, json_encode(array_map(fn($i) => $i->toArray(), $result->issues)));
+        $this->assertSame(['host' => 'localhost'], $result->value);
+    }
+
+    public function testOptionalWrapperDefaultDoesNotOverridePresentField(): void
+    {
+        $schema = AnyVali::object([
+            'host' => AnyVali::optional(AnyVali::string())->default('localhost'),
+        ]);
+
+        $result = $schema->safeParse(['host' => 'example.com']);
+
+        $this->assertTrue($result->success, json_encode(array_map(fn($i) => $i->toArray(), $result->issues)));
+        $this->assertSame(['host' => 'example.com'], $result->value);
+    }
+
+    public function testOptionalWrapperDefaultIsValidated(): void
+    {
+        $schema = AnyVali::object([
+            'host' => AnyVali::optional(AnyVali::string()->minLength(5))->default('hi'),
+        ]);
+
+        $result = $schema->safeParse([]);
+
+        $this->assertFalse($result->success);
+        $this->assertSame(IssueCodes::DEFAULT_INVALID, $result->issues[0]->code);
+        $this->assertSame(['host'], $result->issues[0]->path);
+    }
+
+    public function testOptionalWrapperDefaultIsExported(): void
+    {
+        $doc = AnyVali::optional(AnyVali::string())->default('localhost')->export();
+
+        $this->assertSame('optional', $doc->root['kind']);
+        $this->assertSame('localhost', $doc->root['default']);
+    }
+
     public function testNestedObjectFieldGetsDefault(): void
     {
         $schema = AnyVali::object([

@@ -1,6 +1,7 @@
 package com.anyvali
 
 import org.junit.jupiter.api.Test
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
@@ -70,6 +71,45 @@ class DefaultsTest {
         assertEquals(0L, result.value["count"])
         assertEquals("", result.value["name"])
         assertEquals(false, result.value["active"])
+    }
+
+    @Test
+    fun `optional wrapper field gets default`() {
+        val schema = obj(mapOf("host" to optional(string()).default("localhost")))
+
+        val result = schema.safeParse(emptyMap<String, Any?>())
+
+        assertIs<ParseResult.Success<Map<String, Any?>>>(result)
+        assertEquals("localhost", result.value["host"])
+    }
+
+    @Test
+    fun `optional wrapper default does not override present field`() {
+        val schema = obj(mapOf("host" to optional(string()).default("localhost")))
+
+        val result = schema.safeParse(mapOf("host" to "example.com"))
+
+        assertIs<ParseResult.Success<Map<String, Any?>>>(result)
+        assertEquals("example.com", result.value["host"])
+    }
+
+    @Test
+    fun `optional wrapper default is validated`() {
+        val schema = obj(mapOf("host" to optional(string().minLength(5)).default("hi")))
+
+        val result = schema.safeParse(emptyMap<String, Any?>())
+
+        assertIs<ParseResult.Failure>(result)
+        assertEquals(IssueCodes.DEFAULT_INVALID, result.issues[0].code)
+        assertEquals(listOf("host"), result.issues[0].path)
+    }
+
+    @Test
+    fun `optional wrapper default is exported`() {
+        val doc = optional(string()).default("localhost").export()
+
+        assertEquals(JsonPrimitive("optional"), doc.root["kind"])
+        assertEquals(JsonPrimitive("localhost"), doc.root["default"])
     }
 
     @Test

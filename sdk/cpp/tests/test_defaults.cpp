@@ -74,6 +74,68 @@ TEST("defaults: falsy defaults are applied") {
     ASSERT_JSON_EQ(result.value, json::object({{"count", 0}, {"name", ""}, {"active", false}}));
 }
 
+TEST("defaults: optional wrapper field gets default") {
+    auto s = object();
+    auto host = optional_(string_());
+    host->set_default(json("localhost"));
+    s->prop("host", host);
+
+    auto result = s->safe_parse(json::object());
+
+    ASSERT(result.success);
+    ASSERT_JSON_EQ(result.value, json::object({{"host", "localhost"}}));
+}
+
+TEST("defaults: optional wrapper default does not override present field") {
+    auto s = object();
+    auto host = optional_(string_());
+    host->set_default(json("localhost"));
+    s->prop("host", host);
+
+    auto result = s->safe_parse(json::object({{"host", "example.com"}}));
+
+    ASSERT(result.success);
+    ASSERT_JSON_EQ(result.value, json::object({{"host", "example.com"}}));
+}
+
+TEST("defaults: optional wrapper default is validated") {
+    auto s = object();
+    auto inner = string_();
+    inner->minLength(5);
+    auto host = optional_(inner);
+    host->set_default(json("hi"));
+    s->prop("host", host);
+
+    auto result = s->safe_parse(json::object());
+
+    ASSERT(!result.success);
+    ASSERT(result.issues[0].code == "default_invalid");
+    ASSERT(result.issues[0].path.size() == 1);
+}
+
+TEST("defaults: optional wrapper default is exported") {
+    auto host = optional_(string_());
+    host->set_default(json("localhost"));
+
+    auto node = host->export_node();
+
+    ASSERT_JSON_EQ(node["kind"], json("optional"));
+    ASSERT_JSON_EQ(node["default"], json("localhost"));
+}
+
+TEST("defaults: mutable optional wrapper default is not shared between parses") {
+    auto s = object();
+    auto meta = optional_(any());
+    meta->set_default(json::object({{"items", json::array()}}));
+    s->prop("meta", meta);
+
+    auto first = s->parse(json::object());
+    first["meta"]["items"].push_back("mutated");
+
+    auto second = s->parse(json::object());
+    ASSERT_JSON_EQ(second, json::object({{"meta", json::object({{"items", json::array()}})}}));
+}
+
 TEST("defaults: nested object field gets default") {
     auto s = object();
     auto user = object();

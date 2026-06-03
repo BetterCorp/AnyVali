@@ -1,8 +1,8 @@
 use serde_json::{json, Value};
 
 use crate::schema::{
-    ParseContext, Schema, DescribeOpts, add_metadata_to_node, build_describe_metadata,
-    merge_metadata, reserved_metadata_keys, validate_metadata_keys,
+    add_metadata_to_node, build_describe_metadata, merge_metadata, reserved_metadata_keys,
+    validate_metadata_keys, DescribeOpts, ParseContext, Schema,
 };
 use crate::types::{PathSegment, ValidationIssue};
 
@@ -95,5 +95,9 @@ impl Schema for OptionalSchema {
         }
         add_metadata_to_node(&mut node, &self.metadata);
         node
+    }
+
+    fn default_value(&self) -> Option<&Value> {
+        self.default_value.as_ref()
     }
 }

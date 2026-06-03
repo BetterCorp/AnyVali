@@ -32,7 +32,10 @@ fn invalid_default_produces_default_invalid() {
 
     assert!(!result.success);
     assert_eq!(result.issues[0].code, "default_invalid");
-    assert_eq!(result.issues[0].path, vec![PathSegment::Key("count".to_string())]);
+    assert_eq!(
+        result.issues[0].path,
+        vec![PathSegment::Key("count".to_string())]
+    );
 }
 
 #[test]
@@ -63,6 +66,76 @@ fn falsy_defaults_are_applied() {
         result.value.unwrap(),
         json!({"count": 0, "name": "", "active": false})
     );
+}
+
+#[test]
+fn optional_wrapper_field_gets_default() {
+    let schema = object().field(
+        "host",
+        Box::new(optional(Box::new(string())).default(json!("localhost"))),
+    );
+
+    let result = schema.safe_parse(&json!({}));
+
+    assert!(result.success, "{:?}", result.issues);
+    assert_eq!(result.value.unwrap(), json!({"host": "localhost"}));
+}
+
+#[test]
+fn optional_wrapper_default_does_not_override_present_field() {
+    let schema = object().field(
+        "host",
+        Box::new(optional(Box::new(string())).default(json!("localhost"))),
+    );
+
+    let result = schema.safe_parse(&json!({"host": "example.com"}));
+
+    assert!(result.success, "{:?}", result.issues);
+    assert_eq!(result.value.unwrap(), json!({"host": "example.com"}));
+}
+
+#[test]
+fn optional_wrapper_default_is_validated() {
+    let schema = object().field(
+        "host",
+        Box::new(optional(Box::new(string().min_length(5))).default(json!("hi"))),
+    );
+
+    let result = schema.safe_parse(&json!({}));
+
+    assert!(!result.success);
+    assert_eq!(result.issues[0].code, "default_invalid");
+    assert_eq!(
+        result.issues[0].path,
+        vec![PathSegment::Key("host".to_string())]
+    );
+}
+
+#[test]
+fn optional_wrapper_default_is_exported() {
+    let node = optional(Box::new(string()))
+        .default(json!("localhost"))
+        .export_node();
+
+    assert_eq!(node["kind"], json!("optional"));
+    assert_eq!(node["default"], json!("localhost"));
+}
+
+#[test]
+fn mutable_optional_wrapper_default_is_not_shared_between_parses() {
+    let schema = object().field(
+        "meta",
+        Box::new(optional(Box::new(any())).default(json!({"items": []}))),
+    );
+
+    let mut first = schema.safe_parse(&json!({})).value.unwrap();
+    first["meta"]["items"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!("mutated"));
+
+    let second = schema.safe_parse(&json!({})).value.unwrap();
+    assert_eq!(second, json!({"meta": {"items": []}}));
 }
 
 #[test]
