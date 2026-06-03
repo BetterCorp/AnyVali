@@ -107,6 +107,31 @@ public class IntSchema extends Schema<Long> {
     }
 
     @Override
+    public Object runPipeline(Object input, ValidationContext ctx) {
+        boolean isAbsent = (input == ABSENT) || (input == null && !acceptsNull());
+        if (!isAbsent || !hasDefault) {
+            return super.runPipeline(input, ctx);
+        }
+
+        Object value = deepCopyValue(defaultValue);
+        int issuesBefore = ctx.issueCount();
+        validate(value, ctx);
+        if (ctx.issueCount() > issuesBefore) {
+            var allIssues = ctx.getIssues();
+            var newIssues = allIssues.subList(issuesBefore, allIssues.size());
+            String expectedStr = !newIssues.isEmpty() && newIssues.get(0).expected() != null
+                    ? String.valueOf(newIssues.get(0).expected()) : null;
+            newIssues.clear();
+            ctx.addIssue(IssueCodes.DEFAULT_INVALID,
+                    "Default value " + defaultValue + " is invalid",
+                    expectedStr, String.valueOf(defaultValue));
+            return null;
+        }
+
+        return materializeDefault(value);
+    }
+
+    @Override
     protected Object validate(Object input, ValidationContext ctx) {
         // Reject booleans
         if (input instanceof Boolean) {
@@ -184,6 +209,21 @@ public class IntSchema extends Schema<Long> {
             }
         }
 
+        return value;
+    }
+
+    private Object materializeDefault(Object value) {
+        if (value instanceof Byte || value instanceof Short
+                || value instanceof Integer || value instanceof Long) {
+            return value;
+        }
+        if (value instanceof Number n) {
+            long longValue = n.longValue();
+            if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                return (int) longValue;
+            }
+            return longValue;
+        }
         return value;
     }
 
