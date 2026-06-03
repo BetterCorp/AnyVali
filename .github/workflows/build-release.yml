@@ -224,7 +224,7 @@ jobs:
 
             if [[ "$FORCE_ALL" == "true" || "$enabled" == "true" ]]; then
               echo "Dispatching $workflow on ${GITHUB_REF_NAME}"
-              gh workflow run "$workflow" --ref "${GITHUB_REF_NAME}"
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "${GITHUB_REF_NAME}"
             fi
           }
 
