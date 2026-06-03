@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.2...java-v0.1.3) (2026-06-03)
+
+
+### Bug Fixes
+
+* **java:** preserve integer default width ([7e334be](https://github.com/BetterCorp/AnyVali/commit/7e334beba07324a74c62fc4c3894d55d8d8dc40f))
+
 ## [0.1.2](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.1...java-v0.1.2) (2026-06-01)
 
 
