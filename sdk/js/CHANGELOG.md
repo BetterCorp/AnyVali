@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.2...js-v0.3.3) (2026-06-03)
+
+
+### Bug Fixes
+
+* **defaults:** honor optional wrapper defaults ([1897554](https://github.com/BetterCorp/AnyVali/commit/1897554fa7d8a2cc86d98315dd9df01e208807bb))
+* **defaults:** honor optional wrapper defaults ([a2df41e](https://github.com/BetterCorp/AnyVali/commit/a2df41e47f3c4cfd4cd9fcea435df484001819ab))
+
 ## [0.3.2](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.1...js-v0.3.2) (2026-06-01)
 
 
