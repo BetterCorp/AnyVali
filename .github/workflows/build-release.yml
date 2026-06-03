@@ -5,8 +5,55 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      force_publish_all:
+        description: Force publish all registry-backed SDKs
+        required: true
+        default: false
+        type: boolean
+      force_publish_js:
+        description: Force publish JavaScript SDK to npm
+        required: true
+        default: false
+        type: boolean
+      force_publish_python:
+        description: Force publish Python SDK to PyPI
+        required: true
+        default: false
+        type: boolean
+      force_publish_go:
+        description: Force verify Go module tag
+        required: true
+        default: false
+        type: boolean
+      force_publish_java:
+        description: Force publish Java SDK to Maven Central
+        required: true
+        default: false
+        type: boolean
+      force_publish_kotlin:
+        description: Force publish Kotlin SDK to Maven Central
+        required: true
+        default: false
+        type: boolean
+      force_publish_rust:
+        description: Force publish Rust SDK to crates.io
+        required: true
+        default: false
+        type: boolean
+      force_publish_csharp:
+        description: Force publish C# SDK to NuGet
+        required: true
+        default: false
+        type: boolean
+      force_publish_ruby:
+        description: Force publish Ruby SDK to RubyGems
+        required: true
+        default: false
+        type: boolean
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
   issues: write
@@ -141,6 +188,54 @@ jobs:
                 body,
               });
             }
+
+  force-publish-sdks:
+    needs: build-release
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (inputs.force_publish_all ||
+       inputs.force_publish_js ||
+       inputs.force_publish_python ||
+       inputs.force_publish_go ||
+       inputs.force_publish_java ||
+       inputs.force_publish_kotlin ||
+       inputs.force_publish_rust ||
+       inputs.force_publish_csharp ||
+       inputs.force_publish_ruby)
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Dispatch selected SDK publish workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE_ALL: ${{ inputs.force_publish_all }}
+          FORCE_JS: ${{ inputs.force_publish_js }}
+          FORCE_PYTHON: ${{ inputs.force_publish_python }}
+          FORCE_GO: ${{ inputs.force_publish_go }}
+          FORCE_JAVA: ${{ inputs.force_publish_java }}
+          FORCE_KOTLIN: ${{ inputs.force_publish_kotlin }}
+          FORCE_RUST: ${{ inputs.force_publish_rust }}
+          FORCE_CSHARP: ${{ inputs.force_publish_csharp }}
+          FORCE_RUBY: ${{ inputs.force_publish_ruby }}
+        shell: bash
+        run: |
+          dispatch() {
+            local enabled="$1"
+            local workflow="$2"
+
+            if [[ "$FORCE_ALL" == "true" || "$enabled" == "true" ]]; then
+              echo "Dispatching $workflow on ${GITHUB_REF_NAME}"
+              gh workflow run "$workflow" --ref "${GITHUB_REF_NAME}"
+            fi
+          }
+
+          dispatch "$FORCE_JS" release-npm.yml
+          dispatch "$FORCE_PYTHON" release-pypi.yml
+          dispatch "$FORCE_GO" release-go.yml
+          dispatch "$FORCE_JAVA" release-maven.yml
+          dispatch "$FORCE_KOTLIN" release-kotlin.yml
+          dispatch "$FORCE_RUST" release-crates.yml
+          dispatch "$FORCE_CSHARP" release-nuget.yml
+          dispatch "$FORCE_RUBY" release-rubygems.yml
 
   # --- Publish jobs: only run when releases are actually created ---
   # Releases are created when the release PR is merged.
