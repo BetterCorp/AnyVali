@@ -86,6 +86,60 @@ public class DefaultsTests
     }
 
     [Fact]
+    public void OptionalWrapperFieldGetsDefault()
+    {
+        var schema = V.Object(new Dictionary<string, Schema>
+        {
+            ["host"] = V.Optional(V.String()).Default("localhost"),
+        });
+
+        var result = schema.SafeParse(new Dictionary<string, object?>());
+
+        Assert.True(result.Success, string.Join(", ", result.Issues.Select(i => i.Code)));
+        var data = Assert.IsType<Dictionary<string, object?>>(result.Data);
+        Assert.Equal("localhost", data["host"]);
+    }
+
+    [Fact]
+    public void OptionalWrapperDefaultDoesNotOverridePresentField()
+    {
+        var schema = V.Object(new Dictionary<string, Schema>
+        {
+            ["host"] = V.Optional(V.String()).Default("localhost"),
+        });
+
+        var result = schema.SafeParse(new Dictionary<string, object?> { ["host"] = "example.com" });
+
+        Assert.True(result.Success, string.Join(", ", result.Issues.Select(i => i.Code)));
+        var data = Assert.IsType<Dictionary<string, object?>>(result.Data);
+        Assert.Equal("example.com", data["host"]);
+    }
+
+    [Fact]
+    public void OptionalWrapperDefaultIsValidated()
+    {
+        var schema = V.Object(new Dictionary<string, Schema>
+        {
+            ["host"] = V.Optional(V.String().MinLength(5)).Default("hi"),
+        });
+
+        var result = schema.SafeParse(new Dictionary<string, object?>());
+
+        Assert.False(result.Success);
+        Assert.Equal(IssueCodes.DefaultInvalid, result.Issues[0].Code);
+        Assert.Equal(new object[] { "host" }, result.Issues[0].Path);
+    }
+
+    [Fact]
+    public void OptionalWrapperDefaultIsExported()
+    {
+        var doc = V.Optional(V.String()).Default("localhost").Export();
+
+        Assert.Equal("optional", doc.Root["kind"]);
+        Assert.Equal("localhost", doc.Root["default"]);
+    }
+
+    [Fact]
     public void NestedObjectFieldGetsDefault()
     {
         var schema = V.Object(new Dictionary<string, Schema>
@@ -114,6 +168,29 @@ public class DefaultsTests
         var schema = V.Object(new Dictionary<string, Schema>
         {
             ["meta"] = V.Any().Default(new Dictionary<string, object?>
+            {
+                ["items"] = new List<object?>(),
+            }),
+        });
+
+        var first = Assert.IsType<Dictionary<string, object?>>(
+            schema.Parse(new Dictionary<string, object?>()));
+        var firstMeta = Assert.IsType<Dictionary<string, object?>>(first["meta"]);
+        var firstItems = Assert.IsType<List<object?>>(firstMeta["items"]);
+        firstItems.Add("mutated");
+
+        var second = Assert.IsType<Dictionary<string, object?>>(
+            schema.Parse(new Dictionary<string, object?>()));
+        var secondMeta = Assert.IsType<Dictionary<string, object?>>(second["meta"]);
+        Assert.Empty(Assert.IsType<List<object?>>(secondMeta["items"]));
+    }
+
+    [Fact]
+    public void MutableOptionalWrapperDefaultIsNotSharedBetweenParses()
+    {
+        var schema = V.Object(new Dictionary<string, Schema>
+        {
+            ["meta"] = V.Optional(V.Any()).Default(new Dictionary<string, object?>
             {
                 ["items"] = new List<object?>(),
             }),

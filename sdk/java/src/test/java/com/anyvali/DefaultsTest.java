@@ -82,6 +82,53 @@ class DefaultsTest {
     }
 
     @Test
+    void optionalWrapperFieldGetsDefault() {
+        var schema = object_(Map.of(
+                "host", optional(string()).withDefault("localhost")
+        ));
+
+        var result = schema.safeParse(Map.of());
+
+        assertTrue(result.success(), () -> result.issues().toString());
+        assertEquals("localhost", result.data().get("host"));
+    }
+
+    @Test
+    void optionalWrapperDefaultDoesNotOverridePresentField() {
+        var schema = object_(Map.of(
+                "host", optional(string()).withDefault("localhost")
+        ));
+
+        var result = schema.safeParse(Map.of("host", "example.com"));
+
+        assertTrue(result.success(), () -> result.issues().toString());
+        assertEquals("example.com", result.data().get("host"));
+    }
+
+    @Test
+    void optionalWrapperDefaultIsValidated() {
+        var schema = object_(Map.of(
+                "host", optional(string().minLength(5)).withDefault("hi")
+        ));
+
+        var result = schema.safeParse(Map.of());
+
+        assertFalse(result.success());
+        assertEquals(IssueCodes.DEFAULT_INVALID, result.issues().get(0).code());
+        assertEquals(List.of("host"), result.issues().get(0).path());
+    }
+
+    @Test
+    void optionalWrapperDefaultIsExported() {
+        var doc = optional(string()).withDefault("localhost").export();
+        @SuppressWarnings("unchecked")
+        var root = (Map<String, Object>) doc.get("root");
+
+        assertEquals("optional", root.get("kind"));
+        assertEquals("localhost", root.get("default"));
+    }
+
+    @Test
     void nestedObjectFieldGetsDefault() {
         var schema = object_(Map.of(
                 "user", object_(Map.of(
@@ -102,6 +149,25 @@ class DefaultsTest {
     void mutableDefaultIsNotSharedBetweenParses() {
         var schema = object_(Map.of(
                 "meta", any_().withDefault(Map.of("items", new ArrayList<>()))
+        ));
+
+        var first = schema.parse(Map.of());
+        @SuppressWarnings("unchecked")
+        var firstMeta = (Map<String, Object>) first.get("meta");
+        @SuppressWarnings("unchecked")
+        var firstItems = (List<Object>) firstMeta.get("items");
+        firstItems.add("mutated");
+
+        var second = schema.parse(Map.of());
+        @SuppressWarnings("unchecked")
+        var secondMeta = (Map<String, Object>) second.get("meta");
+        assertEquals(List.of(), secondMeta.get("items"));
+    }
+
+    @Test
+    void mutableOptionalWrapperDefaultIsNotSharedBetweenParses() {
+        var schema = object_(Map.of(
+                "meta", optional(any_()).withDefault(Map.of("items", new ArrayList<>()))
         ));
 
         var first = schema.parse(Map.of());

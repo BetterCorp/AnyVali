@@ -26,9 +26,8 @@ public sealed class OptionalSchema : Schema<object?>
     {
         var isAbsent = Absent.IsAbsent(input);
 
-        // If absent and inner has default, delegate to inner
-        if (isAbsent && !Absent.IsAbsent(Inner.DefaultValue))
-            return Inner.RunPipeline(input, ctx);
+        if (isAbsent && !Absent.IsAbsent(DefaultValue))
+            return base.RunPipeline(input, ctx);
 
         if (isAbsent)
             return null;

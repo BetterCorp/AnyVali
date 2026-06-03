@@ -42,15 +42,18 @@ func (s *OptionalSchema) Parse(input any) (any, error) {
 }
 
 func (s *OptionalSchema) SafeParse(input any) ParseResult {
-	// If absent and has default, use the default
-	if input == nil || isAbsent(input) {
-		if s.hasDefault {
-			// Validate the default through the inner schema
-			return s.inner.SafeParse(s.defaultValue)
-		}
-		return ParseResult{Success: true, Data: nil}
+	return s.runPipeline(input, s.validate)
+}
+
+func (s *OptionalSchema) validate(value any) (any, []ValidationIssue) {
+	if value == nil {
+		return nil, nil
 	}
-	return s.inner.SafeParse(input)
+	result := s.inner.SafeParse(value)
+	if result.Success {
+		return result.Data, nil
+	}
+	return nil, result.Issues
 }
 
 func (s *OptionalSchema) ToNode() map[string]any {

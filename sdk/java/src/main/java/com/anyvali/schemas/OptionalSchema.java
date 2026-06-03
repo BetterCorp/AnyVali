@@ -36,10 +36,9 @@ public class OptionalSchema extends Schema<Object> {
 
     @Override
     public Object runPipeline(Object input, ValidationContext ctx) {
-        // If absent (sentinel), return null without error
         if (input == ABSENT) {
             if (hasDefault) {
-                return deepCopyValue(defaultValue);
+                return super.runPipeline(input, ctx);
             }
             return null;
         }

@@ -150,7 +150,10 @@ data class ObjectSchema(
                 is NumberSchema -> if (schema.defaultValue !== NumberSchema.UNSET) "number" to schema.defaultValue else null
                 is BoolSchema -> if (schema.defaultValue !== BoolSchema.UNSET) "bool" to schema.defaultValue else null
                 is NullableSchema -> getDefault(schema.inner)
-                is OptionalSchema -> getDefault(schema.inner)
+                is OptionalSchema -> {
+                    if (schema.defaultValue !== OptionalSchema.UNSET) "optional" to schema.defaultValue
+                    else getDefault(schema.inner)
+                }
                 else -> null
             }
         }

@@ -59,6 +59,36 @@ class TestDefaults:
         assert result.success
         assert result.data == {"count": 0, "name": "", "active": False}
 
+    def test_optional_wrapper_field_gets_default(self):
+        schema = v.object_({
+            "host": v.optional(v.string()).default("localhost"),
+        })
+        result = schema.safe_parse({})
+        assert result.success
+        assert result.data == {"host": "localhost"}
+
+    def test_optional_wrapper_default_does_not_override_present_field(self):
+        schema = v.object_({
+            "host": v.optional(v.string()).default("localhost"),
+        })
+        result = schema.safe_parse({"host": "example.com"})
+        assert result.success
+        assert result.data == {"host": "example.com"}
+
+    def test_optional_wrapper_default_is_validated(self):
+        schema = v.object_({
+            "host": v.optional(v.string().min_length(5)).default("hi"),
+        })
+        result = schema.safe_parse({})
+        assert not result.success
+        assert result.issues[0].code == v.DEFAULT_INVALID
+        assert result.issues[0].path == ["host"]
+
+    def test_optional_wrapper_default_is_exported(self):
+        doc = v.optional(v.string()).default("localhost").export()
+        assert doc["root"]["kind"] == "optional"
+        assert doc["root"]["default"] == "localhost"
+
     def test_nested_object_field_gets_default(self):
         schema = v.object_({
             "user": v.object_({
@@ -78,3 +108,12 @@ class TestDefaults:
         first["tags"].append("mutated")
         second = schema.parse({})
         assert second == {"tags": []}
+
+    def test_mutable_optional_wrapper_default_is_not_shared_between_parses(self):
+        schema = v.object_({
+            "meta": v.optional(v.any_()).default({"items": []}),
+        })
+        first = schema.parse({})
+        first["meta"]["items"].append("mutated")
+        second = schema.parse({})
+        assert second == {"meta": {"items": []}}

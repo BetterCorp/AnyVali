@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { string, int, object, optional, nullable, bool } from "../../src/index.js";
+import { any, string, int, object, optional, nullable, bool, exportSchema } from "../../src/index.js";
 
 describe("Defaults", () => {
   it("applies default when value is absent", () => {
@@ -45,6 +45,47 @@ describe("Defaults", () => {
     });
     const result = s.parse({});
     expect(result).toEqual({ count: 0 });
+  });
+
+  it("applies default on optional wrapper field", () => {
+    const s = object({
+      host: optional(string()).default("localhost"),
+    });
+    expect(s.parse({})).toEqual({ host: "localhost" });
+  });
+
+  it("does not override present optional wrapper field with default", () => {
+    const s = object({
+      host: optional(string()).default("localhost"),
+    });
+    expect(s.parse({ host: "example.com" })).toEqual({ host: "example.com" });
+  });
+
+  it("validates default on optional wrapper field", () => {
+    const s = object({
+      host: optional(string().minLength(5)).default("hi"),
+    });
+    const result = s.safeParse({});
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues[0].code).toBe("default_invalid");
+      expect(result.issues[0].path).toEqual(["host"]);
+    }
+  });
+
+  it("exports default on optional wrapper", () => {
+    const doc = exportSchema(optional(string()).default("localhost"));
+    expect(doc.root.kind).toBe("optional");
+    expect(doc.root.default).toBe("localhost");
+  });
+
+  it("clones mutable default on optional wrapper field", () => {
+    const s = object({
+      config: optional(any()).default({ tags: [] as string[] }),
+    });
+    const first = s.parse({}) as any;
+    first.config.tags.push("mutated");
+    expect(s.parse({})).toEqual({ config: { tags: [] } });
   });
 
   it("does not apply default when nullable field is null", () => {

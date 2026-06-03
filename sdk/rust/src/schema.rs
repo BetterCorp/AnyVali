@@ -87,6 +87,11 @@ pub trait Schema: SchemaClone + std::fmt::Debug + Send + Sync {
     /// Export this schema to a JSON node representation.
     fn export_node(&self) -> Value;
 
+    /// Schema-level default used by wrappers that carry their own default.
+    fn default_value(&self) -> Option<&Value> {
+        None
+    }
+
     /// Whether this schema has non-portable features (custom validators).
     fn has_custom_validators(&self) -> bool {
         false
