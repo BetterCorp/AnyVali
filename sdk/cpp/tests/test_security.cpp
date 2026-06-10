@@ -376,6 +376,32 @@ TEST("security: NaN rejected by float32 schema") {
     ASSERT(!result.success);
 }
 
+// ============================================================================
+// CWE-20 / spec 1.4: float32 out-of-range bypass
+//
+// float32 MUST reject values outside the binary32 representable range. Without
+// the check it silently accepts any double, defeating the narrowing guarantee.
+// ============================================================================
+
+TEST("security: float32 rejects value above its range") {
+    auto s = float32();
+    // 3.5e38 > FLT_MAX (~3.4028e38)
+    auto result = s->safe_parse(json(3.5e38));
+    ASSERT(!result.success);
+    ASSERT(result.issues[0].code == issue_codes::TOO_LARGE);
+}
+
+TEST("security: float32 rejects huge and large-negative values") {
+    ASSERT(!float32()->safe_parse(json(1e300)).success);
+    ASSERT(!float32()->safe_parse(json(-1e300)).success);
+}
+
+TEST("security: float32 accepts in-range values and zero") {
+    ASSERT(float32()->safe_parse(json(1.5)).success);
+    ASSERT(float32()->safe_parse(json(0.0)).success);
+    ASSERT(float32()->safe_parse(json(3.4e38)).success);
+}
+
 TEST("security: infinity rejected by float32 schema") {
     auto s = float32();
     auto result = s->safe_parse(json(std::numeric_limits<double>::infinity()));

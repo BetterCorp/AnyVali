@@ -101,7 +101,7 @@ data class StringSchema(
         }
         pattern?.let {
             try {
-                if (!Regex(it).containsMatchIn(value)) {
+                if (!Regex(toEcmaAnchors(it)).containsMatchIn(value)) {
                     issues.add(
                         ValidationIssue(
                             code = IssueCodes.INVALID_STRING,
@@ -194,5 +194,32 @@ data class StringSchema(
 
     companion object {
         val UNSET = Any()
+
+        /**
+         * Rewrite ECMA-262 anchors to absolute anchors. In ECMA without the
+         * multiline flag, "^"/"$" match only the start/end of the whole string.
+         * Kotlin/Java "$" also matches just before a final line terminator, so
+         * an anchored whitelist like ^[a-z]+$ would accept "abc\n" -- a
+         * newline-injection bypass that diverges from the JS reference.
+         * Translate unescaped, top-level "^" -> "\A" and "$" -> "\z". Anchors
+         * inside character classes and escaped "\^"/"\$" are left untouched.
+         */
+        fun toEcmaAnchors(p: String): String {
+            val sb = StringBuilder(p.length + 4)
+            var escaped = false
+            var inClass = false
+            for (ch in p) {
+                when {
+                    escaped -> { sb.append(ch); escaped = false }
+                    ch == '\\' -> { sb.append(ch); escaped = true }
+                    ch == '[' -> { inClass = true; sb.append(ch) }
+                    ch == ']' && inClass -> { inClass = false; sb.append(ch) }
+                    ch == '^' && !inClass -> sb.append("\\A")
+                    ch == '$' && !inClass -> sb.append("\\z")
+                    else -> sb.append(ch)
+                }
+            }
+            return sb.toString()
+        }
     }
 }

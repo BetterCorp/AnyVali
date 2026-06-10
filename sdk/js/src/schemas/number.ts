@@ -3,6 +3,9 @@ import { BaseSchema } from "./base.js";
 import { ISSUE_CODES } from "../issue-codes.js";
 import { describeType } from "../util.js";
 
+/** Largest finite magnitude representable in IEEE 754 binary32. */
+const FLOAT32_MAX = 3.4028234663852886e38;
+
 export class NumberSchema extends BaseSchema<number, number> {
   protected _kind: SchemaKind;
   protected _min?: number;
@@ -58,6 +61,20 @@ export class NumberSchema extends BaseSchema<number, number> {
         path: [...ctx.path],
         expected: this._kind,
         received: describeType(input),
+      });
+      return undefined;
+    }
+
+    // float32 MUST reject values outside the binary32 representable range
+    // (spec 1.4). Without this, float32 silently accepts any float64 value,
+    // defeating the narrowing guarantee.
+    if (this._kind === "float32" && input !== 0 && Math.abs(input) > FLOAT32_MAX) {
+      ctx.issues.push({
+        code: ISSUE_CODES.TOO_LARGE,
+        message: `Value ${input} is outside the float32 range`,
+        path: [...ctx.path],
+        expected: "float32",
+        received: String(input),
       });
       return undefined;
     }

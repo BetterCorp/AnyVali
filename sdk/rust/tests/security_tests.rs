@@ -390,6 +390,36 @@ fn cwe_20_nan_infinity_float32_rejects_null_from_infinity() {
 }
 
 // =============================================================================
+// CWE-20 / spec 1.4: float32 out-of-range bypass
+//
+// float32 MUST reject values outside the binary32 representable range. Without
+// the check it silently accepts any float64, defeating the narrowing guarantee
+// and diverging from the SDKs that do enforce it.
+// =============================================================================
+
+#[test]
+fn cwe_20_float32_rejects_value_above_range() {
+    let f = float32();
+    // 3.5e38 > f32::MAX (~3.4028e38)
+    let result = f.safe_parse(&json!(3.5e38_f64));
+    assert!(!result.success, "float32() must reject values above its range");
+    assert_eq!(result.issues[0].code, "too_large");
+}
+
+#[test]
+fn cwe_20_float32_rejects_large_negative_and_huge_values() {
+    assert!(!float32().safe_parse(&json!(-3.5e38_f64)).success);
+    assert!(!float32().safe_parse(&json!(1e300_f64)).success);
+}
+
+#[test]
+fn cwe_20_float32_accepts_in_range_and_zero() {
+    assert!(float32().safe_parse(&json!(1.5_f64)).success);
+    assert!(float32().safe_parse(&json!(0.0_f64)).success);
+    assert!(float32().safe_parse(&json!(3.4e38_f64)).success);
+}
+
+// =============================================================================
 // CWE-20: Format Validation Bypass
 //
 // Edge cases in format validation (email, url, ipv4) that could allow

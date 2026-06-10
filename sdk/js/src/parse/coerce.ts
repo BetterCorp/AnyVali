@@ -1,5 +1,10 @@
 import type { CoercionConfig } from "../types.js";
 
+// Decimal floating-point grammar: optional sign, digits with optional
+// fraction (or bare fraction), optional decimal exponent. Excludes hex/octal/
+// binary literals, Infinity and NaN that JS `Number()` would otherwise accept.
+const DECIMAL_FLOAT_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
 export type CoercionResult =
   | { success: true; value: unknown }
   | { success: false; message: string };
@@ -99,6 +104,16 @@ export function applyCoercion(
           return {
             success: false,
             message: `Cannot coerce empty string to ${targetType}`,
+          };
+        }
+        // Spec 5.1: parse as DECIMAL floating-point. JS `Number()` also accepts
+        // hex (0x), octal (0o) and binary (0b) literals, which would let
+        // "0x10" slip through as 16 and bypass the decimal-only contract.
+        // Restrict to a decimal float grammar before parsing.
+        if (!DECIMAL_FLOAT_RE.test(trimmed)) {
+          return {
+            success: false,
+            message: `Cannot coerce "${value}" to ${targetType}`,
           };
         }
         const num = Number(trimmed);

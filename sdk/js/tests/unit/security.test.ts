@@ -62,6 +62,41 @@ describe("CVE-2016-4055 / CVE-2022-25883 - ReDoS catastrophic backtracking", () 
 });
 
 // ---------------------------------------------------------------------------
+// 1b. Regex anchor newline bypass - CWE-20 / spec 3.1
+// ---------------------------------------------------------------------------
+// ECMA-262 is the portable baseline: "^"/"$" without the multiline flag match
+// only the start/end of the whole string. JS already enforces this; these tests
+// lock the invariant so it stays consistent with the other SDKs (which rewrite
+// "^"/"$" to absolute anchors). A trailing-newline match would be a whitelist
+// (newline/CRLF/log-injection) bypass.
+describe("CWE-20 - regex anchor newline bypass", () => {
+  it("$ anchor does not match before a trailing newline", () => {
+    const s = string().pattern("^[a-z]+$");
+    expect(s.safeParse("abc").success).toBe(true);
+    expect(s.safeParse("abc\n").success).toBe(false);
+    expect(s.safeParse("abc\nEVIL").success).toBe(false);
+  });
+
+  it("^ anchor is string-start, not line-start", () => {
+    const s = string().pattern("^admin$");
+    expect(s.safeParse("admin").success).toBe(true);
+    expect(s.safeParse("x\nadmin").success).toBe(false);
+    expect(s.safeParse("admin\n").success).toBe(false);
+  });
+
+  it("applies the same anchoring to imported patterns", () => {
+    const schema = importSchema({
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: { kind: "string", pattern: "^[a-z]+$" },
+      definitions: {},
+      extensions: {},
+    });
+    expect(schema.safeParse("abc\n").success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 2. Prototype Pollution - CVE-2019-10744 / CVE-2020-8203
 // ---------------------------------------------------------------------------
 describe("CVE-2019-10744 / CVE-2020-8203 - Prototype pollution", () => {
@@ -413,6 +448,93 @@ describe("CWE-190 - Integer overflow and boundary checks", () => {
     expect(uint32().safeParse(1.5).success).toBe(false);
     expect(uint64().safeParse(1.5).success).toBe(false);
     expect(int().safeParse(1.5).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4b. float32 range bypass - CWE-20 / spec 1.4
+// ---------------------------------------------------------------------------
+// float32 MUST reject values outside the binary32 representable range. If it
+// silently accepts any float64, a schema using float32 as a narrowing guard is
+// bypassed: a value that cannot survive a round-trip through a real 32-bit
+// float passes validation and is later truncated to Infinity downstream.
+describe("CWE-20 - float32 out-of-range bypass", () => {
+  it("rejects a value just above the float32 maximum", () => {
+    // 3.5e38 > FLT_MAX (~3.4028e38)
+    const result = float32().safeParse(3.5e38);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues[0].code).toBe("too_large");
+    }
+  });
+
+  it("rejects a value far above the float32 range", () => {
+    expect(float32().safeParse(1e300).success).toBe(false);
+  });
+
+  it("rejects a large negative value below the float32 range", () => {
+    expect(float32().safeParse(-1e300).success).toBe(false);
+  });
+
+  it("accepts values inside the float32 range and zero", () => {
+    expect(float32().safeParse(1.5).success).toBe(true);
+    expect(float32().safeParse(0).success).toBe(true);
+    expect(float32().safeParse(3.4e38).success).toBe(true);
+  });
+
+  it("rejects out-of-range float32 imported from interchange", () => {
+    const schema = importSchema({
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: { kind: "float32" },
+      definitions: {},
+      extensions: {},
+    });
+    expect(schema.safeParse(3.5e38).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4c. string->number coercion bypass - CWE-20 / spec 5.1
+// ---------------------------------------------------------------------------
+// string->number coercion MUST parse decimal floating-point only. JS Number()
+// also accepts hex/octal/binary literals, so "0x10" would coerce to 16 and slip
+// past a decimal-only contract (and diverge from every other SDK).
+describe("CWE-20 - non-decimal string->number coercion bypass", () => {
+  const c = number().coerce({ from: "string" });
+
+  it("rejects hexadecimal literal strings", () => {
+    expect(c.safeParse("0x10").success).toBe(false);
+  });
+
+  it("rejects octal literal strings", () => {
+    expect(c.safeParse("0o17").success).toBe(false);
+  });
+
+  it("rejects binary literal strings", () => {
+    expect(c.safeParse("0b101").success).toBe(false);
+  });
+
+  it("rejects Infinity literal strings", () => {
+    expect(c.safeParse("Infinity").success).toBe(false);
+    expect(c.safeParse("-Infinity").success).toBe(false);
+  });
+
+  it("still accepts ordinary decimal and exponential strings", () => {
+    expect(c.parse("3.14")).toBe(3.14);
+    expect(c.parse("  -42 ")).toBe(-42);
+    expect(c.parse("1e3")).toBe(1000);
+  });
+
+  it("rejects hex coercion imported from interchange", () => {
+    const schema = importSchema({
+      anyvaliVersion: "1.0",
+      schemaVersion: "1.1",
+      root: { kind: "number", coerce: "string->number" },
+      definitions: {},
+      extensions: {},
+    });
+    expect(schema.safeParse("0x10").success).toBe(false);
   });
 });
 

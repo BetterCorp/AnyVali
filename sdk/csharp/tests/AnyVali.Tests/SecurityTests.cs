@@ -348,6 +348,62 @@ public class SecurityTests
         Assert.Equal(IssueCodes.InvalidType, result.Issues[0].Code);
     }
 
+    // CWE-20 / spec 1.4: float32 MUST reject values outside the binary32 range.
+    // Without the check it silently accepts any double, defeating narrowing.
+    [Fact]
+    public void Float32_RejectsValueAboveRange()
+    {
+        var s = V.Float32();
+        // 3.5e38 > float32 max (~3.4028e38)
+        var result = s.SafeParse(3.5e38);
+        Assert.False(result.Success);
+        Assert.Equal(IssueCodes.TooLarge, result.Issues[0].Code);
+    }
+
+    // CWE-20 / spec 3.1: regex anchor newline bypass. .NET's "$" matches before
+    // a trailing "\n", so ^[a-z]+$ would accept "abc\n" (newline/CRLF injection).
+    // Anchors are rewritten to absolute (\A/\z) to match the JS reference.
+    [Fact]
+    public void Pattern_DollarAnchorRejectsTrailingNewline()
+    {
+        var s = V.String().Pattern("^[a-z]+$");
+        Assert.True(s.SafeParse("abc").Success);
+        Assert.False(s.SafeParse("abc\n").Success);
+        Assert.False(s.SafeParse("abc\nEVIL").Success);
+    }
+
+    [Fact]
+    public void Pattern_CaretAnchorIsStringStartNotLineStart()
+    {
+        var s = V.String().Pattern("^admin$");
+        Assert.True(s.SafeParse("admin").Success);
+        Assert.False(s.SafeParse("x\nadmin").Success);
+        Assert.False(s.SafeParse("admin\n").Success);
+    }
+
+    [Fact]
+    public void Pattern_EscapedDollarStaysLiteral()
+    {
+        var s = V.String().Pattern(@"^a\$$");
+        Assert.True(s.SafeParse("a$").Success);
+        Assert.False(s.SafeParse("a$\n").Success);
+    }
+
+    [Fact]
+    public void Float32_RejectsHugeAndLargeNegativeValues()
+    {
+        Assert.False(V.Float32().SafeParse(1e300).Success);
+        Assert.False(V.Float32().SafeParse(-1e300).Success);
+    }
+
+    [Fact]
+    public void Float32_AcceptsInRangeAndZero()
+    {
+        Assert.True(V.Float32().SafeParse(1.5).Success);
+        Assert.True(V.Float32().SafeParse(0.0).Success);
+        Assert.True(V.Float32().SafeParse(3.4e38).Success);
+    }
+
     [Fact]
     public void Infinity_RejectedByFloat32()
     {

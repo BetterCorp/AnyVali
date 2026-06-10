@@ -189,3 +189,34 @@ fn coerce_module_parse_config_array() {
     let config = parse_coerce_config(&json!(["trim", "lower"]));
     assert_eq!(config, vec!["trim", "lower"]);
 }
+
+// ---------------------------------------------------------------------------
+// CWE-20 / spec 5.1: non-portable coercion bypass
+//
+// str::parse is more permissive than the ECMA-262 reference (JS): parse::<i64>
+// accepts a leading "+", and parse::<f64> accepts "inf"/"infinity"/"nan". These
+// let a string the JS reference rejects coerce into a number. Coercion must
+// accept ASCII decimals only so behaviour is identical across SDKs.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn coerce_int_rejects_non_decimal() {
+    let s = int().coerce(vec!["string->int".to_string()]);
+    for bad in ["+5", "1_000", "1.0", "1e3", "0x10"] {
+        assert!(!s.safe_parse(&json!(bad)).success, "string->int must reject {bad:?}");
+    }
+    for good in ["42", "-7", "  42  "] {
+        assert!(s.safe_parse(&json!(good)).success, "string->int must accept {good:?}");
+    }
+}
+
+#[test]
+fn coerce_number_rejects_non_decimal() {
+    let s = number().coerce(vec!["string->number".to_string()]);
+    for bad in ["inf", "infinity", "nan", "NaN", "1_000.5"] {
+        assert!(!s.safe_parse(&json!(bad)).success, "string->number must reject {bad:?}");
+    }
+    for good in ["3.14", "+5", ".5", "1e3", "  3.5  "] {
+        assert!(s.safe_parse(&json!(good)).success, "string->number must accept {good:?}");
+    }
+}

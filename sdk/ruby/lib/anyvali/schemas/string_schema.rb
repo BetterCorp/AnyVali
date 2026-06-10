@@ -68,7 +68,7 @@ module AnyVali
 
       if @constraints["pattern"]
         begin
-          re = Regexp.new(@constraints["pattern"])
+          re = Regexp.new(ecma_anchors(@constraints["pattern"]))
           unless re.match?(value)
             issues << ValidationIssue.new(
               code: IssueCodes::INVALID_STRING,
@@ -118,6 +118,43 @@ module AnyVali
       if @constraints["format"]
         Format::Validators.validate(value, @constraints["format"], path, issues)
       end
+    end
+
+    private
+
+    # Rewrite ECMA-262 anchors to Ruby's absolute anchors. The spec (3.1) makes
+    # ECMA-262 the portable regex baseline, where "^"/"$" without the multiline
+    # flag match only the start/end of the whole string. In Ruby "^"/"$" are
+    # ALWAYS line anchors, so /^admin$/ matches "x\nadmin\ny" -- a line/newline
+    # injection bypass that diverges from the JS reference. Translate unescaped,
+    # top-level "^" -> "\A" and "$" -> "\z" (absolute start/end). Anchors inside
+    # character classes and escaped "\^"/"\$" are left untouched.
+    def ecma_anchors(pattern)
+      out = +""
+      escaped = false
+      in_class = false
+      pattern.each_char do |ch|
+        if escaped
+          out << ch
+          escaped = false
+        elsif ch == "\\"
+          out << ch
+          escaped = true
+        elsif ch == "["
+          in_class = true
+          out << ch
+        elsif ch == "]" && in_class
+          in_class = false
+          out << ch
+        elsif ch == "^" && !in_class
+          out << "\\A"
+        elsif ch == "$" && !in_class
+          out << "\\z"
+        else
+          out << ch
+        end
+      end
+      out
     end
   end
 end

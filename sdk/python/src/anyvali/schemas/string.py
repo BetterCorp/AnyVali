@@ -12,6 +12,43 @@ from .base import BaseSchema, ValidationContext, _anyvali_type_name
 _INVALID_PATTERN = object()
 
 
+def _to_ecma_anchors(pattern: str) -> str:
+    """Rewrite ECMA-262 anchors to Python's absolute anchors.
+
+    The spec (3.1) makes ECMA-262 the portable regex baseline. In ECMA without
+    the multiline flag, ``^``/``$`` match only the start/end of the *whole*
+    string. Python's ``$`` also matches just before a trailing ``\\n``, so an
+    anchored whitelist like ``^[a-z]+$`` would accept ``"abc\\n"`` -- a
+    newline-injection bypass that diverges from the JS reference. Translate
+    unescaped, top-level ``^`` -> ``\\A`` and ``$`` -> ``\\Z`` (absolute end,
+    no trailing-newline exception). Anchors inside character classes and
+    escaped ``\\^``/``\\$`` are left untouched.
+    """
+    out: list[str] = []
+    escaped = False
+    in_class = False
+    for ch in pattern:
+        if escaped:
+            out.append(ch)
+            escaped = False
+        elif ch == "\\":
+            out.append(ch)
+            escaped = True
+        elif ch == "[":
+            in_class = True
+            out.append(ch)
+        elif ch == "]" and in_class:
+            in_class = False
+            out.append(ch)
+        elif ch == "^" and not in_class:
+            out.append(r"\A")
+        elif ch == "$" and not in_class:
+            out.append(r"\Z")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 class StringSchema(BaseSchema[str]):
     """Schema for string values with optional constraints."""
 
@@ -42,7 +79,7 @@ class StringSchema(BaseSchema[str]):
         """Lazily compile and cache the pattern. Returns _INVALID_PATTERN if invalid."""
         if self._pattern_re is None:
             try:
-                self._pattern_re = re.compile(self._pattern)
+                self._pattern_re = re.compile(_to_ecma_anchors(self._pattern))
             except re.error:
                 self._pattern_re = _INVALID_PATTERN
         return self._pattern_re

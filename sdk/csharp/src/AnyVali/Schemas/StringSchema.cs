@@ -71,7 +71,7 @@ public sealed class StringSchema : Schema<string>
         {
             try
             {
-                var re = new Regex(_pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+                var re = new Regex(ToEcmaAnchors(_pattern), RegexOptions.None, TimeSpan.FromSeconds(1));
                 if (!re.IsMatch(val))
                 {
                     ctx.Issues.Add(new ValidationIssue
@@ -147,6 +147,33 @@ public sealed class StringSchema : Schema<string>
         }
 
         return val;
+    }
+
+    /// <summary>
+    /// Rewrite ECMA-262 anchors to .NET's absolute anchors. In ECMA without the
+    /// multiline flag, "^"/"$" match only the start/end of the whole string.
+    /// .NET's "$" also matches just before a trailing "\n", so an anchored
+    /// whitelist like ^[a-z]+$ would accept "abc\n" -- a newline-injection
+    /// bypass that diverges from the JS reference. Translate unescaped, top-level
+    /// "^" -> "\A" and "$" -> "\z" (absolute end). Anchors inside character
+    /// classes and escaped "\^"/"\$" are left untouched.
+    /// </summary>
+    private static string ToEcmaAnchors(string pattern)
+    {
+        var sb = new System.Text.StringBuilder(pattern.Length + 4);
+        var escaped = false;
+        var inClass = false;
+        foreach (var ch in pattern)
+        {
+            if (escaped) { sb.Append(ch); escaped = false; }
+            else if (ch == '\\') { sb.Append(ch); escaped = true; }
+            else if (ch == '[') { inClass = true; sb.Append(ch); }
+            else if (ch == ']' && inClass) { inClass = false; sb.Append(ch); }
+            else if (ch == '^' && !inClass) { sb.Append(@"\A"); }
+            else if (ch == '$' && !inClass) { sb.Append(@"\z"); }
+            else { sb.Append(ch); }
+        }
+        return sb.ToString();
     }
 
     private static int CodePointLength(string value)

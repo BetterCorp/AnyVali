@@ -122,6 +122,16 @@ public:
             }
         }
 
+        // float32 MUST reject values outside the binary32 representable range
+        // (spec 1.4). Without this, float32 silently accepts any double value,
+        // defeating the narrowing guarantee.
+        if (kind_ == SchemaKind::Float32 && dval != 0.0 &&
+            std::abs(dval) > static_cast<double>(std::numeric_limits<float>::max())) {
+            ctx.add_issue(issue_codes::TOO_LARGE, kind_to_string(kind_),
+                          format_number(dval));
+            return nullptr;
+        }
+
         // Numeric constraints
         if (min_.has_value() && dval < min_.value()) {
             ctx.add_issue(issue_codes::TOO_SMALL, format_number(min_.value()),

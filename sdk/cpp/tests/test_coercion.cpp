@@ -117,3 +117,33 @@ TEST("coercion: chained coercions left to right") {
     ASSERT(result.success);
     ASSERT_JSON_EQ(result.value, json("hello"));
 }
+
+// ---------------------------------------------------------------------------
+// CWE-20 / spec 5.1: non-portable coercion bypass
+//
+// std::stoll/std::stod are more permissive than the ECMA-262 reference (JS):
+// they accept a leading "+", and std::stod accepts hex floats ("0x1p4") and
+// "inf"/"nan". Each let a string the JS reference rejects coerce into a number.
+// Coercion must accept ASCII decimals only so behaviour matches across SDKs.
+// ---------------------------------------------------------------------------
+
+TEST("security: string->int rejects non-decimal forms") {
+    auto s = int_();
+    s->coerce("string->int");
+    for (const auto& bad : {"+5", "1.0", "1e3", "0x10"}) {
+        ASSERT(!s->safe_parse(json(bad)).success);
+    }
+    ASSERT(s->safe_parse(json("42")).success);
+    ASSERT(s->safe_parse(json("  42  ")).success);
+}
+
+TEST("security: string->number rejects hex-float and infinities") {
+    auto s = number();
+    s->coerce("string->number");
+    for (const auto& bad : {"0x1p4", "0x10", "inf", "nan", "infinity"}) {
+        ASSERT(!s->safe_parse(json(bad)).success);
+    }
+    ASSERT(s->safe_parse(json("3.14")).success);
+    ASSERT(s->safe_parse(json("+5")).success);
+    ASSERT(s->safe_parse(json(".5")).success);
+}

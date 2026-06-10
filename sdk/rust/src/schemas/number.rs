@@ -254,10 +254,17 @@ impl Schema for NumberSchema {
             Value::Number(n) => {
                 let f = n.as_f64().unwrap();
 
-                if self.is_float32 {
-                    // float32 range check: we accept values that fit in f32
-                    // (the corpus doesn't test range rejection for float32 specifically,
-                    //  but we validate the type)
+                if self.is_float32 && f != 0.0 && f.abs() > f32::MAX as f64 {
+                    // float32 MUST reject values outside the binary32 range
+                    // (spec 1.4). Without this, float32 silently accepts any
+                    // float64 value, defeating the narrowing guarantee.
+                    return Err(vec![ValidationIssue {
+                        code: TOO_LARGE.to_string(),
+                        path: path.to_vec(),
+                        expected: self.kind_name.clone(),
+                        received: f.to_string(),
+                        meta: None,
+                    }]);
                 }
 
                 let issues = validate_numeric_constraints(f, self, path);

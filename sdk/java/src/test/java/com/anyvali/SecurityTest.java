@@ -905,4 +905,20 @@ class SecurityTest {
             assertThrows(Exception.class, () -> Importer.importSchema("null"));
         }
     }
+
+    // CWE-20 / spec 3.1: regex anchor newline bypass. Java's "$" matches before
+    // a final line terminator, so ^[a-z]+$ would accept "abc\n" (newline/CRLF
+    // injection). Anchors are rewritten to absolute (\A/\z) to match JS.
+    @Test
+    void patternAnchorsRejectNewlineInjection() {
+        var s = string().pattern("^[a-z]+$");
+        assertTrue(s.safeParse("abc").success());
+        assertFalse(s.safeParse("abc\n").success());
+        assertFalse(s.safeParse("abc\nEVIL").success());
+
+        var admin = string().pattern("^admin$");
+        assertTrue(admin.safeParse("admin").success());
+        assertFalse(admin.safeParse("x\nadmin").success());
+        assertFalse(admin.safeParse("admin\n").success());
+    }
 }

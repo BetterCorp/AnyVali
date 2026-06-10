@@ -114,7 +114,7 @@ final class StringSchema extends Schema
         }
 
         if ($this->pattern !== null) {
-            $result = @preg_match('/' . $this->pattern . '/', $value);
+            $result = @preg_match('/' . self::toEcmaAnchors($this->pattern) . '/', $value);
             if ($result === false) {
                 // Invalid regex pattern - treat as validation failure
                 $issues[] = new ValidationIssue(
@@ -196,5 +196,45 @@ final class StringSchema extends Schema
         if ($this->coerce !== null) $node['coerce'] = $this->coerce;
         $this->addMetadataToNode($node);
         return $node;
+    }
+
+    /**
+     * Rewrite ECMA-262 anchors to PCRE absolute anchors. In ECMA without the
+     * multiline flag, "^"/"$" match only the start/end of the whole string.
+     * PCRE's "$" also matches just before a trailing "\n", so an anchored
+     * whitelist like ^[a-z]+$ would accept "abc\n" -- a newline-injection
+     * bypass that diverges from the JS reference. Translate unescaped, top-level
+     * "^" -> "\A" and "$" -> "\z" (absolute end). Anchors inside character
+     * classes and escaped "\^"/"\$" are left untouched.
+     */
+    private static function toEcmaAnchors(string $pattern): string
+    {
+        $out = '';
+        $escaped = false;
+        $inClass = false;
+        $len = strlen($pattern);
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $pattern[$i];
+            if ($escaped) {
+                $out .= $ch;
+                $escaped = false;
+            } elseif ($ch === '\\') {
+                $out .= $ch;
+                $escaped = true;
+            } elseif ($ch === '[') {
+                $inClass = true;
+                $out .= $ch;
+            } elseif ($ch === ']' && $inClass) {
+                $inClass = false;
+                $out .= $ch;
+            } elseif ($ch === '^' && !$inClass) {
+                $out .= '\\A';
+            } elseif ($ch === '$' && !$inClass) {
+                $out .= '\\z';
+            } else {
+                $out .= $ch;
+            }
+        }
+        return $out;
     }
 }

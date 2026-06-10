@@ -1,7 +1,23 @@
+use regex::Regex;
 use serde_json::Value;
 
 use crate::issue_codes::*;
 use crate::types::ValidationIssue;
+
+// Strict ASCII decimal grammars. Rust's `str::parse` is more permissive than
+// the ECMA-262 reference (JS): `parse::<i64>` accepts a leading "+", and
+// `parse::<f64>` accepts "inf"/"infinity"/"nan". Each let a string that the
+// JS reference rejects coerce into a number -- a cross-language validation
+// bypass. Gate on these before parsing (spec 5.1: decimal only).
+fn is_decimal_int(s: &str) -> bool {
+    Regex::new(r"^-?[0-9]+$").unwrap().is_match(s)
+}
+
+fn is_decimal_float(s: &str) -> bool {
+    Regex::new(r"^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$")
+        .unwrap()
+        .is_match(s)
+}
 
 /// Apply a coercion to a value. Returns the coerced value or a coercion_failed issue.
 pub fn apply_coercion(
@@ -13,9 +29,14 @@ pub fn apply_coercion(
         "string->int" => {
             if let Value::String(s) = value {
                 let trimmed = s.trim();
-                match trimmed.parse::<i64>() {
-                    Ok(n) => Ok(serde_json::json!(n)),
-                    Err(_) => Err(ValidationIssue {
+                let parsed = if is_decimal_int(trimmed) {
+                    trimmed.parse::<i64>().ok()
+                } else {
+                    None
+                };
+                match parsed {
+                    Some(n) => Ok(serde_json::json!(n)),
+                    None => Err(ValidationIssue {
                         code: COERCION_FAILED.to_string(),
                         path: vec![],
                         expected: target_kind.to_string(),
@@ -30,9 +51,14 @@ pub fn apply_coercion(
         "string->number" => {
             if let Value::String(s) = value {
                 let trimmed = s.trim();
-                match trimmed.parse::<f64>() {
-                    Ok(n) => Ok(serde_json::json!(n)),
-                    Err(_) => Err(ValidationIssue {
+                let parsed = if is_decimal_float(trimmed) {
+                    trimmed.parse::<f64>().ok().filter(|n| n.is_finite())
+                } else {
+                    None
+                };
+                match parsed {
+                    Some(n) => Ok(serde_json::json!(n)),
+                    None => Err(ValidationIssue {
                         code: COERCION_FAILED.to_string(),
                         path: vec![],
                         expected: target_kind.to_string(),

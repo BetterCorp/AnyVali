@@ -842,3 +842,55 @@ func TestSecurity_CWE400_UnionWithManyVariants(t *testing.T) {
 		t.Fatal("expected failure for non-matching union")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// CWE-20 / spec 5.1: non-portable coercion bypass
+//
+// Go's strconv parsers are more permissive than the ECMA-262 reference (JS):
+// ParseInt accepts a leading "+", ParseFloat accepts hex floats / underscores,
+// and ParseBool accepts "t"/"T"/"f"/"F". Each let a string that every other SDK
+// rejects coerce into a number/bool. Coercion must accept ASCII decimals (and
+// only true/1/false/0) so behaviour is identical across SDKs.
+// ---------------------------------------------------------------------------
+
+func TestSecurity_CWE20_CoerceIntRejectsNonDecimal(t *testing.T) {
+	s := Int().Coerce(CoerceToInt)
+	for _, bad := range []string{"+5", "1_000", "1.0", "1e3", "0x10", "０x", "１２３"} {
+		if s.SafeParse(bad).Success {
+			t.Fatalf("string->int must reject %q", bad)
+		}
+	}
+	for _, good := range []string{"42", "-7", "  42  "} {
+		if !s.SafeParse(good).Success {
+			t.Fatalf("string->int must accept %q", good)
+		}
+	}
+}
+
+func TestSecurity_CWE20_CoerceNumberRejectsNonDecimal(t *testing.T) {
+	s := Number().Coerce(CoerceToNumber)
+	for _, bad := range []string{"0x1p4", "0x10", "1_000.5", "inf", "Infinity", "nan"} {
+		if s.SafeParse(bad).Success {
+			t.Fatalf("string->number must reject %q", bad)
+		}
+	}
+	for _, good := range []string{"3.14", "+5", ".5", "1e3", "  3.5  "} {
+		if !s.SafeParse(good).Success {
+			t.Fatalf("string->number must accept %q", good)
+		}
+	}
+}
+
+func TestSecurity_CWE20_CoerceBoolRejectsNonPortableWords(t *testing.T) {
+	s := Bool().Coerce(CoerceToBool)
+	for _, bad := range []string{"t", "T", "f", "F", "yes", "no"} {
+		if s.SafeParse(bad).Success {
+			t.Fatalf("string->bool must reject %q", bad)
+		}
+	}
+	for _, good := range []string{"true", "TRUE", "1", "false", "0"} {
+		if !s.SafeParse(good).Success {
+			t.Fatalf("string->bool must accept %q", good)
+		}
+	}
+}

@@ -22,6 +22,9 @@ final class NumberSchema extends Schema
     private ?float $multipleOf = null;
     private string $kind;
 
+    /** Largest finite magnitude representable in IEEE 754 binary32. */
+    private const FLOAT32_MAX = 3.4028234663852886e38;
+
     public function __construct(string $kind = 'number')
     {
         $this->kind = $kind;
@@ -86,6 +89,19 @@ final class NumberSchema extends Schema
                 message: "{$this->kind} must be finite",
                 path: $ctx->path,
                 expected: $this->kind,
+                received: self::formatNum($numericValue),
+            )]);
+        }
+
+        // float32 MUST reject values outside the binary32 representable range
+        // (spec 1.4). Without this, float32 silently accepts any float64 value,
+        // defeating the narrowing guarantee.
+        if ($this->kind === 'float32' && $numericValue !== 0.0 && abs($numericValue) > self::FLOAT32_MAX) {
+            return ParseResult::fail([new ValidationIssue(
+                code: IssueCodes::TOO_LARGE,
+                message: "Value is outside the float32 range",
+                path: $ctx->path,
+                expected: 'float32',
                 received: self::formatNum($numericValue),
             )]);
         }

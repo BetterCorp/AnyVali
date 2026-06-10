@@ -735,4 +735,21 @@ class TestSchemaImportInjection < Minitest::Test
     }
     assert_raises(AnyVali::ValidationError) { AnyVali.import_schema(doc) }
   end
+
+  # CWE-20 / spec 3.1: regex anchor newline bypass. In Ruby "^"/"$" are line
+  # anchors, so /^admin$/ matches "x\nadmin\ny" -- a line/newline injection
+  # bypass. Anchors are rewritten to absolute (\A/\z) to match the JS baseline.
+  def test_pattern_dollar_anchor_rejects_trailing_newline
+    s = AnyVali.string.pattern("^[a-z]+$")
+    assert s.safe_parse("abc").success?
+    refute s.safe_parse("abc\n").success?
+    refute s.safe_parse("abc\nEVIL").success?
+  end
+
+  def test_pattern_caret_anchor_is_string_start_not_line_start
+    s = AnyVali.string.pattern("^admin$")
+    assert s.safe_parse("admin").success?
+    refute s.safe_parse("x\nadmin").success?
+    refute s.safe_parse("admin\n").success?
+  end
 end

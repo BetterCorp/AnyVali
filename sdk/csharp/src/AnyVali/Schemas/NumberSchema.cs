@@ -41,9 +41,28 @@ public class NumberSchema : Schema<double>
         }
 
         var val = ToDouble(input);
+
+        // float32 MUST reject values outside the binary32 representable range
+        // (spec 1.4). Without this, float32 silently accepts any double value,
+        // defeating the narrowing guarantee.
+        if (Kind == "float32" && val != 0.0 && Math.Abs(val) > Float32Max)
+        {
+            ctx.Issues.Add(new ValidationIssue
+            {
+                Code = IssueCodes.TooLarge,
+                Message = $"Value {FormatNum(val)} is outside the float32 range",
+                Path = ctx.ClonePath(),
+                Expected = "float32",
+                Received = FormatNum(val),
+            });
+            return null;
+        }
+
         ValidateConstraints(val, ctx);
         return val;
     }
+
+    private const double Float32Max = 3.4028234663852886e38;
 
     protected void ValidateConstraints(double val, ValidationContext ctx)
     {

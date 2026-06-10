@@ -966,3 +966,102 @@ class TestSchemaImportInjection:
         }
         with pytest.raises((ValueError, TypeError)):
             v.import_schema(doc)
+
+
+# ---------------------------------------------------------------------------
+# CWE-20 / spec 5.1: non-portable string->number coercion bypass
+#
+# Python's int()/float() are far more permissive than the ECMA-262 reference
+# (JS): they accept Unicode digits, digit-group underscores, a leading "+",
+# and a float fallback for int. Each of these coerced a "non-numeric" string
+# into a valid number in Python while every other SDK rejected it -- a
+# cross-language validation bypass. Coercion must accept ASCII decimals only.
+# ---------------------------------------------------------------------------
+
+class TestCoercionPortabilityBypass_CWE_20:
+    @pytest.mark.parametrize("bad", [
+        "１２３",  # fullwidth digits 123
+        "١٢٣",  # arabic-indic digits 123
+        "1_000",                # underscore grouping
+        "+5",                   # leading plus (JS int rejects)
+        "1.0",                  # float string (JS int rejects)
+        "1e3",                  # exponent (JS int rejects)
+        "0x10",                 # hex
+    ])
+    def test_string_to_int_rejects_non_ascii_decimal(self, bad: str):
+        schema = v.int_().coerce(to_int=True)
+        result = schema.safe_parse(bad)
+        assert not result.success
+        assert result.issues[0].code == v.COERCION_FAILED
+
+    @pytest.mark.parametrize("bad", [
+        "３.14",   # fullwidth 3.14
+        "1_000.5",      # underscore grouping
+        "inf",          # infinity
+        "Infinity",
+        "nan",
+        "0x10",         # hex
+    ])
+    def test_string_to_number_rejects_non_ascii_decimal(self, bad: str):
+        schema = v.number().coerce(to_number=True)
+        result = schema.safe_parse(bad)
+        assert not result.success
+        assert result.issues[0].code == v.COERCION_FAILED
+
+    @pytest.mark.parametrize("good,expected", [
+        ("42", 42), ("-7", -7), ("  42  ", 42),
+    ])
+    def test_string_to_int_accepts_plain_decimal(self, good, expected):
+        schema = v.int_().coerce(to_int=True)
+        result = schema.safe_parse(good)
+        assert result.success and result.data == expected
+
+    @pytest.mark.parametrize("good,expected", [
+        ("3.14", 3.14), ("+5", 5.0), (".5", 0.5), ("1e3", 1000.0),
+    ])
+    def test_string_to_number_accepts_decimal(self, good, expected):
+        schema = v.number().coerce(to_number=True)
+        result = schema.safe_parse(good)
+        assert result.success and result.data == expected
+
+    @pytest.mark.parametrize("bad", ["yes", "YES", "no", "NO", "maybe"])
+    def test_string_to_bool_rejects_non_portable_words(self, bad: str):
+        schema = v.bool_().coerce(to_bool=True)
+        result = schema.safe_parse(bad)
+        assert not result.success
+        assert result.issues[0].code == v.COERCION_FAILED
+
+
+# ---------------------------------------------------------------------------
+# CWE-20 / spec 3.1: regex anchor newline bypass
+#
+# In ECMA-262 (the portable baseline) "^"/"$" without the multiline flag match
+# only the start/end of the whole string. Python's "$" also matches just before
+# a trailing newline, so an anchored whitelist like ^[a-z]+$ would accept
+# "admin\n" -- a newline/CRLF/log-injection bypass. The SDK rewrites anchors to
+# absolute (\A/\Z) so behaviour matches the JS reference.
+# ---------------------------------------------------------------------------
+
+class TestRegexAnchorNewlineBypass_CWE_20:
+    def test_dollar_anchor_rejects_trailing_newline(self):
+        s = v.string().pattern("^[a-z]+$")
+        assert s.safe_parse("abc").success
+        assert not s.safe_parse("abc\n").success
+        assert not s.safe_parse("abc\nEVIL").success
+
+    def test_caret_anchor_is_string_start_not_line_start(self):
+        s = v.string().pattern("^admin$")
+        assert s.safe_parse("admin").success
+        assert not s.safe_parse("x\nadmin").success
+        assert not s.safe_parse("admin\n").success
+
+    def test_escaped_dollar_stays_literal(self):
+        s = v.string().pattern(r"^a\$$")
+        assert s.safe_parse("a$").success
+        assert not s.safe_parse("a$\n").success
+
+    def test_negated_class_still_matches_newline_like_ecma(self):
+        # [^0-9] includes "\n", so ^[^0-9]+$ accepting "abc\n" matches JS.
+        s = v.string().pattern("^[^0-9]+$")
+        assert s.safe_parse("abc\n").success
+        assert not s.safe_parse("ab1").success

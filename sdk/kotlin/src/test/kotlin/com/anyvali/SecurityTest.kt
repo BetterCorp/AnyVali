@@ -903,4 +903,28 @@ class SecurityTest {
             assertEquals(kind, schema.kind, "Expected kind '$kind' to import successfully")
         }
     }
+
+    // ========================================================================
+    // CWE-20 / spec 3.1: regex anchor newline bypass
+    //
+    // Kotlin/Java "^"/"$" match at line boundaries (and "$" before a trailing
+    // terminator), so ^[a-z]+$ would accept "abc\n" -- a newline/CRLF injection
+    // bypass. Anchors are rewritten to absolute (\A/\z) to match the JS baseline.
+    // ========================================================================
+
+    @Test
+    fun `CWE-20 pattern dollar anchor rejects trailing newline`() {
+        val s = string().pattern("^[a-z]+$")
+        assertIs<ParseResult.Success<*>>(s.safeParse("abc"))
+        assertIs<ParseResult.Failure>(s.safeParse("abc\n"))
+        assertIs<ParseResult.Failure>(s.safeParse("abc\nEVIL"))
+    }
+
+    @Test
+    fun `CWE-20 pattern caret anchor is string start not line start`() {
+        val s = string().pattern("^admin$")
+        assertIs<ParseResult.Success<*>>(s.safeParse("admin"))
+        assertIs<ParseResult.Failure>(s.safeParse("x\nadmin"))
+        assertIs<ParseResult.Failure>(s.safeParse("admin\n"))
+    }
 }

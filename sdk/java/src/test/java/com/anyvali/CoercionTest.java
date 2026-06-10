@@ -77,8 +77,6 @@ class CoercionTest {
         assertEquals(true, Coercion.applyCoercion("true", config, ctx));
         ctx = new ValidationContext();
         assertEquals(true, Coercion.applyCoercion("1", config, ctx));
-        ctx = new ValidationContext();
-        assertEquals(true, Coercion.applyCoercion("yes", config, ctx));
     }
 
     @Test
@@ -88,8 +86,31 @@ class CoercionTest {
         assertEquals(false, Coercion.applyCoercion("false", config, ctx));
         ctx = new ValidationContext();
         assertEquals(false, Coercion.applyCoercion("0", config, ctx));
-        ctx = new ValidationContext();
-        assertEquals(false, Coercion.applyCoercion("no", config, ctx));
+    }
+
+    // CWE-20 / spec 5.1: non-portable coercion bypass. Java's parsers accept
+    // inputs every other SDK rejects (leading "+", float-for-int, hex floats,
+    // type suffixes, "yes"/"no"); coercion must accept ASCII decimals only.
+    @Test
+    void coerceRejectsNonPortableInputs() {
+        var intCfg = CoercionConfig.builder().toInt(true).build();
+        for (String bad : new String[]{"+5", "1.0", "1e3", "0x10", "1_000"}) {
+            var ctx = new ValidationContext();
+            Coercion.applyCoercion(bad, intCfg, ctx);
+            assertTrue(ctx.issueCount() > 0, "string->int must reject '" + bad + "'");
+        }
+        var numCfg = CoercionConfig.builder().toNumber(true).build();
+        for (String bad : new String[]{"0x1p4", "1.0f", "1d", "Infinity", "NaN", "1_000.5"}) {
+            var ctx = new ValidationContext();
+            Coercion.applyCoercion(bad, numCfg, ctx);
+            assertTrue(ctx.issueCount() > 0, "string->number must reject '" + bad + "'");
+        }
+        var boolCfg = CoercionConfig.builder().toBool(true).build();
+        for (String bad : new String[]{"yes", "no", "t", "f"}) {
+            var ctx = new ValidationContext();
+            Coercion.applyCoercion(bad, boolCfg, ctx);
+            assertTrue(ctx.issueCount() > 0, "string->bool must reject '" + bad + "'");
+        }
     }
 
     @Test

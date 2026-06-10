@@ -4,10 +4,27 @@
 #include <optional>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <regex>
 #include <nlohmann/json.hpp>
 
 namespace anyvali {
 namespace coercion {
+
+// Strict ASCII decimal grammars. std::stoll/std::stod are more permissive than
+// the ECMA-262 reference (JS): they accept a leading "+", and std::stod accepts
+// hex floats ("0x1p4") and "inf"/"nan". Each let a string the JS reference
+// rejects coerce into a number -- a cross-language validation bypass. Gate on
+// these before parsing (spec 5.1: decimal only). regex_match is fully anchored.
+inline bool is_decimal_int(const std::string& s) {
+    static const std::regex re(R"(-?[0-9]+)");
+    return std::regex_match(s, re);
+}
+
+inline bool is_decimal_float(const std::string& s) {
+    static const std::regex re(R"([+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?)");
+    return std::regex_match(s, re);
+}
 
 // Attempt coercion of a JSON value according to the given coercion name.
 // Returns the coerced value on success, or std::nullopt on failure.
@@ -21,6 +38,7 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
         size_t end = s.find_last_not_of(" \t\n\r");
         if (start == std::string::npos) return std::nullopt;
         s = s.substr(start, end - start + 1);
+        if (!is_decimal_int(s)) return std::nullopt;
         try {
             size_t pos = 0;
             int64_t result = std::stoll(s, &pos);
@@ -38,10 +56,11 @@ inline std::optional<nlohmann::json> apply(const std::string& coercion_name,
         size_t end = s.find_last_not_of(" \t\n\r");
         if (start == std::string::npos) return std::nullopt;
         s = s.substr(start, end - start + 1);
+        if (!is_decimal_float(s)) return std::nullopt;
         try {
             size_t pos = 0;
             double result = std::stod(s, &pos);
-            if (pos != s.size()) return std::nullopt;
+            if (pos != s.size() || !std::isfinite(result)) return std::nullopt;
             return nlohmann::json(result);
         } catch (...) {
             return std::nullopt;

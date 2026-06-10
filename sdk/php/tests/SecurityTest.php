@@ -204,6 +204,32 @@ final class SecurityTest extends TestCase
         $this->assertSame(IssueCodes::TOO_SMALL, $result->issues[0]->code);
     }
 
+    // ── CWE-20 / spec 1.4: float32 out-of-range bypass ─────────────
+    // float32 MUST reject values outside the binary32 range. Without the
+    // check it silently accepts any float64, defeating narrowing.
+
+    public function testFloat32RejectsValueAboveRange(): void
+    {
+        $s = AnyVali::float32();
+        // 3.5e38 > float32 max (~3.4028e38)
+        $result = $s->safeParse(3.5e38);
+        $this->assertFalse($result->success);
+        $this->assertSame(IssueCodes::TOO_LARGE, $result->issues[0]->code);
+    }
+
+    public function testFloat32RejectsHugeAndLargeNegative(): void
+    {
+        $this->assertFalse(AnyVali::float32()->safeParse(1e300)->success);
+        $this->assertFalse(AnyVali::float32()->safeParse(-1e300)->success);
+    }
+
+    public function testFloat32AcceptsInRangeAndZero(): void
+    {
+        $this->assertTrue(AnyVali::float32()->safeParse(1.5)->success);
+        $this->assertTrue(AnyVali::float32()->safeParse(0.0)->success);
+        $this->assertTrue(AnyVali::float32()->safeParse(3.4e38)->success);
+    }
+
     public function testInt16BoundaryExact(): void
     {
         $s = AnyVali::int16();
@@ -1088,5 +1114,26 @@ final class SecurityTest extends TestCase
         ]);
 
         AnyVali::import($json);
+    }
+
+    // ── CWE-20 / spec 3.1: regex anchor newline bypass ─────────────
+    // PCRE's "$" matches before a trailing "\n", so ^[a-z]+$ would accept
+    // "abc\n" (newline/CRLF injection). Anchors are rewritten to absolute
+    // (\A/\z) to match the JS reference.
+
+    public function testPatternDollarAnchorRejectsTrailingNewline(): void
+    {
+        $s = AnyVali::string()->pattern('^[a-z]+$');
+        $this->assertTrue($s->safeParse('abc')->success);
+        $this->assertFalse($s->safeParse("abc\n")->success);
+        $this->assertFalse($s->safeParse("abc\nEVIL")->success);
+    }
+
+    public function testPatternCaretAnchorIsStringStartNotLineStart(): void
+    {
+        $s = AnyVali::string()->pattern('^admin$');
+        $this->assertTrue($s->safeParse('admin')->success);
+        $this->assertFalse($s->safeParse("x\nadmin")->success);
+        $this->assertFalse($s->safeParse("admin\n")->success);
     }
 }

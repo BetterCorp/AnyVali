@@ -12,12 +12,14 @@ from anyvali.schemas.base import _SENTINEL
 
 
 class TestCoerceToIntEdgeCases:
-    def test_float_string_whole(self):
-        """String "3.0" should coerce to int 3 via float path."""
+    def test_float_string_rejected_for_int(self):
+        """String "3.0" must NOT coerce to int: string->int parses decimal
+        integers only (spec 5.1, matching the JS reference). Accepting "3.0"
+        diverged from JS/Go/C# and was a portability bypass."""
         schema = v.int_().coerce(to_int=True)
         result = schema.safe_parse("3.0")
-        assert result.success
-        assert result.data == 3
+        assert not result.success
+        assert result.issues[0].code == v.COERCION_FAILED
 
     def test_float_string_non_whole(self):
         """String "3.5" should fail coercion to int."""
@@ -89,20 +91,25 @@ class TestCoerceToBoolEdgeCases:
         ("True", True),
         ("TRUE", True),
         ("1", True),
-        ("yes", True),
-        ("YES", True),
         ("false", False),
         ("False", False),
         ("FALSE", False),
         ("0", False),
-        ("no", False),
-        ("NO", False),
     ])
     def test_valid_values(self, value: str, expected: bool):
         schema = v.bool_().coerce(to_bool=True)
         result = schema.safe_parse(value)
         assert result.success
         assert result.data is expected
+
+    @pytest.mark.parametrize("value", ["yes", "YES", "no", "NO", "maybe"])
+    def test_non_portable_words_rejected(self, value: str):
+        """string->bool accepts only true/1/false/0 (spec 5.1). "yes"/"no"
+        were a non-portable divergence from the JS reference."""
+        schema = v.bool_().coerce(to_bool=True)
+        result = schema.safe_parse(value)
+        assert not result.success
+        assert result.issues[0].code == v.COERCION_FAILED
 
     def test_invalid_string(self):
         schema = v.bool_().coerce(to_bool=True)

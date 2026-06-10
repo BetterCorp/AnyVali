@@ -53,6 +53,11 @@ module AnyVali
       return { success: false, value: value } unless value.is_a?(String)
 
       stripped = value.strip
+      # Spec 5.1: parse DECIMAL floating-point only. Ruby's Float() also accepts
+      # digit-group underscores ("1_000.5") and hex floats ("0x1.8p3"), which
+      # diverge from the JS reference and let non-decimal strings slip through.
+      return { success: false, value: value } unless stripped.match?(/\A[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?\z/)
+
       begin
         f = Float(stripped)
         { success: true, value: f }

@@ -96,4 +96,19 @@ class TestCoercion < Minitest::Test
     assert AnyVali::CoercionConfig.portable?("string->int")
     assert AnyVali::CoercionConfig.portable?(["trim", "lower"])
   end
+
+  # CWE-20 / spec 5.1: non-portable coercion bypass. Ruby's Float() accepts
+  # digit-group underscores ("1_000.5") and hex floats, which diverge from the
+  # JS reference. string->number must accept ASCII decimals only.
+  def test_string_to_number_rejects_non_decimal
+    s = AnyVali.number.coerce("string->number")
+    ["1_000.5", "0x1.8p3", "0x10"].each do |bad|
+      assert s.safe_parse(bad).failure?, "string->number must reject #{bad.inspect}"
+    end
+    [["3.14", 3.14], ["+5", 5.0], [".5", 0.5], ["1e3", 1000.0]].each do |good, expected|
+      result = s.safe_parse(good)
+      assert result.success?, "string->number must accept #{good.inspect}"
+      assert_equal expected, result.value
+    end
+  end
 end

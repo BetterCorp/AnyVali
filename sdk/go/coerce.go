@@ -2,8 +2,20 @@ package anyvali
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+// Strict ASCII decimal grammars. Go's strconv parsers are more permissive than
+// the ECMA-262 reference (JS): ParseInt accepts a leading "+", ParseFloat
+// accepts hex floats ("0x1p4"), digit-group underscores ("1_000") and
+// "inf"/"nan", and ParseBool accepts "t"/"T"/"f"/"F". Each let a string that
+// every other SDK rejects coerce into a number/bool -- a cross-language
+// validation bypass. Gate on these before parsing (spec 5.1: decimal only).
+var (
+	decimalIntRe   = regexp.MustCompile(`^-?[0-9]+$`)
+	decimalFloatRe = regexp.MustCompile(`^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
 )
 
 // CoercionType represents a portable coercion kind.
@@ -41,7 +53,11 @@ func applyCoercion(value any, coercion CoercionType) (any, error) {
 func coerceToInt(value any) (any, error) {
 	switch v := value.(type) {
 	case string:
-		i, err := strconv.ParseInt(v, 10, 64)
+		trimmed := strings.TrimSpace(v)
+		if !decimalIntRe.MatchString(trimmed) {
+			return nil, fmt.Errorf("cannot coerce string %q to int", v)
+		}
+		i, err := strconv.ParseInt(trimmed, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("cannot coerce string %q to int", v)
 		}
@@ -54,7 +70,11 @@ func coerceToInt(value any) (any, error) {
 func coerceToNumber(value any) (any, error) {
 	switch v := value.(type) {
 	case string:
-		f, err := strconv.ParseFloat(v, 64)
+		trimmed := strings.TrimSpace(v)
+		if !decimalFloatRe.MatchString(trimmed) {
+			return nil, fmt.Errorf("cannot coerce string %q to number", v)
+		}
+		f, err := strconv.ParseFloat(trimmed, 64)
 		if err != nil {
 			return nil, fmt.Errorf("cannot coerce string %q to number", v)
 		}
@@ -67,11 +87,17 @@ func coerceToNumber(value any) (any, error) {
 func coerceToBool(value any) (any, error) {
 	switch v := value.(type) {
 	case string:
-		b, err := strconv.ParseBool(v)
-		if err != nil {
+		// Spec 5.1: only "true"/"1" and "false"/"0" (case-insensitive).
+		// strconv.ParseBool also accepts "t"/"T"/"f"/"F", which diverge from
+		// the JS reference.
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "true", "1":
+			return true, nil
+		case "false", "0":
+			return false, nil
+		default:
 			return nil, fmt.Errorf("cannot coerce string %q to bool", v)
 		}
-		return b, nil
 	default:
 		return nil, fmt.Errorf("cannot coerce %T to bool", value)
 	}

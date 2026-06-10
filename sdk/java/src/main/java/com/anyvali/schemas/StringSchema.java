@@ -104,7 +104,7 @@ public class StringSchema extends Schema<String> {
 
         if (pattern != null) {
             try {
-                if (!Pattern.compile(pattern).matcher(s).find()) {
+                if (!Pattern.compile(toEcmaAnchors(pattern)).matcher(s).find()) {
                     ctx.addIssue(IssueCodes.INVALID_STRING,
                             "String does not match pattern '" + pattern + "'",
                             pattern, s);
@@ -155,6 +155,32 @@ public class StringSchema extends Schema<String> {
         if (includes != null) node.put("includes", includes);
         if (format != null) node.put("format", format);
         return addCommonNodeFields(node);
+    }
+
+    /**
+     * Rewrite ECMA-262 anchors to Java's absolute anchors. In ECMA without the
+     * multiline flag, "^"/"$" match only the start/end of the whole string.
+     * Java's "$" also matches just before a final line terminator, so an
+     * anchored whitelist like ^[a-z]+$ would accept "abc\n" -- a
+     * newline-injection bypass that diverges from the JS reference. Translate
+     * unescaped, top-level "^" -> "\A" and "$" -> "\z" (absolute end). Anchors
+     * inside character classes and escaped "\^"/"\$" are left untouched.
+     */
+    private static String toEcmaAnchors(String p) {
+        var sb = new StringBuilder(p.length() + 4);
+        boolean escaped = false;
+        boolean inClass = false;
+        for (int i = 0; i < p.length(); i++) {
+            char ch = p.charAt(i);
+            if (escaped) { sb.append(ch); escaped = false; }
+            else if (ch == '\\') { sb.append(ch); escaped = true; }
+            else if (ch == '[') { inClass = true; sb.append(ch); }
+            else if (ch == ']' && inClass) { inClass = false; sb.append(ch); }
+            else if (ch == '^' && !inClass) { sb.append("\\A"); }
+            else if (ch == '$' && !inClass) { sb.append("\\z"); }
+            else { sb.append(ch); }
+        }
+        return sb.toString();
     }
 
     @Override
