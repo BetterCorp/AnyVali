@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.3...js-v0.3.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* **validation:** close cross-language coercion + regex-anchor bypasses ([5693efe](https://github.com/BetterCorp/AnyVali/commit/5693efe897c8289424c5e9ae897660a8e42f80bc))
+
 ## [0.3.3](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.2...js-v0.3.3) (2026-06-03)
 
 
