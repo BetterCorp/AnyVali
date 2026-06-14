@@ -29,10 +29,15 @@ class CoercionTest {
     }
 
     @Test
-    void coerceStringToIntFromFloat() {
+    void coerceStringToIntRejectsFloat() {
+        // Spec 5.1: string->int accepts ASCII decimal integers only. A float
+        // string like "42.0" must fail -- every other SDK rejects it, so
+        // accepting it here would be a cross-language coercion bypass.
         var config = CoercionConfig.builder().toInt(true).build();
         var ctx = new ValidationContext();
-        assertEquals(42L, Coercion.applyCoercion("42.0", config, ctx));
+        Coercion.applyCoercion("42.0", config, ctx);
+        assertTrue(ctx.hasIssues());
+        assertEquals(IssueCodes.COERCION_FAILED, ctx.getIssues().get(0).code());
     }
 
     @Test

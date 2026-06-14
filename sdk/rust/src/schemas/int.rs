@@ -204,11 +204,19 @@ impl Schema for IntSchema {
                 if c == "string->int" {
                     if let Value::String(s) = &value {
                         let trimmed = s.trim();
-                        match trimmed.parse::<i64>() {
-                            Ok(n) => {
+                        // Gate on ASCII decimals only before parsing: str::parse
+                        // accepts a leading "+", which the JS reference rejects --
+                        // a cross-language coercion bypass (spec 5.1).
+                        let parsed = if crate::parse::coerce::is_decimal_int(trimmed) {
+                            trimmed.parse::<i64>().ok()
+                        } else {
+                            None
+                        };
+                        match parsed {
+                            Some(n) => {
                                 value = json!(n);
                             }
-                            Err(_) => {
+                            None => {
                                 return Err(vec![ValidationIssue {
                                     code: COERCION_FAILED.to_string(),
                                     path: path.to_vec(),

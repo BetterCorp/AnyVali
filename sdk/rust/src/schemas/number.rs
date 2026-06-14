@@ -231,11 +231,20 @@ impl Schema for NumberSchema {
                 if c == "string->number" {
                     if let Value::String(s) = &value {
                         let trimmed = s.trim();
-                        match trimmed.parse::<f64>() {
-                            Ok(n) => {
+                        // Gate on ASCII decimals only before parsing: str::parse
+                        // accepts "inf"/"infinity"/"nan" and a leading "+", which
+                        // the JS reference rejects -- a cross-language coercion
+                        // bypass (spec 5.1). Also drop non-finite results.
+                        let parsed = if crate::parse::coerce::is_decimal_float(trimmed) {
+                            trimmed.parse::<f64>().ok().filter(|n| n.is_finite())
+                        } else {
+                            None
+                        };
+                        match parsed {
+                            Some(n) => {
                                 value = json!(n);
                             }
-                            Err(_) => {
+                            None => {
                                 return Err(vec![ValidationIssue {
                                     code: COERCION_FAILED.to_string(),
                                     path: path.to_vec(),
