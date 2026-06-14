@@ -30,7 +30,8 @@
     "sdk/java": {
       "component": "java",
       "release-type": "simple",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["pom.xml"]
     },
     "sdk/rust": {
       "component": "rust",
@@ -47,17 +48,20 @@
       "component": "ruby",
       "release-type": "ruby",
       "package-name": "anyvali",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["anyvali.gemspec"]
     },
     "sdk/kotlin": {
       "component": "kotlin",
       "release-type": "simple",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["build.gradle.kts"]
     },
     "sdk/csharp": {
       "component": "csharp",
       "release-type": "simple",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["src/AnyVali/AnyVali.csproj"]
     },
     "sdk/cpp": {
       "component": "cpp",

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "anyvali"
-  s.version     = "0.0.1"
+  s.version     = "0.1.5" # x-release-please-version
   s.summary     = "Native validation with portable schema interchange"
   s.description = "AnyVali Ruby SDK - native validation with portable schema interchange across 10 languages"
   s.authors     = ["AnyVali Contributors"]

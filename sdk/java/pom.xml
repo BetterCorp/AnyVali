@@ -7,7 +7,7 @@
 
     <groupId>com.anyvali</groupId>
     <artifactId>anyvali</artifactId>
-    <version>0.0.1</version>
+    <version>0.1.5</version> <!-- x-release-please-version -->
     <url>https://anyvali.com</url>
     <packaging>jar</packaging>
 
