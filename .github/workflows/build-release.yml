@@ -74,7 +74,7 @@ jobs:
       ruby_released: ${{ steps.release.outputs['ruby--release_created'] }}
       cli_released: ${{ steps.release.outputs['cli--release_created'] }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           config-file: .release-please-config.json
