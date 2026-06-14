@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.6...anyvali-v0.3.7) (2026-06-14)
+
+
+### Bug Fixes
+
+* **release:** bump SDK build manifests + surface publish failures ([0860a75](https://github.com/BetterCorp/AnyVali/commit/0860a753e66e6c5bb53f8e845ed347dc4eaff897))
+* **release:** key publish gates by manifest path, not component ([02270e3](https://github.com/BetterCorp/AnyVali/commit/02270e3e6074f66a36fa0e2d5cd17252891abe67))
+
 ## [0.3.6](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.5...anyvali-v0.3.6) (2026-06-14)
 
 
