@@ -9,11 +9,11 @@ use crate::types::ValidationIssue;
 // `parse::<f64>` accepts "inf"/"infinity"/"nan". Each let a string that the
 // JS reference rejects coerce into a number -- a cross-language validation
 // bypass. Gate on these before parsing (spec 5.1: decimal only).
-fn is_decimal_int(s: &str) -> bool {
+pub(crate) fn is_decimal_int(s: &str) -> bool {
     Regex::new(r"^-?[0-9]+$").unwrap().is_match(s)
 }
 
-fn is_decimal_float(s: &str) -> bool {
+pub(crate) fn is_decimal_float(s: &str) -> bool {
     Regex::new(r"^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$")
         .unwrap()
         .is_match(s)
