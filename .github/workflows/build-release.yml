@@ -64,14 +64,18 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      js_released: ${{ steps.release.outputs['js--release_created'] }}
-      python_released: ${{ steps.release.outputs['python--release_created'] }}
-      go_released: ${{ steps.release.outputs['go--release_created'] }}
-      rust_released: ${{ steps.release.outputs['rust--release_created'] }}
-      java_released: ${{ steps.release.outputs['java--release_created'] }}
-      kotlin_released: ${{ steps.release.outputs['kotlin--release_created'] }}
-      csharp_released: ${{ steps.release.outputs['csharp--release_created'] }}
-      ruby_released: ${{ steps.release.outputs['ruby--release_created'] }}
+      # release-please keys per-package outputs by the manifest PATH, not the
+      # component name -- e.g. 'sdk/js--release_created', not 'js--release_created'.
+      # Using the component name yields empty strings, so every publish job's
+      # `if` evaluates false and the release publishes nothing.
+      js_released: ${{ steps.release.outputs['sdk/js--release_created'] }}
+      python_released: ${{ steps.release.outputs['sdk/python--release_created'] }}
+      go_released: ${{ steps.release.outputs['sdk/go--release_created'] }}
+      rust_released: ${{ steps.release.outputs['sdk/rust--release_created'] }}
+      java_released: ${{ steps.release.outputs['sdk/java--release_created'] }}
+      kotlin_released: ${{ steps.release.outputs['sdk/kotlin--release_created'] }}
+      csharp_released: ${{ steps.release.outputs['sdk/csharp--release_created'] }}
+      ruby_released: ${{ steps.release.outputs['sdk/ruby--release_created'] }}
       cli_released: ${{ steps.release.outputs['cli--release_created'] }}
     steps:
       - uses: googleapis/release-please-action@v5
