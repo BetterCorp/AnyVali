@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/BetterCorp/AnyVali/compare/python-v0.2.3...python-v0.2.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* **validation:** close cross-language coercion + regex-anchor bypasses ([5693efe](https://github.com/BetterCorp/AnyVali/commit/5693efe897c8289424c5e9ae897660a8e42f80bc))
+
 ## [0.2.3](https://github.com/BetterCorp/AnyVali/compare/python-v0.2.2...python-v0.2.3) (2026-06-03)
 
 

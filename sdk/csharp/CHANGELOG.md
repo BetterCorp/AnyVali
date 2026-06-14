@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.3...csharp-v0.1.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* **validation:** close cross-language coercion + regex-anchor bypasses ([5693efe](https://github.com/BetterCorp/AnyVali/commit/5693efe897c8289424c5e9ae897660a8e42f80bc))
+
 ## [0.1.3](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.2...csharp-v0.1.3) (2026-06-03)
 
 

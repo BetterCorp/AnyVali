@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.4](https://github.com/BetterCorp/AnyVali/compare/rust-v0.2.3...rust-v0.2.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* **validation:** apply strict decimal gate in Rust int/number coercion ([6d1fdfb](https://github.com/BetterCorp/AnyVali/commit/6d1fdfb90c26d48831ee12748daac720df420738))
+* **validation:** close cross-language coercion + regex-anchor bypasses ([5693efe](https://github.com/BetterCorp/AnyVali/commit/5693efe897c8289424c5e9ae897660a8e42f80bc))
+* **validation:** close Rust coercion bypass + fix stale Java test ([433cb98](https://github.com/BetterCorp/AnyVali/commit/433cb989743c300b51210c35c041d4ff76171710))
+
 ## [0.2.3](https://github.com/BetterCorp/AnyVali/compare/rust-v0.2.2...rust-v0.2.3) (2026-06-03)
 
 
