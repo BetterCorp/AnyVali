@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>AnyVali</RootNamespace>
-    <Version>0.1.4</Version> <!-- x-release-please-version -->
+    <Version>0.1.5</Version> <!-- x-release-please-version -->
     <PackageId>AnyVali</PackageId>
     <Description>Native validation with portable schema interchange</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>

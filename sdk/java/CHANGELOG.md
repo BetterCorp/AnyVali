@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.5...java-v0.1.6) (2026-06-14)
+
+
+### Bug Fixes
+
+* **release:** bump SDK build manifests + surface publish failures ([0860a75](https://github.com/BetterCorp/AnyVali/commit/0860a753e66e6c5bb53f8e845ed347dc4eaff897))
+
 ## [0.1.5](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.4...java-v0.1.5) (2026-06-14)
 
 
