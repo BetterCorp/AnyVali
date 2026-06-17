@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.4...js-v0.3.5) (2026-06-17)
+
+
+### Bug Fixes
+
+* infer default coercion source ([19577b3](https://github.com/BetterCorp/AnyVali/commit/19577b3d59e00e246fe2021c0b7e30e4196a5fa3))
+
 ## [0.3.4](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.3...js-v0.3.4) (2026-06-14)
 
 

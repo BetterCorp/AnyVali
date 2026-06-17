@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/BetterCorp/AnyVali/compare/go-v0.1.4...go-v0.1.5) (2026-06-17)
+
+
+### Bug Fixes
+
+* infer default coercion source ([19577b3](https://github.com/BetterCorp/AnyVali/commit/19577b3d59e00e246fe2021c0b7e30e4196a5fa3))
+
 ## [0.1.4](https://github.com/BetterCorp/AnyVali/compare/go-v0.1.3...go-v0.1.4) (2026-06-14)
 
 

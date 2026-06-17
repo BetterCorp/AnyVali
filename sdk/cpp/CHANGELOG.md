@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.2.4...cpp-v0.2.5) (2026-06-17)
+
+
+### Bug Fixes
+
+* infer default coercion source ([19577b3](https://github.com/BetterCorp/AnyVali/commit/19577b3d59e00e246fe2021c0b7e30e4196a5fa3))
+
 ## [0.2.4](https://github.com/BetterCorp/AnyVali/compare/cpp-v0.2.3...cpp-v0.2.4) (2026-06-14)
 
 
