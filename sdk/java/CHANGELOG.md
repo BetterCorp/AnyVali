@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.6...java-v0.1.7) (2026-06-17)
+
+
+### Bug Fixes
+
+* infer default coercion source ([19577b3](https://github.com/BetterCorp/AnyVali/commit/19577b3d59e00e246fe2021c0b7e30e4196a5fa3))
+
 ## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/java-v0.1.5...java-v0.1.6) (2026-06-14)
 
 

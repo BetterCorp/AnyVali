@@ -80,7 +80,7 @@ T = TypeVar("T")
 SchemaAny = BaseSchema[Any]
 """Any AnyVali schema. Use as a generic constraint or type hint."""
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 
 # ── Builder functions (public API) ────────────────────────────────

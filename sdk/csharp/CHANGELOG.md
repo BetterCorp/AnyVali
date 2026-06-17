@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.5...csharp-v0.1.6) (2026-06-17)
+
+
+### Bug Fixes
+
+* infer default coercion source ([19577b3](https://github.com/BetterCorp/AnyVali/commit/19577b3d59e00e246fe2021c0b7e30e4196a5fa3))
+
 ## [0.1.5](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.4...csharp-v0.1.5) (2026-06-14)
 
 
