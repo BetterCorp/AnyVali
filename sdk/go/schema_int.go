@@ -68,8 +68,23 @@ func (s *IntSchema) Default(value int64) *IntSchema {
 	return s
 }
 
-func (s *IntSchema) Coerce(c CoercionType) *IntSchema {
-	s.addCoercion(c)
+// Coerce enables coercion on the schema.
+//
+// Called with no arguments, it enables the idiomatic default form: a string
+// input is coerced to this schema's target type (int), inferred from the schema
+// kind. The only portable coercion source is "string". This mirrors the no-arg
+// ergonomic in the other SDKs (e.g. Zod's z.coerce.number()).
+//
+// Called with explicit CoercionType values, it appends each in order, allowing
+// typed and chained coercions (e.g. Coerce(CoerceToInt)).
+func (s *IntSchema) Coerce(c ...CoercionType) *IntSchema {
+	if len(c) == 0 {
+		s.addCoercion(coercionForKind(s.kind))
+		return s
+	}
+	for _, ct := range c {
+		s.addCoercion(ct)
+	}
 	return s
 }
 

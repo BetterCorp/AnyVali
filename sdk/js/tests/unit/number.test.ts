@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { number, float32, float64, int, int8, int16, int32, int64, uint8, uint16, uint32, uint64 } from "../../src/index.js";
+import { number, float32, float64, int, int8, int16, int32, int64, uint8, uint16, uint32, uint64, object } from "../../src/index.js";
 
 describe("NumberSchema", () => {
   it("accepts valid numbers", () => {
@@ -61,6 +61,43 @@ describe("NumberSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) expect(result.issues[0].code).toBe("coercion_failed");
   });
+
+  // Bare `.coerce()` (no args) must imply string source on a numeric target.
+  // Regression: previously no-op'd, so a string input failed with invalid_type.
+  it("coerces string to number with no-arg coerce()", () => {
+    const s = number().coerce();
+    expect(s.parse("3.14")).toBe(3.14);
+  });
+
+  // Full string->number coercion matrix (no-arg form). ASCII decimal float
+  // incl. exponent, trimmed. No hex/Infinity/NaN/underscores.
+  describe("string->number matrix via no-arg coerce()", () => {
+    const s = number().coerce();
+
+    it.each([
+      ["3.14", 3.14],
+      ["-1.5e3", -1500],
+      ["  2  ", 2],
+      ["0", 0],
+    ])("accepts %j -> %j", (input, expected) => {
+      expect(s.parse(input as string)).toBe(expected);
+    });
+
+    it.each([
+      "0x10",
+      "Infinity",
+      "NaN",
+      "",
+      "1_000",
+      "abc",
+    ])("rejects %j with coercion_failed", (input) => {
+      const result = s.safeParse(input);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.issues[0].code).toBe("coercion_failed");
+      }
+    });
+  });
 });
 
 describe("Float32Schema", () => {
@@ -101,6 +138,66 @@ describe("IntSchema", () => {
     const s = int().coerce({ from: "string" });
     const result = s.safeParse("3.14");
     expect(result.success).toBe(false);
+  });
+
+  it("coerces string to int with no-arg coerce()", () => {
+    const s = int().coerce();
+    expect(s.parse("42")).toBe(42);
+  });
+
+  // Full string->int coercion matrix (no-arg form). ASCII `^-?\d+$`, trimmed.
+  describe("string->int matrix via no-arg coerce()", () => {
+    const s = int().coerce();
+
+    it.each([
+      ["42", 42],
+      ["  42  ", 42],
+      ["-7", -7],
+    ])("accepts %j -> %j", (input, expected) => {
+      expect(s.parse(input as string)).toBe(expected);
+    });
+
+    it.each([
+      "3.14",
+      "0x10",
+      "1_000",
+      "+5",
+      "Infinity",
+      "",
+      "abc",
+    ])("rejects %j with coercion_failed", (input) => {
+      const result = s.safeParse(input);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.issues[0].code).toBe("coercion_failed");
+      }
+    });
+  });
+});
+
+// Reproduces the reported field-level coercion failure: an object whose
+// numeric fields use bare `.coerce()` must coerce string inputs, not reject
+// them with invalid_type.
+describe("object with no-arg coerce() on numeric fields", () => {
+  it("coerces all string fields to numbers", () => {
+    const schema = object({
+      lumpSum: number().coerce().min(0),
+      monthlyContributions: number().coerce().min(0),
+      investmentTerm: number().coerce().min(1),
+    });
+    const result = schema.safeParse({
+      lumpSum: "1000000",
+      monthlyContributions: "1000",
+      investmentTerm: "20",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        lumpSum: 1000000,
+        monthlyContributions: 1000,
+        investmentTerm: 20,
+      });
+    }
   });
 });
 

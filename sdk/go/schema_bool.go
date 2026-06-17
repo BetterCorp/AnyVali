@@ -16,8 +16,23 @@ func (s *BoolSchema) Default(value bool) *BoolSchema {
 	return s
 }
 
-func (s *BoolSchema) Coerce(c CoercionType) *BoolSchema {
-	s.addCoercion(c)
+// Coerce enables coercion on the schema.
+//
+// Called with no arguments, it enables the idiomatic default form: a string
+// input is coerced to bool, inferred from the schema kind. The only portable
+// coercion source is "string". This mirrors the no-arg ergonomic in the other
+// SDKs (e.g. Zod's z.coerce.boolean()).
+//
+// Called with explicit CoercionType values, it appends each in order
+// (e.g. Coerce(CoerceToBool)).
+func (s *BoolSchema) Coerce(c ...CoercionType) *BoolSchema {
+	if len(c) == 0 {
+		s.addCoercion(CoerceToBool)
+		return s
+	}
+	for _, ct := range c {
+		s.addCoercion(ct)
+	}
 	return s
 }
 

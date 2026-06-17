@@ -22,6 +22,14 @@ public:
     NumberSchema& exclusiveMax(double v) { exclusive_max_ = v; return *this; }
     NumberSchema& multipleOf(double v) { multiple_of_ = v; return *this; }
     NumberSchema& coerce(const std::string& c) { coercions_ = {c}; return *this; }
+    // No-arg ergonomic: enable string coercion with the target inferred from the
+    // schema kind. Int-family kinds coerce via "string->int" (ASCII ^-?\d+$),
+    // float/number kinds via "string->number" (ASCII decimal float). Mirrors the
+    // Zod-style coerce() with no explicit source token.
+    NumberSchema& coerce() {
+        coercions_ = { is_int_kind() ? "string->int" : "string->number" };
+        return *this;
+    }
     NumberSchema& defaultValue(const nlohmann::json& v) { default_value_ = v; return *this; }
 
     nlohmann::json validate(const nlohmann::json& input, ValidationContext& ctx) const override {

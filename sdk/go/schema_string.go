@@ -70,8 +70,14 @@ func (s *StringSchema) Default(value string) *StringSchema {
 	return s
 }
 
-func (s *StringSchema) Coerce(c CoercionType) *StringSchema {
-	s.addCoercion(c)
+// Coerce appends one or more string transform coercions (trim, lower, upper),
+// applied in order. Unlike the numeric/bool schemas, a string schema has no
+// implicit string-to-self target, so the no-arg form is a no-op; pass explicit
+// CoercionType values (e.g. Coerce(CoerceTrim, CoerceLower)).
+func (s *StringSchema) Coerce(c ...CoercionType) *StringSchema {
+	for _, ct := range c {
+		s.addCoercion(ct)
+	}
 	return s
 }
 

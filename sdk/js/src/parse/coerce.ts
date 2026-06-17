@@ -66,8 +66,16 @@ export function applyCoercion(
     }
   }
 
-  // Type coercion from string to target
-  if (config.from === "string" && typeof value === "string") {
+  // Type coercion from string to target.
+  // The only portable coercion source is "string" (spec 5.1), so enabling
+  // coercion on a non-string target (e.g. `number().coerce()`) implies a
+  // string source even when `from` is omitted. Without this, a bare
+  // `.coerce()` on a numeric/bool schema would silently no-op and the raw
+  // string would fail validation with invalid_type.
+  const isTypeTarget = targetType !== "string" && targetType !== "unknown";
+  const fromString =
+    config.from === "string" || (config.from === undefined && isTypeTarget);
+  if (fromString && typeof value === "string") {
     switch (targetType) {
       case "int":
       case "int8":

@@ -127,6 +127,13 @@ impl IntSchema {
         self
     }
 
+    /// Enable coercion with the target inferred from the schema kind. A bare
+    /// string input is coerced as `string->int`. Equivalent to `.coerce(vec![])`
+    /// but reads more clearly as "coerce from string into this kind".
+    pub fn coerce_default(self) -> Self {
+        self.coerce(vec![])
+    }
+
     pub fn default(mut self, v: Value) -> Self {
         self.default_value = Some(v);
         self
@@ -175,6 +182,35 @@ impl Default for IntSchema {
     }
 }
 
+/// Coerce a string value into an int, gating on ASCII decimals only (spec 5.1).
+/// Non-string values pass through unchanged.
+fn coerce_string_to_int(
+    value: &Value,
+    kind: &str,
+    path: &[PathSegment],
+) -> Result<Value, Vec<ValidationIssue>> {
+    if let Value::String(s) = value {
+        let trimmed = s.trim();
+        let parsed = if crate::parse::coerce::is_decimal_int(trimmed) {
+            trimmed.parse::<i64>().ok()
+        } else {
+            None
+        };
+        match parsed {
+            Some(n) => Ok(json!(n)),
+            None => Err(vec![ValidationIssue {
+                code: COERCION_FAILED.to_string(),
+                path: path.to_vec(),
+                expected: kind.to_string(),
+                received: s.clone(),
+                meta: None,
+            }]),
+        }
+    } else {
+        Ok(value.clone())
+    }
+}
+
 /// Format a number for display, matching spec (integer display for whole numbers).
 fn format_num(n: f64) -> String {
     if n.fract() == 0.0 && n.abs() < 1e18 {
@@ -197,37 +233,23 @@ impl Schema for IntSchema {
     ) -> Result<Value, Vec<ValidationIssue>> {
         let kind = self.width.kind_name();
 
-        // Apply coercions
+        // Apply coercions. When coercion is enabled but no explicit typed
+        // source token is supplied (e.g. `.coerce(vec![])` / `.coerce_default()`),
+        // the only portable source is "string", so a bare string input is
+        // coerced as `string->int`. This mirrors the cross-SDK contract that
+        // "coerce, default source" never silently no-ops on string input.
         let mut value = input.clone();
         if let Some(coercions) = &self.coerce {
+            let has_string_int = coercions.iter().any(|c| c == "string->int");
+            let infer_default = coercions.is_empty();
             for c in coercions {
-                if c == "string->int" {
-                    if let Value::String(s) = &value {
-                        let trimmed = s.trim();
-                        // Gate on ASCII decimals only before parsing: str::parse
-                        // accepts a leading "+", which the JS reference rejects --
-                        // a cross-language coercion bypass (spec 5.1).
-                        let parsed = if crate::parse::coerce::is_decimal_int(trimmed) {
-                            trimmed.parse::<i64>().ok()
-                        } else {
-                            None
-                        };
-                        match parsed {
-                            Some(n) => {
-                                value = json!(n);
-                            }
-                            None => {
-                                return Err(vec![ValidationIssue {
-                                    code: COERCION_FAILED.to_string(),
-                                    path: path.to_vec(),
-                                    expected: kind.to_string(),
-                                    received: s.clone(),
-                                    meta: None,
-                                }]);
-                            }
-                        }
-                    }
+                if c != "string->int" {
+                    continue;
                 }
+                value = coerce_string_to_int(&value, kind, path)?;
+            }
+            if infer_default && !has_string_int {
+                value = coerce_string_to_int(&value, kind, path)?;
             }
         }
 

@@ -19,6 +19,11 @@ module AnyVali
 
     def apply_single(value, config, kind)
       case config
+      when "string"
+        # Generic, portable coercion source (spec 5.1). The only portable
+        # source is "string"; infer the target from the schema kind. On a
+        # string-kind schema this is a no-op (the value is already a string).
+        coerce_from_string_to_kind(value, kind)
       when "string->int"
         coerce_string_to_int(value)
       when "string->number"
@@ -33,6 +38,23 @@ module AnyVali
         coerce_upper(value)
       else
         { success: false, value: value }
+      end
+    end
+
+    # Map the portable "string" source to the concrete string->kind coercion
+    # for the target schema kind. Integer family -> int; float family ->
+    # number; bool -> bool; everything else (string/unknown/...) is a no-op.
+    def coerce_from_string_to_kind(value, kind)
+      case kind
+      when "int", "int8", "int16", "int32", "int64",
+           "uint8", "uint16", "uint32", "uint64"
+        coerce_string_to_int(value)
+      when "number", "float32", "float64"
+        coerce_string_to_number(value)
+      when "bool"
+        coerce_string_to_bool(value)
+      else
+        { success: true, value: value }
       end
     end
 

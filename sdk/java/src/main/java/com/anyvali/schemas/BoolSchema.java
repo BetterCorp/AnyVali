@@ -22,6 +22,12 @@ public class BoolSchema extends Schema<Boolean> {
     }
 
     @Override
+    protected com.anyvali.parse.CoercionConfig defaultCoercionConfig() {
+        // No-arg coerce() on a boolean schema coerces boolean strings.
+        return com.anyvali.parse.CoercionConfig.builder().toBool(true).build();
+    }
+
+    @Override
     protected Object validate(Object input, ValidationContext ctx) {
         if (!(input instanceof Boolean)) {
             String received = anyvaliTypeName(input);

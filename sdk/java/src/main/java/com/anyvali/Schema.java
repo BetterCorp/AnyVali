@@ -186,6 +186,44 @@ public abstract class Schema<T> {
         return copy;
     }
 
+    /**
+     * Enable coercion from string with the target type inferred from this
+     * schema's kind, returning a new schema instance.
+     * <p>
+     * "string" is the only portable coercion source, so this ergonomic overload
+     * enables string-to-target coercion: numeric schemas coerce ASCII decimal
+     * strings; boolean schemas coerce boolean strings. The accepted/rejected
+     * grammars are identical to the explicit {@code coerce(...)} form.
+     * <p>
+     * Schema kinds that have no portable string source (e.g. string itself,
+     * objects, arrays) cannot infer a target and must use the explicit
+     * {@link #coerce(CoercionConfig)} overload instead.
+     *
+     * @throws IllegalStateException if this schema kind cannot infer a coercion
+     *         target from string
+     */
+    public Schema<T> coerce() {
+        CoercionConfig config = defaultCoercionConfig();
+        if (config == null) {
+            throw new IllegalStateException(
+                    "coerce() with no arguments cannot infer a coercion target for this "
+                            + "schema kind; use coerce(CoercionConfig) to configure string "
+                            + "transformations or an explicit target");
+        }
+        return coerce(config);
+    }
+
+    /**
+     * The CoercionConfig used by the no-arg {@link #coerce()} ergonomic, with
+     * the string-to-target enabled based on this schema's kind.
+     * <p>
+     * Returns {@code null} for kinds that cannot infer a portable string source.
+     * Numeric and boolean schemas override this.
+     */
+    protected CoercionConfig defaultCoercionConfig() {
+        return null;
+    }
+
     // ---- Describe & Metadata ----
 
     /**

@@ -78,8 +78,14 @@ public static class Coercion
             value = str;
         }
 
-        // Type coercion from string to target
-        if (config.From == "string" && value is string sv)
+        // Type coercion from string to target.
+        // "string" is the only portable coercion source, so an omitted source
+        // (From == null) is treated as "string" when the target is a non-string
+        // type. This makes the bare `.Coerce()` form coerce string input.
+        var coerceFromString = config.From == "string"
+            || (config.From is null && targetType != "string");
+
+        if (coerceFromString && value is string sv)
         {
             switch (targetType)
             {

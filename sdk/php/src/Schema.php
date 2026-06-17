@@ -131,10 +131,19 @@ abstract class Schema
     }
 
     /**
-     * Set coercion. Returns cloned instance.
+     * Enable coercion. Returns cloned instance.
+     *
+     * Called with no arguments, this enables the default/ergonomic form:
+     * string input is coerced to the schema's own target kind (numeric kinds
+     * => string->number, integer kinds => string->int, bool => string->bool).
+     * The bare source token "string" stored here is resolved to the concrete
+     * typed coercion at parse time, so explicit typed tokens
+     * ("string->int" etc.), string transforms ("trim"/"lower"/"upper"), and
+     * interchange round-tripping all keep working unchanged.
+     *
      * @param string|string[] $coerce
      */
-    public function coerce(string|array $coerce): static
+    public function coerce(string|array $coerce = 'string'): static
     {
         $clone = clone $this;
         $clone->coerce = $coerce;

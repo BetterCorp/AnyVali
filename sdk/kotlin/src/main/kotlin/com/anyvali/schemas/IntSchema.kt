@@ -22,6 +22,12 @@ data class IntSchema(
     fun multipleOf(n: Long) = copy(multipleOf = n)
     fun default(v: Long) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
+    /**
+     * No-arg ergonomic: enable string coercion with the target inferred from the
+     * schema kind. Equivalent to the portable generic "string" source (spec 5.1)
+     * and to JS `.coerce()` / `.coerce({ from: "string" })`.
+     */
+    fun coerce() = copy(coerce = "string")
 
     fun describe(description: String, opts: DescribeOptions? = null): IntSchema {
         applyDescribe(description, opts)
@@ -61,10 +67,11 @@ data class IntSchema(
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Long> {
         var value = input
 
-        // Apply coercion
-        if (coerce == "string->int" && value is String) {
-            val trimmed = value.trim()
-            val parsed = trimmed.toLongOrNull()
+        // Apply coercion. Both the typed token ("string->int") and the generic
+        // portable "string" source (set via the no-arg coerce()) enable
+        // string->int coercion, with the target inferred from this schema's kind.
+        if ((coerce == "string->int" || coerce == "string") && value is String) {
+            val parsed = com.anyvali.parse.Coercion.coerceStringToInt(value)
             if (parsed == null) {
                 return ParseResult.Failure(
                     listOf(

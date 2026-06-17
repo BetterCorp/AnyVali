@@ -78,6 +78,9 @@ class _BaseIntSchema(BaseSchema[int]):
         new._multiple_of = v
         return new
 
+    def _coercion_target(self) -> str | None:
+        return "int"
+
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
         # Reject booleans (bool is subclass of int in Python)
         if isinstance(input, bool):

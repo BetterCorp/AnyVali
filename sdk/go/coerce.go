@@ -30,6 +30,22 @@ const (
 	CoerceUpper    CoercionType = "upper"
 )
 
+// coercionForKind maps a numeric schema kind to the portable coercion that
+// targets it. It backs the no-arg Coerce() ergonomic, where the target type is
+// inferred from the schema's own kind and the source is implicitly the only
+// portable one ("string"). Float kinds (number/float32/float64) coerce via
+// CoerceToNumber; every integer/unsigned kind coerces via CoerceToInt (the
+// schema's own range check then enforces width).
+func coercionForKind(kind string) CoercionType {
+	switch kind {
+	case "number", "float64", "float32":
+		return CoerceToNumber
+	default:
+		// int, int8/16/32/64, uint8/16/32/64
+		return CoerceToInt
+	}
+}
+
 // applyCoercion attempts to coerce the input value according to the given coercion type.
 func applyCoercion(value any, coercion CoercionType) (any, error) {
 	switch coercion {

@@ -220,3 +220,161 @@ fn coerce_number_rejects_non_decimal() {
         assert!(s.safe_parse(&json!(good)).success, "string->number must accept {good:?}");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Cross-SDK regression: enabling coercion with NO explicit source.
+//
+// Mirrors a JS SDK bug: turning coercion ON without naming a source silently
+// no-ops, so string input fails with invalid_type instead of coercing. The
+// only portable coercion source is "string", so "coerce, default source"
+// MUST behave as string->{int,number,bool}. The idiomatic no-arg ergonomic is
+// `.coerce_default()` (equivalent to `.coerce(vec![])`), which infers the
+// target from the schema kind.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn default_coerce_number_from_string() {
+    let s = number().coerce_default();
+    let result = s.parse(&json!("3.14"));
+    assert!(result.is_ok(), "default coerce should coerce \"3.14\": {result:?}");
+    assert_eq!(result.unwrap(), json!(3.14));
+}
+
+#[test]
+fn default_coerce_int_from_string() {
+    let s = int().coerce_default();
+    let result = s.parse(&json!("42"));
+    assert!(result.is_ok(), "default coerce should coerce \"42\": {result:?}");
+    assert_eq!(result.unwrap(), json!(42));
+}
+
+#[test]
+fn default_coerce_bool_true_from_string() {
+    let s = bool_().coerce_default();
+    let result = s.parse(&json!("true"));
+    assert!(result.is_ok(), "default coerce should coerce \"true\": {result:?}");
+    assert_eq!(result.unwrap(), json!(true));
+}
+
+#[test]
+fn default_coerce_bool_false_from_string() {
+    let s = bool_().coerce_default();
+    let result = s.parse(&json!("false"));
+    assert!(result.is_ok(), "default coerce should coerce \"false\": {result:?}");
+    assert_eq!(result.unwrap(), json!(false));
+}
+
+#[test]
+fn default_coerce_object_numeric_fields_from_strings() {
+    let s = object()
+        .field("age", Box::new(int().coerce_default()))
+        .field("score", Box::new(number().coerce_default()))
+        .field("active", Box::new(bool_().coerce_default()))
+        .required(vec!["age", "score", "active"]);
+    let input = json!({ "age": "42", "score": "3.14", "active": "true" });
+    let result = s.parse(&input);
+    assert!(
+        result.is_ok(),
+        "default coerce on object numeric/bool fields should coerce all string inputs: {result:?}"
+    );
+    assert_eq!(result.unwrap(), json!({ "age": 42, "score": 3.14, "active": true }));
+}
+
+// The no-arg ergonomic must be interchangeable with the explicit-token form:
+// `.coerce_default()` == `.coerce(vec![])`, and an explicit `string->int` token
+// still works alongside it.
+#[test]
+fn coerce_default_equivalent_to_empty_vec() {
+    assert_eq!(
+        int().coerce_default().safe_parse(&json!("42")).success,
+        int().coerce(vec![]).safe_parse(&json!("42")).success,
+    );
+}
+
+#[test]
+fn explicit_token_still_works() {
+    let s = int().coerce(vec!["string->int".to_string()]);
+    assert_eq!(s.parse(&json!("42")).unwrap(), json!(42));
+}
+
+// ---------------------------------------------------------------------------
+// CANONICAL COERCION MATRIX (all FROM STRING) via the no-arg `.coerce_default()`
+// ergonomic. Every ACCEPT/REJECT row from the spec matrix is exercised here.
+// ---------------------------------------------------------------------------
+
+// string->int: ASCII ^-?\d+$ trimmed.
+#[test]
+fn matrix_default_coerce_int() {
+    let s = int().coerce_default();
+    for good in ["42", "  42  ", "-7"] {
+        let r = s.safe_parse(&json!(good));
+        assert!(r.success, "string->int must ACCEPT {good:?}: {:?}", r.issues);
+    }
+    for bad in ["3.14", "0x10", "1_000", "+5", "Infinity", "", "abc"] {
+        let r = s.safe_parse(&json!(bad));
+        assert!(!r.success, "string->int must REJECT {bad:?}");
+        assert_eq!(r.issues[0].code, "coercion_failed", "{bad:?}");
+    }
+}
+
+// string->number: ASCII decimal float incl exponent, trimmed.
+#[test]
+fn matrix_default_coerce_number() {
+    let s = number().coerce_default();
+    for good in ["3.14", "-1.5e3", "  2  ", "0"] {
+        let r = s.safe_parse(&json!(good));
+        assert!(r.success, "string->number must ACCEPT {good:?}: {:?}", r.issues);
+    }
+    for bad in ["0x10", "Infinity", "NaN", "", "1_000", "abc"] {
+        let r = s.safe_parse(&json!(bad));
+        assert!(!r.success, "string->number must REJECT {bad:?}");
+        assert_eq!(r.issues[0].code, "coercion_failed", "{bad:?}");
+    }
+}
+
+// string->bool: trim + case-insensitive; true<-"true"/"TRUE"/"1", false<-"false"/"0".
+#[test]
+fn matrix_default_coerce_bool() {
+    let s = bool_().coerce_default();
+    for (input, expected) in [
+        ("true", true),
+        ("TRUE", true),
+        ("1", true),
+        ("false", false),
+        ("0", false),
+    ] {
+        let r = s.safe_parse(&json!(input));
+        assert!(r.success, "string->bool must ACCEPT {input:?}: {:?}", r.issues);
+        assert_eq!(r.value.unwrap(), json!(expected), "{input:?}");
+    }
+    for bad in ["yes", "no", "on", "off", "t", "f", "2", ""] {
+        let r = s.safe_parse(&json!(bad));
+        assert!(!r.success, "string->bool must REJECT {bad:?}");
+        assert_eq!(r.issues[0].code, "coercion_failed", "{bad:?}");
+    }
+}
+
+// string transforms (string kind): trim, lower, upper; chainable.
+#[test]
+fn matrix_string_transforms() {
+    assert_eq!(
+        string().coerce(vec!["trim".to_string()]).parse(&json!("  hi  ")).unwrap(),
+        json!("hi")
+    );
+    assert_eq!(
+        string().coerce(vec!["lower".to_string()]).parse(&json!("HeLLo")).unwrap(),
+        json!("hello")
+    );
+    assert_eq!(
+        string().coerce(vec!["upper".to_string()]).parse(&json!("HeLLo")).unwrap(),
+        json!("HELLO")
+    );
+    // chainable
+    assert_eq!(
+        string()
+            .coerce(vec!["trim".to_string(), "upper".to_string()])
+            .parse(&json!("  HeLLo  "))
+            .unwrap(),
+        json!("HELLO")
+    );
+}

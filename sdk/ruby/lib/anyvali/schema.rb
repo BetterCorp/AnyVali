@@ -66,7 +66,14 @@ module AnyVali
       dup_with(default_value: value, has_default: true)
     end
 
-    def coerce(config)
+    # Enable coercion on this schema.
+    #
+    # With no argument (`schema.coerce`) the only portable coercion source —
+    # "string" (spec 5.1) — is implied, and the coercion target is inferred
+    # from the schema kind (e.g. number().coerce coerces a string to a number).
+    # An explicit config string/array (e.g. "string->int", "trim",
+    # ["trim", "lower"]) is still accepted for backwards compatibility.
+    def coerce(config = "string")
       dup_with(coerce_config: config)
     end
 

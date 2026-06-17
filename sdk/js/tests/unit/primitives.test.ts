@@ -35,6 +35,47 @@ describe("BoolSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) expect(result.issues[0].code).toBe("coercion_failed");
   });
+
+  it("coerces string to bool with no-arg coerce()", () => {
+    const s = bool().coerce();
+    expect(s.parse("true")).toBe(true);
+    expect(s.parse("false")).toBe(false);
+  });
+
+  // Full string->bool coercion matrix (no-arg form). Trim + case-insensitive.
+  // true <- "true"/"TRUE"/"1"; false <- "false"/"0". Nothing else.
+  describe("string->bool matrix via no-arg coerce()", () => {
+    const s = bool().coerce();
+
+    it.each([
+      ["true", true],
+      ["TRUE", true],
+      ["1", true],
+      ["  true  ", true],
+      ["false", false],
+      ["0", false],
+      ["  FALSE  ", false],
+    ])("accepts %j -> %j", (input, expected) => {
+      expect(s.parse(input as string)).toBe(expected);
+    });
+
+    it.each([
+      "yes",
+      "no",
+      "on",
+      "off",
+      "t",
+      "f",
+      "2",
+      "",
+    ])("rejects %j with coercion_failed", (input) => {
+      const result = s.safeParse(input);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.issues[0].code).toBe("coercion_failed");
+      }
+    });
+  });
 });
 
 describe("NullSchema", () => {

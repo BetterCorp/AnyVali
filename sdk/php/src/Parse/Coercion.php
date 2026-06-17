@@ -9,6 +9,21 @@ use AnyVali\ValidationIssue;
 
 final class Coercion
 {
+    /**
+     * Integer-family schema kinds. A bare/"string" coercion on any of these
+     * resolves to string->int.
+     */
+    private const INT_KINDS = [
+        'int', 'int8', 'int16', 'int32', 'int64',
+        'uint8', 'uint16', 'uint32', 'uint64',
+    ];
+
+    /**
+     * Number-family schema kinds. A bare/"string" coercion on any of these
+     * resolves to string->number.
+     */
+    private const NUMBER_KINDS = ['number', 'float32', 'float64'];
+
     private function __construct()
     {
     }
@@ -24,6 +39,28 @@ final class Coercion
         string $targetKind,
         array $path,
     ): array {
+        // Resolve the generic/default source token "string" to a concrete
+        // typed coercion based on the schema's own kind. This is the no-arg /
+        // bare-source ergonomic: ->coerce() (which stores "string") or
+        // ->coerce('string') coerces string input to the schema target.
+        //   - numeric kinds  => string->number
+        //   - integer kinds  => string->int
+        //   - bool           => string->bool
+        //   - string kind    => identity passthrough (trim/lower/upper handle
+        //                       the real string transforms)
+        if ($coercion === 'string') {
+            if (in_array($targetKind, self::INT_KINDS, true)) {
+                $coercion = 'string->int';
+            } elseif (in_array($targetKind, self::NUMBER_KINDS, true)) {
+                $coercion = 'string->number';
+            } elseif ($targetKind === 'bool') {
+                $coercion = 'string->bool';
+            } else {
+                // string (or any non-coercible) target: nothing to convert.
+                return [$value, null];
+            }
+        }
+
         return match ($coercion) {
             'string->int' => self::stringToInt($value, $path),
             'string->number' => self::stringToNumber($value, $path),
@@ -75,8 +112,15 @@ final class Coercion
             return [$value, null];
         }
 
+        // Strict ASCII decimal float (optionally signed, optional exponent).
+        // PHP's is_numeric()/(float) cast are more permissive than the ECMA-262
+        // reference: is_numeric accepts hex-ish forms in older PHP, leading/
+        // trailing whitespace, and "(float)" silently turns garbage into 0.0.
+        // Gate on a strict grammar so coercion behaves identically across SDKs
+        // (spec 5.1: parse as DECIMAL floating-point only). Mirrors the Python
+        // canonical regex.
         $trimmed = trim($value);
-        if (!is_numeric($trimmed)) {
+        if (!preg_match('/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/', $trimmed)) {
             return [$value, new ValidationIssue(
                 code: IssueCodes::COERCION_FAILED,
                 message: "Cannot coerce \"{$value}\" to number",
@@ -86,7 +130,20 @@ final class Coercion
             )];
         }
 
-        return [(float)$trimmed, null];
+        $num = (float)$trimmed;
+        // Guard against magnitudes that overflow to +/-INF (e.g. "1e400"):
+        // INF/NaN are not decimal-representable finite numbers (spec 5.1).
+        if (is_infinite($num) || is_nan($num)) {
+            return [$value, new ValidationIssue(
+                code: IssueCodes::COERCION_FAILED,
+                message: "Cannot coerce \"{$value}\" to number",
+                path: $path,
+                expected: 'number',
+                received: $value,
+            )];
+        }
+
+        return [$num, null];
     }
 
     /**

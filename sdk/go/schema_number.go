@@ -69,8 +69,23 @@ func (s *Float64Schema) Default(value float64) *Float64Schema {
 	return s
 }
 
-func (s *Float64Schema) Coerce(c CoercionType) *Float64Schema {
-	s.addCoercion(c)
+// Coerce enables coercion on the schema.
+//
+// Called with no arguments, it enables the idiomatic default form: a string
+// input is coerced to this schema's target type (number), inferred from the
+// schema kind. The only portable coercion source is "string". This mirrors the
+// no-arg ergonomic in the other SDKs (e.g. Zod's z.coerce.number()).
+//
+// Called with explicit CoercionType values, it appends each in order, allowing
+// typed and chained coercions (e.g. Coerce(CoerceToNumber)).
+func (s *Float64Schema) Coerce(c ...CoercionType) *Float64Schema {
+	if len(c) == 0 {
+		s.addCoercion(coercionForKind(s.kind))
+		return s
+	}
+	for _, ct := range c {
+		s.addCoercion(ct)
+	}
 	return s
 }
 

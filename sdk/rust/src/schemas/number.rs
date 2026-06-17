@@ -85,6 +85,13 @@ impl NumberSchema {
         self
     }
 
+    /// Enable coercion with the target inferred from the schema kind. A bare
+    /// string input is coerced as `string->number`. Equivalent to
+    /// `.coerce(vec![])`, reading as "coerce from string into this kind".
+    pub fn coerce_default(self) -> Self {
+        self.coerce(vec![])
+    }
+
     pub fn default(mut self, v: Value) -> Self {
         self.default_value = Some(v);
         self
@@ -130,6 +137,35 @@ impl NumberSchema {
 impl Default for NumberSchema {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Coerce a string value into a number, gating on ASCII decimal floats only
+/// and dropping non-finite results (spec 5.1). Non-strings pass through.
+fn coerce_string_to_number(
+    value: &Value,
+    kind: &str,
+    path: &[PathSegment],
+) -> Result<Value, Vec<ValidationIssue>> {
+    if let Value::String(s) = value {
+        let trimmed = s.trim();
+        let parsed = if crate::parse::coerce::is_decimal_float(trimmed) {
+            trimmed.parse::<f64>().ok().filter(|n| n.is_finite())
+        } else {
+            None
+        };
+        match parsed {
+            Some(n) => Ok(json!(n)),
+            None => Err(vec![ValidationIssue {
+                code: COERCION_FAILED.to_string(),
+                path: path.to_vec(),
+                expected: kind.to_string(),
+                received: s.clone(),
+                meta: None,
+            }]),
+        }
+    } else {
+        Ok(value.clone())
     }
 }
 
@@ -224,38 +260,22 @@ impl Schema for NumberSchema {
         path: &[PathSegment],
         _ctx: &ParseContext,
     ) -> Result<Value, Vec<ValidationIssue>> {
-        // Apply coercions
+        // Apply coercions. When coercion is enabled but no explicit typed
+        // source token is supplied (e.g. `.coerce(vec![])` / `.coerce_default()`),
+        // the only portable source is "string", so a bare string input is
+        // coerced as `string->number` rather than silently no-oping.
         let mut value = input.clone();
         if let Some(coercions) = &self.coerce {
+            let has_string_number = coercions.iter().any(|c| c == "string->number");
+            let infer_default = coercions.is_empty();
             for c in coercions {
-                if c == "string->number" {
-                    if let Value::String(s) = &value {
-                        let trimmed = s.trim();
-                        // Gate on ASCII decimals only before parsing: str::parse
-                        // accepts "inf"/"infinity"/"nan" and a leading "+", which
-                        // the JS reference rejects -- a cross-language coercion
-                        // bypass (spec 5.1). Also drop non-finite results.
-                        let parsed = if crate::parse::coerce::is_decimal_float(trimmed) {
-                            trimmed.parse::<f64>().ok().filter(|n| n.is_finite())
-                        } else {
-                            None
-                        };
-                        match parsed {
-                            Some(n) => {
-                                value = json!(n);
-                            }
-                            None => {
-                                return Err(vec![ValidationIssue {
-                                    code: COERCION_FAILED.to_string(),
-                                    path: path.to_vec(),
-                                    expected: self.kind_name.clone(),
-                                    received: s.clone(),
-                                    meta: None,
-                                }]);
-                            }
-                        }
-                    }
+                if c != "string->number" {
+                    continue;
                 }
+                value = coerce_string_to_number(&value, &self.kind_name, path)?;
+            }
+            if infer_default && !has_string_number {
+                value = coerce_string_to_number(&value, &self.kind_name, path)?;
             }
         }
 

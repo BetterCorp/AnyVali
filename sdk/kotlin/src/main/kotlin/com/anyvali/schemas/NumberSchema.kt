@@ -23,6 +23,12 @@ data class NumberSchema(
     fun multipleOf(n: Number) = copy(multipleOf = n.toDouble())
     fun default(v: Number) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
+    /**
+     * No-arg ergonomic: enable string coercion with the target inferred from the
+     * schema kind. Equivalent to the portable generic "string" source (spec 5.1)
+     * and to JS `.coerce()` / `.coerce({ from: "string" })`.
+     */
+    fun coerce() = copy(coerce = "string")
 
     fun describe(description: String, opts: DescribeOptions? = null): NumberSchema {
         applyDescribe(description, opts)
@@ -38,10 +44,11 @@ data class NumberSchema(
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Double> {
         var value = input
 
-        // Apply coercion
-        if (coerce == "string->number" && value is String) {
-            val trimmed = value.trim()
-            val parsed = trimmed.toDoubleOrNull()
+        // Apply coercion. Both the typed token ("string->number") and the generic
+        // portable "string" source (set via the no-arg coerce()) enable
+        // string->number coercion, with the target inferred from this schema's kind.
+        if ((coerce == "string->number" || coerce == "string") && value is String) {
+            val parsed = Coercion.coerceStringToNumber(value)
             if (parsed == null) {
                 return ParseResult.Failure(
                     listOf(

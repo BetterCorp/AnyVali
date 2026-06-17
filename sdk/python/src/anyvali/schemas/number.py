@@ -86,6 +86,9 @@ class _BaseNumberSchema(BaseSchema[float]):
             if value % self._multiple_of != 0:
                 ctx.add_issue(INVALID_NUMBER, f"Number must be a multiple of {self._multiple_of}", expected=self._multiple_of, received=value)
 
+    def _coercion_target(self) -> str | None:
+        return "number"
+
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
         if not self._check_is_number(input, ctx):
             return None

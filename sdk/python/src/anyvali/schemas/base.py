@@ -243,8 +243,21 @@ class BaseSchema(ABC, Generic[T]):
 
         if self._coercion is None:
             return value
-        result = apply_coercion(value, self._coercion, ctx)
+        result = apply_coercion(
+            value, self._coercion, ctx, target=self._coercion_target()
+        )
         return result
+
+    def _coercion_target(self) -> str | None:
+        """Inferred coercion target for the bare ``.coerce()`` form.
+
+        Returns the portable target ("int" / "number" / "bool") this schema's
+        kind expects a string to be coerced into when ``.coerce()`` is called
+        with no explicit ``to_*`` source flag. String-typed schemas return None
+        (trim/lower/upper only). Mirrors the JS rule: "coercion enabled +
+        non-string target + no explicit source => coerce from string."
+        """
+        return None
 
     # ── Private helpers ────────────────────────────────────────────
 

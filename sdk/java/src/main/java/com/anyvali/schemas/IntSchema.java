@@ -107,6 +107,12 @@ public class IntSchema extends Schema<Long> {
     }
 
     @Override
+    protected com.anyvali.parse.CoercionConfig defaultCoercionConfig() {
+        // No-arg coerce() on an integer schema coerces ASCII decimal strings.
+        return com.anyvali.parse.CoercionConfig.builder().toInt(true).build();
+    }
+
+    @Override
     public Object runPipeline(Object input, ValidationContext ctx) {
         boolean isAbsent = (input == ABSENT) || (input == null && !acceptsNull());
         if (!isAbsent || !hasDefault) {

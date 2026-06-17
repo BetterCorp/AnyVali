@@ -29,6 +29,13 @@ impl BoolSchema {
         self
     }
 
+    /// Enable coercion with the target inferred from the schema kind. A bare
+    /// string input is coerced as `string->bool`. Equivalent to `.coerce(vec![])`,
+    /// reading as "coerce from string into this kind".
+    pub fn coerce_default(self) -> Self {
+        self.coerce(vec![])
+    }
+
     pub fn default(mut self, v: Value) -> Self {
         self.default_value = Some(v);
         self
@@ -77,6 +84,30 @@ impl Default for BoolSchema {
     }
 }
 
+/// Coerce a string value into a bool (trim + case-insensitive; true<-"true"/"1",
+/// false<-"false"/"0"). Non-string values pass through unchanged.
+fn coerce_string_to_bool(
+    value: &Value,
+    path: &[PathSegment],
+) -> Result<Value, Vec<ValidationIssue>> {
+    if let Value::String(s) = value {
+        let lower = s.trim().to_lowercase();
+        match lower.as_str() {
+            "true" | "1" => Ok(Value::Bool(true)),
+            "false" | "0" => Ok(Value::Bool(false)),
+            _ => Err(vec![ValidationIssue {
+                code: COERCION_FAILED.to_string(),
+                path: path.to_vec(),
+                expected: "bool".to_string(),
+                received: s.clone(),
+                meta: None,
+            }]),
+        }
+    } else {
+        Ok(value.clone())
+    }
+}
+
 impl Schema for BoolSchema {
     fn kind(&self) -> &str {
         "bool"
@@ -88,32 +119,22 @@ impl Schema for BoolSchema {
         path: &[PathSegment],
         _ctx: &ParseContext,
     ) -> Result<Value, Vec<ValidationIssue>> {
-        // Apply coercions
+        // Apply coercions. When coercion is enabled but no explicit typed
+        // source token is supplied (e.g. `.coerce(vec![])` / `.coerce_default()`),
+        // the only portable source is "string", so a bare string input is
+        // coerced as `string->bool` rather than silently no-oping.
         let mut value = input.clone();
         if let Some(coercions) = &self.coerce {
+            let has_string_bool = coercions.iter().any(|c| c == "string->bool");
+            let infer_default = coercions.is_empty();
             for c in coercions {
-                if c == "string->bool" {
-                    if let Value::String(s) = &value {
-                        let lower = s.trim().to_lowercase();
-                        match lower.as_str() {
-                            "true" | "1" => {
-                                value = Value::Bool(true);
-                            }
-                            "false" | "0" => {
-                                value = Value::Bool(false);
-                            }
-                            _ => {
-                                return Err(vec![ValidationIssue {
-                                    code: COERCION_FAILED.to_string(),
-                                    path: path.to_vec(),
-                                    expected: "bool".to_string(),
-                                    received: s.clone(),
-                                    meta: None,
-                                }]);
-                            }
-                        }
-                    }
+                if c != "string->bool" {
+                    continue;
                 }
+                value = coerce_string_to_bool(&value, path)?;
+            }
+            if infer_default && !has_string_bool {
+                value = coerce_string_to_bool(&value, path)?;
             }
         }
 

@@ -17,25 +17,51 @@ _DECIMAL_INT_RE = re.compile(r"^-?[0-9]+$")
 _DECIMAL_FLOAT_RE = re.compile(r"^[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$")
 
 
-def apply_coercion(value: Any, config: CoercionConfig, ctx: ValidationContext) -> Any:
+def apply_coercion(
+    value: Any,
+    config: CoercionConfig,
+    ctx: ValidationContext,
+    target: str | None = None,
+) -> Any:
     """Apply configured coercions to a value.
 
     Coercion order: type coercions first, then string transformations.
+
+    ``target`` is the schema's inferred coercion target ("int"/"number"/"bool"
+    or None for string-typed schemas). When coercion is enabled but NO explicit
+    ``to_*`` source flag is set, we infer the conversion from the schema's own
+    kind and coerce from string. Mirrors the JS rule: "coercion enabled +
+    non-string target + no explicit source => coerce from string." We do not
+    auto-coerce when ``target`` is None (string kind): trim/lower/upper only.
     """
     result = value
 
+    # Resolve effective type-coercion flags. Explicit to_* flags always win and
+    # remain interoperable with the typed string->int/number/bool interchange
+    # tokens; only when none is set do we fall back to the inferred target.
+    to_int = config.to_int
+    to_number = config.to_number
+    to_bool = config.to_bool
+    if not (to_int or to_number or to_bool) and target is not None:
+        if target == "int":
+            to_int = True
+        elif target == "number":
+            to_number = True
+        elif target == "bool":
+            to_bool = True
+
     # Type coercions (string -> target type)
-    if config.to_int and isinstance(result, str):
+    if to_int and isinstance(result, str):
         result = _coerce_to_int(result, ctx)
         if ctx.issues:
             return result
 
-    if config.to_number and isinstance(result, str):
+    if to_number and isinstance(result, str):
         result = _coerce_to_number(result, ctx)
         if ctx.issues:
             return result
 
-    if config.to_bool and isinstance(result, str):
+    if to_bool and isinstance(result, str):
         result = _coerce_to_bool(result, ctx)
         if ctx.issues:
             return result

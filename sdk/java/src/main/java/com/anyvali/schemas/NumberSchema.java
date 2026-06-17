@@ -75,6 +75,12 @@ public class NumberSchema extends Schema<Double> {
     }
 
     @Override
+    protected com.anyvali.parse.CoercionConfig defaultCoercionConfig() {
+        // No-arg coerce() on a number/float schema coerces ASCII decimal strings.
+        return com.anyvali.parse.CoercionConfig.builder().toNumber(true).build();
+    }
+
+    @Override
     protected Object validate(Object input, ValidationContext ctx) {
         if (!checkIsNumber(input, ctx)) {
             return null;

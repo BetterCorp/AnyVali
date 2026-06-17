@@ -11,6 +11,12 @@ data class BoolSchema(
 
     fun default(v: Boolean) = copy(defaultValue = v)
     fun coerce(c: String) = copy(coerce = c)
+    /**
+     * No-arg ergonomic: enable string coercion with the target inferred from the
+     * schema kind. Equivalent to the portable generic "string" source (spec 5.1)
+     * and to JS `.coerce()` / `.coerce({ from: "string" })`.
+     */
+    fun coerce() = copy(coerce = "string")
 
     fun describe(description: String, opts: DescribeOptions? = null): BoolSchema {
         applyDescribe(description, opts)
@@ -26,7 +32,9 @@ data class BoolSchema(
     override fun safeParseWithContext(input: Any?, ctx: ValidationContext): ParseResult<Boolean> {
         var value = input
 
-        if (coerce == "string->bool" && value is String) {
+        // Both the typed token ("string->bool") and the generic portable "string"
+        // source (set via the no-arg coerce()) enable string->bool coercion.
+        if ((coerce == "string->bool" || coerce == "string") && value is String) {
             val lower = value.trim().lowercase()
             value = when (lower) {
                 "true", "1" -> true

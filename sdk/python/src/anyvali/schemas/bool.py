@@ -14,6 +14,9 @@ class BoolSchema(BaseSchema[bool]):
     def __init__(self) -> None:
         super().__init__()
 
+    def _coercion_target(self) -> str | None:
+        return "bool"
+
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
         if not isinstance(input, bool):
             received = _anyvali_type_name(input)

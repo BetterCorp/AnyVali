@@ -3,6 +3,7 @@
 module AnyVali
   module CoercionConfig
     PORTABLE_COERCIONS = %w[
+      string
       string->int
       string->number
       string->bool

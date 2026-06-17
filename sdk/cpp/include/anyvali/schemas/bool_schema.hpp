@@ -10,6 +10,10 @@ public:
     SchemaKind kind() const override { return SchemaKind::Bool; }
 
     BoolSchema& coerce(const std::string& c) { coercions_ = {c}; return *this; }
+    // No-arg ergonomic: enable string coercion with the target inferred from the
+    // schema kind. Bool coerces via "string->bool" (trim + case-insensitive;
+    // true<-"true"/"1", false<-"false"/"0"). Mirrors Zod-style coerce().
+    BoolSchema& coerce() { coercions_ = {"string->bool"}; return *this; }
     BoolSchema& defaultValue(const nlohmann::json& v) { default_value_ = v; return *this; }
 
     nlohmann::json validate(const nlohmann::json& input, ValidationContext& ctx) const override {

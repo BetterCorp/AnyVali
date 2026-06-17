@@ -97,6 +97,161 @@ class TestCoercion < Minitest::Test
     assert AnyVali::CoercionConfig.portable?(["trim", "lower"])
   end
 
+  # --- Ergonomic no-arg / generic-"string" coercion -------------------------
+  # The only portable coercion source is "string" (spec 5.1). Enabling coercion
+  # on a numeric/bool schema with no explicit typed target (`.coerce` no-arg, or
+  # the generic "string" source) infers the target from the schema kind. A bare
+  # `.coerce` defaults the source to "string", so `number.coerce` and
+  # `number.coerce("string")` are equivalent.
+
+  def test_no_arg_coerce_equivalent_to_string
+    no_arg = AnyVali.number.coerce
+    explicit = AnyVali.number.coerce("string")
+    assert_equal "string", no_arg.coerce_config
+    assert_equal "string", explicit.coerce_config
+    assert_equal 3.14, no_arg.parse("3.14")
+  end
+
+  def test_default_coerce_number_from_string
+    s = AnyVali.number.coerce
+    assert_equal 3.14, s.parse("3.14")
+  end
+
+  def test_default_coerce_int_from_string
+    s = AnyVali.int_.coerce
+    assert_equal 42, s.parse("42")
+  end
+
+  def test_default_coerce_bool_true_from_string
+    s = AnyVali.bool.coerce
+    assert_equal true, s.parse("true")
+  end
+
+  def test_default_coerce_bool_false_from_string
+    s = AnyVali.bool.coerce
+    assert_equal false, s.parse("false")
+  end
+
+  def test_default_coerce_object_numeric_fields_from_string
+    s = AnyVali.object(
+      properties: {
+        "lumpSum" => AnyVali.number.coerce,
+        "monthlyContributions" => AnyVali.number.coerce,
+        "investmentTerm" => AnyVali.number.coerce
+      },
+      required: %w[lumpSum monthlyContributions investmentTerm]
+    )
+
+    result = s.safe_parse(
+      "lumpSum" => "1000000",
+      "monthlyContributions" => "1000",
+      "investmentTerm" => "20"
+    )
+
+    assert result.success?, "object with default-coerce numeric fields must parse"
+    assert_equal 1_000_000.0, result.value["lumpSum"]
+    assert_equal 1_000.0, result.value["monthlyContributions"]
+    assert_equal 20.0, result.value["investmentTerm"]
+  end
+
+  def test_no_arg_coerce_is_portable
+    assert AnyVali::CoercionConfig.portable?("string")
+    assert AnyVali.number.coerce.portable?
+  end
+
+  # --- Canonical coercion matrix (all FROM STRING, no-arg ergonomic) --------
+  # Targets inferred from schema kind. Every ACCEPT/REJECT row from the spec.
+
+  INT_ACCEPT = { "42" => 42, "  42  " => 42, "-7" => -7 }.freeze
+  INT_REJECT = ["3.14", "0x10", "1_000", "+5", "Infinity", "", "abc"].freeze
+
+  def test_matrix_string_to_int_accept
+    s = AnyVali.int_.coerce
+    INT_ACCEPT.each do |input, expected|
+      result = s.safe_parse(input)
+      assert result.success?, "int coerce must accept #{input.inspect}"
+      assert_equal expected, result.value
+    end
+  end
+
+  def test_matrix_string_to_int_reject
+    s = AnyVali.int_.coerce
+    INT_REJECT.each do |input|
+      result = s.safe_parse(input)
+      assert result.failure?, "int coerce must reject #{input.inspect}"
+      assert_equal "coercion_failed", result.issues.first.code
+    end
+  end
+
+  NUMBER_ACCEPT = { "3.14" => 3.14, "-1.5e3" => -1500.0, "  2  " => 2.0, "0" => 0.0 }.freeze
+  NUMBER_REJECT = ["0x10", "Infinity", "NaN", "", "1_000", "abc"].freeze
+
+  def test_matrix_string_to_number_accept
+    s = AnyVali.number.coerce
+    NUMBER_ACCEPT.each do |input, expected|
+      result = s.safe_parse(input)
+      assert result.success?, "number coerce must accept #{input.inspect}"
+      assert_equal expected, result.value
+    end
+  end
+
+  def test_matrix_string_to_number_reject
+    s = AnyVali.number.coerce
+    NUMBER_REJECT.each do |input|
+      result = s.safe_parse(input)
+      assert result.failure?, "number coerce must reject #{input.inspect}"
+      assert_equal "coercion_failed", result.issues.first.code
+    end
+  end
+
+  BOOL_TRUE = %w[true TRUE 1].freeze
+  BOOL_FALSE = %w[false 0].freeze
+  BOOL_REJECT = ["yes", "no", "on", "off", "t", "f", "2", ""].freeze
+
+  def test_matrix_string_to_bool_true
+    s = AnyVali.bool.coerce
+    BOOL_TRUE.each do |input|
+      result = s.safe_parse(input)
+      assert result.success?, "bool coerce must accept #{input.inspect}"
+      assert_equal true, result.value
+    end
+  end
+
+  def test_matrix_string_to_bool_false
+    s = AnyVali.bool.coerce
+    BOOL_FALSE.each do |input|
+      result = s.safe_parse(input)
+      assert result.success?, "bool coerce must accept #{input.inspect}"
+      assert_equal false, result.value
+    end
+  end
+
+  def test_matrix_string_to_bool_reject
+    s = AnyVali.bool.coerce
+    BOOL_REJECT.each do |input|
+      result = s.safe_parse(input)
+      assert result.failure?, "bool coerce must reject #{input.inspect}"
+      assert_equal "coercion_failed", result.issues.first.code
+    end
+  end
+
+  # --- String-kind transforms (string source is a no-op; transforms apply) ---
+
+  def test_string_kind_no_arg_coerce_is_noop_passthrough
+    s = AnyVali.string.coerce
+    assert_equal "hello", s.parse("hello")
+  end
+
+  def test_string_transforms_trim
+    s = AnyVali.string.coerce("trim")
+    assert_equal "hello", s.parse("  hello  ")
+  end
+
+  def test_string_transforms_chainable
+    s = AnyVali.string.coerce(%w[trim lower upper])
+    assert_equal "HELLO", s.parse("  Hello  ")
+  end
+
   # CWE-20 / spec 5.1: non-portable coercion bypass. Ruby's Float() accepts
   # digit-group underscores ("1_000.5") and hex floats, which diverge from the
   # JS reference. string->number must accept ASCII decimals only.
