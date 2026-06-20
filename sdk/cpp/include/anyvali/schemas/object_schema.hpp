@@ -106,7 +106,7 @@ public:
         }
         for (auto it = input.begin(); it != input.end(); ++it) {
             if (properties_.find(it.key()) == properties_.end()) {
-                auto current_mode = (!ctx.inherited_unknown_key_mode.has_value() && !unknown_key_mode_explicit_ && unknown_count > 1)
+                auto current_mode = (!previous_inherited_unknown_key_mode.has_value() && !unknown_key_mode_explicit_ && unknown_count > 1)
                     ? UnknownKeyMode::Reject
                     : mode;
                 if (current_mode == UnknownKeyMode::Reject) {
