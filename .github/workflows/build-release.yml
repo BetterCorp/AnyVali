@@ -347,7 +347,7 @@ jobs:
             echo "Release ${{ github.ref_name }} already exists. Delete it and push a new tag; published releases are immutable." >&2
             exit 1
           fi
-          gh release create "${{ github.ref_name }}" --draft --latest --title "${{ github.ref_name }}" --notes "Release ${{ github.ref_name }}"
+          gh release create "${{ github.ref_name }}" --target "${{ github.sha }}" --draft --latest --title "${{ github.ref_name }}" --notes "Release ${{ github.ref_name }}"
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
