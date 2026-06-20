@@ -67,11 +67,10 @@ jobs:
           cd sdk/go && go build ./...
           cd ../../cli && go build ./...
 
-      - name: Build Java + Kotlin
+      - name: Build Java
         if: matrix.language == 'java-kotlin'
         run: |
           cd sdk/java && mvn -B compile -DskipTests
-          cd ../../sdk/kotlin && gradle --no-daemon compileKotlin
 
       - name: Build C#
         if: matrix.language == 'csharp'

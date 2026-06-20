@@ -36,7 +36,8 @@ module AnyVali
       node
     end
 
-    def safe_parse(input, path: [], context: nil)
+    def safe_parse(input = nil, path: [], context: nil, **kwargs)
+      input = kwargs unless kwargs.empty?
       context ||= ValidationContext.new
       issues = []
 

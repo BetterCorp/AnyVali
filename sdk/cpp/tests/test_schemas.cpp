@@ -774,7 +774,7 @@ TEST("object: parent reject propagates to nested allow object") {
     }));
     ASSERT(!result.success);
     ASSERT(result.issues[0].code == "unknown_key");
-    ASSERT(result.issues[0].path == std::vector<PathSegment>{PathSegment("profile"), PathSegment("role")});
+    ASSERT((result.issues[0].path == std::vector<PathSegment>{PathSegment("profile"), PathSegment("role")}));
 }
 
 TEST("object: parent allow does not override nested strip object") {
