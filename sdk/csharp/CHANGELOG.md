@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.6...csharp-v0.1.7) (2026-06-20)
+
+
+### Bug Fixes
+
+* cascade unknown key policy ([7d21a51](https://github.com/BetterCorp/AnyVali/commit/7d21a51b0d7961c9089fdc92bb1c787c33186207))
+
 ## [0.1.6](https://github.com/BetterCorp/AnyVali/compare/csharp-v0.1.5...csharp-v0.1.6) (2026-06-17)
 
 
