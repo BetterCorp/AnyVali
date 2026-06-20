@@ -11,7 +11,24 @@ permissions:
   id-token: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Read version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.]+)?$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   npm:
+    needs: version
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,6 +41,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: npm install -g npm@latest
+      - name: Set package version from tag
+        run: npm version "${{ needs.version.outputs.version }}" --no-git-tag-version --allow-same-version
       - run: npm ci
       - run: npm run build
       - name: Check npm version
@@ -41,6 +60,7 @@ jobs:
         run: npm publish --access public
 
   pypi:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     environment: release
     steps:
@@ -48,6 +68,22 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("sdk/python/pyproject.toml")
+          text = path.read_text()
+          text, count = re.subn(r'(?m)^version = ".*"$', f'version = "{os.environ["VERSION"]}"', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not set Python package version")
+          path.write_text(text)
+          PY
       - name: Build package
         run: |
           cp README.md sdk/python/README.md
@@ -60,6 +96,7 @@ jobs:
           skip-existing: true
 
   go:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
@@ -71,6 +108,7 @@ jobs:
         run: go mod verify
 
   maven:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
@@ -87,6 +125,10 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: mvn -B versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
       - name: Publish to Maven Central
         run: mvn -B deploy -DskipTests -Prelease
         env:
@@ -95,6 +137,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   kotlin:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
@@ -107,6 +150,22 @@ jobs:
           java-version: "21"
           cache: gradle
       - uses: gradle/actions/setup-gradle@v6
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("build.gradle.kts")
+          text = path.read_text()
+          text, count = re.subn(r'(?m)^version = ".*"', f'version = "{os.environ["VERSION"]}"', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not set Kotlin package version")
+          path.write_text(text)
+          PY
       - name: Publish to Maven Central
         run: gradle --no-daemon publishAndReleaseToMavenCentral
         env:
@@ -116,10 +175,27 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   crates:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("sdk/rust/Cargo.toml")
+          text = path.read_text()
+          text, count = re.subn(r'(?m)^version = ".*"$', f'version = "{os.environ["VERSION"]}"', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not set Rust package version")
+          path.write_text(text)
+          PY
       - name: Publish to crates.io
         run: |
           cp README.md sdk/rust/README.md
@@ -129,6 +205,7 @@ jobs:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
   nuget:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
@@ -138,6 +215,22 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("src/AnyVali/AnyVali.csproj")
+          text = path.read_text()
+          text, count = re.subn(r'<Version>.*</Version>', f'<Version>{os.environ["VERSION"]}</Version>', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not set NuGet package version")
+          path.write_text(text)
+          PY
       - run: dotnet restore AnyVali.sln
       - run: dotnet build AnyVali.sln --configuration Release --no-restore
       - run: dotnet pack --configuration Release --no-build -o nupkgs
@@ -147,6 +240,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   rubygems:
+    needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
@@ -156,6 +250,22 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+      - name: Set package version from tag
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("anyvali.gemspec")
+          text = path.read_text()
+          text, count = re.subn(r's\.version\s+=\s+".*?"', f's.version     = "{os.environ["VERSION"]}"', text, count=1)
+          if count != 1:
+              raise SystemExit("Could not set Ruby package version")
+          path.write_text(text)
+          PY
       - name: Build and publish gem
         run: |
           cp ../../README.md README.md
@@ -170,6 +280,7 @@ jobs:
           rm -f ~/.gem/credentials
 
   cli:
+    needs: version
     strategy:
       matrix:
         include:
@@ -205,16 +316,17 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           cd cli
-          go build -ldflags="-s -w" -o ../${{ matrix.name }} .
+          go build -ldflags="-s -w -X github.com/BetterCorp/AnyVali/cli/cmd.Version=$VERSION -X github.com/BetterCorp/AnyVali/cli/server.Version=$VERSION" -o ../${{ matrix.name }} .
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
 
   cli-upload:
-    needs: cli
+    needs: [cli, version]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/download-artifact@v8
@@ -231,7 +343,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          draft: false
+          draft: true
           fail_on_unmatched_files: true
           files: |
             binaries/anyvali-linux-amd64
@@ -240,3 +352,7 @@ jobs:
             binaries/anyvali-darwin-arm64
             binaries/anyvali-windows-amd64.exe
             binaries/checksums-sha256.txt
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false
