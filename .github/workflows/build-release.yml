@@ -200,7 +200,7 @@ jobs:
         run: |
           cp README.md sdk/rust/README.md
           cd sdk/rust
-          cargo publish --token "$CRATES_TOKEN"
+          cargo publish --allow-dirty --token "$CRATES_TOKEN"
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
@@ -339,20 +339,20 @@ jobs:
         run: |
           cd binaries
           sha256sum * > checksums-sha256.txt
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          draft: true
-          fail_on_unmatched_files: true
-          files: |
-            binaries/anyvali-linux-amd64
-            binaries/anyvali-linux-arm64
-            binaries/anyvali-darwin-amd64
-            binaries/anyvali-darwin-arm64
-            binaries/anyvali-windows-amd64.exe
-            binaries/checksums-sha256.txt
-      - name: Publish GitHub Release
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "${{ github.ref_name }}" --draft=false
+        run: |
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            echo "Release ${{ github.ref_name }} already exists. Delete it and push a new tag; published releases are immutable." >&2
+            exit 1
+          fi
+          gh release create "${{ github.ref_name }}" --draft --latest --title "${{ github.ref_name }}" --notes "Release ${{ github.ref_name }}"
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" binaries/*
+      - name: Publish latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false --latest
