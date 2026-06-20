@@ -57,8 +57,8 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
         return c;
     }
 
-    private UnknownKeyMode EffectiveUnknownKeys() =>
-        _unknownKeysExplicit ? _unknownKeys : UnknownKeyMode.Strip;
+    private UnknownKeyMode EffectiveUnknownKeys(ValidationContext ctx) =>
+        ctx.InheritedUnknownKeys ?? (_unknownKeysExplicit ? _unknownKeys : UnknownKeyMode.Strip);
 
     private UnknownKeyMode ExportUnknownKeys() =>
         _unknownKeysExplicit ? _unknownKeys : UnknownKeyMode.Strip;
@@ -82,6 +82,10 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
 
         var result = new Dictionary<string, object?>();
         var inputKeys = new HashSet<string>(obj.Keys);
+        var unknownKeys = EffectiveUnknownKeys(ctx);
+        var previousInheritedUnknownKeys = ctx.InheritedUnknownKeys;
+        if (unknownKeys is UnknownKeyMode.Strip or UnknownKeyMode.Reject)
+            ctx.InheritedUnknownKeys = unknownKeys;
 
         // Validate declared properties
         foreach (var (key, prop) in _properties)
@@ -122,7 +126,7 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
         // Handle unknown keys
         foreach (var key in inputKeys)
         {
-            switch (EffectiveUnknownKeys())
+            switch (unknownKeys)
             {
                 case UnknownKeyMode.Reject:
                     ctx.Issues.Add(new ValidationIssue
@@ -141,6 +145,8 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
                     break;
             }
         }
+
+        ctx.InheritedUnknownKeys = previousInheritedUnknownKeys;
 
         return result;
     }

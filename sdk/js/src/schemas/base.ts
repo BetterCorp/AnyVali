@@ -1,5 +1,6 @@
 import type {
   ParseResult,
+  ParseOptions,
   ValidationIssue,
   ParseContext,
   SchemaNode,
@@ -58,14 +59,14 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
 
   // ---------- public API ----------
 
-  parse(input: unknown): TOutput {
-    const result = this.safeParse(input);
+  parse(input: unknown, options?: ParseOptions): TOutput {
+    const result = this.safeParse(input, options);
     if (result.success) return result.data;
     throw new ValidationError(result.issues);
   }
 
-  safeParse(input: unknown): ParseResult<TOutput> {
-    const ctx: ParseContext = { path: [], issues: [] };
+  safeParse(input: unknown, options?: ParseOptions): ParseResult<TOutput> {
+    const ctx: ParseContext = { path: [], issues: [], ...options };
     let output: unknown;
     try {
       output = this._runPipeline(input, ctx);

@@ -16,6 +16,7 @@ final class ValidationContext
     public function __construct(
         public readonly array $path = [],
         array $definitions = [],
+        public readonly ?UnknownKeyMode $inheritedUnknownKeys = null,
     ) {
         $this->definitions = $definitions;
     }
@@ -28,6 +29,7 @@ final class ValidationContext
         return new self(
             path: array_merge($this->path, [$segment]),
             definitions: $this->definitions,
+            inheritedUnknownKeys: $this->inheritedUnknownKeys,
         );
     }
 }

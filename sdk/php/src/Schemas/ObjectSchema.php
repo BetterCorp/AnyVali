@@ -67,8 +67,9 @@ final class ObjectSchema extends Schema
         return $clone;
     }
 
-    private function effectiveUnknownKeys(): UnknownKeyMode
+    private function effectiveUnknownKeys(ValidationContext $ctx): UnknownKeyMode
     {
+        if ($ctx->inheritedUnknownKeys !== null) return $ctx->inheritedUnknownKeys;
         return $this->unknownKeysExplicit ? $this->unknownKeys : UnknownKeyMode::Strip;
     }
 
@@ -95,6 +96,14 @@ final class ObjectSchema extends Schema
 
         $issues = [];
         $parsed = [];
+        $unknownMode = $this->effectiveUnknownKeys($ctx);
+        $childCtx = new ValidationContext(
+            path: $ctx->path,
+            definitions: $ctx->definitions,
+            inheritedUnknownKeys: in_array($unknownMode, [UnknownKeyMode::Strip, UnknownKeyMode::Reject], true)
+                ? $unknownMode
+                : $ctx->inheritedUnknownKeys,
+        );
 
         // Check required fields
         foreach ($this->required as $key) {
@@ -122,7 +131,7 @@ final class ObjectSchema extends Schema
                 // Apply defaults for nested schemas that have defaults
                 $fieldValue = $value[$key];
 
-                $result = $schema->safeParse($fieldValue, $ctx->child($key));
+                $result = $schema->safeParse($fieldValue, $childCtx->child($key));
                 if (!$result->success) {
                     $issues = array_merge($issues, $result->issues);
                 } else {
@@ -132,7 +141,7 @@ final class ObjectSchema extends Schema
                 // Apply default
                 $defaultVal = $schema->getDefaultValue();
                 // Validate the default value
-                $defResult = $schema->safeParse($defaultVal, $ctx->child($key));
+                $defResult = $schema->safeParse($defaultVal, $childCtx->child($key));
                 if (!$defResult->success) {
                     // Default is invalid
                     $issues[] = new ValidationIssue(
@@ -155,11 +164,11 @@ final class ObjectSchema extends Schema
         $unknownCount = count(array_diff(array_keys($value), $knownKeys));
         foreach ($value as $key => $v) {
             if (!in_array($key, $knownKeys, true)) {
-                $unknownMode = $this->effectiveUnknownKeys();
-                if (!$this->unknownKeysExplicit && ($unknownCount > 1 || self::isDangerousObjectKey((string)$key))) {
-                    $unknownMode = UnknownKeyMode::Reject;
+                $mode = $unknownMode;
+                if ($ctx->inheritedUnknownKeys === null && !$this->unknownKeysExplicit && ($unknownCount > 1 || self::isDangerousObjectKey((string)$key))) {
+                    $mode = UnknownKeyMode::Reject;
                 }
-                switch ($unknownMode) {
+                switch ($mode) {
                     case UnknownKeyMode::Reject:
                         $issues[] = new ValidationIssue(
                             code: IssueCodes::UNKNOWN_KEY,
@@ -213,7 +222,7 @@ final class ObjectSchema extends Schema
 
     public function getUnknownKeys(): UnknownKeyMode
     {
-        return $this->effectiveUnknownKeys();
+        return $this->unknownKeysExplicit ? $this->unknownKeys : UnknownKeyMode::Strip;
     }
 
     public function exportNode(): array

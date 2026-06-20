@@ -26,7 +26,9 @@ class ObjectSchema(BaseSchema[dict[str, Any]]):
         self._unknown_keys = unknown_keys or "strip"
         self._unknown_keys_explicit = unknown_keys is not None
 
-    def _effective_unknown_keys(self) -> UnknownKeyMode:
+    def _effective_unknown_keys(self, ctx: ValidationContext) -> UnknownKeyMode:
+        if ctx.inherited_unknown_keys is not None:
+            return ctx.inherited_unknown_keys  # type: ignore[return-value]
         return self._unknown_keys if self._unknown_keys_explicit else "strip"
 
     def _export_unknown_keys(self) -> UnknownKeyMode:
@@ -48,6 +50,10 @@ class ObjectSchema(BaseSchema[dict[str, Any]]):
         ctx._seen.add(obj_id)  # type: ignore[attr-defined]
 
         result: dict[str, Any] = {}
+        mode = self._effective_unknown_keys(ctx)
+        previous_inherited_unknown_keys = ctx.inherited_unknown_keys
+        if mode in ("strip", "reject"):
+            ctx.inherited_unknown_keys = mode
 
         # Validate known properties
         for key, schema in self._properties.items():
@@ -71,12 +77,13 @@ class ObjectSchema(BaseSchema[dict[str, Any]]):
                     parsed = schema._run_pipeline(_SENTINEL, child_ctx)
                     result[key] = parsed
 
+        ctx.inherited_unknown_keys = previous_inherited_unknown_keys
+
         # Handle unknown keys
         known = set(self._properties.keys())
         unknown = set(input.keys()) - known
 
         if unknown:
-            mode = self._effective_unknown_keys()
             if mode == "reject":
                 for key in sorted(unknown):
                     child_ctx = ctx.child(key)

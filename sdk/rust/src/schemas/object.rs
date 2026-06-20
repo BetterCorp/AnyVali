@@ -74,7 +74,10 @@ impl ObjectSchema {
         self
     }
 
-    fn effective_unknown_keys(&self) -> UnknownKeyMode {
+    fn effective_unknown_keys(&self, ctx: &ParseContext) -> UnknownKeyMode {
+        if let Some(mode) = ctx.inherited_unknown_keys {
+            return mode;
+        }
         if self.unknown_keys_explicit {
             self.unknown_keys
         } else {
@@ -159,6 +162,11 @@ impl Schema for ObjectSchema {
 
         let mut issues = Vec::new();
         let mut result = serde_json::Map::new();
+        let mode = self.effective_unknown_keys(ctx);
+        let mut child_ctx = ctx.clone();
+        if matches!(mode, UnknownKeyMode::Strip | UnknownKeyMode::Reject) {
+            child_ctx.inherited_unknown_keys = Some(mode);
+        }
 
         // Check required fields and validate all properties
         for (field_name, field_def) in &self.properties {
@@ -167,7 +175,7 @@ impl Schema for ObjectSchema {
 
             if let Some(value) = obj.get(field_name) {
                 // Field is present - validate it
-                match field_def.schema.parse_value(value, &field_path, ctx) {
+                match field_def.schema.parse_value(value, &field_path, &child_ctx) {
                     Ok(v) => {
                         result.insert(field_name.clone(), v);
                     }
@@ -179,7 +187,7 @@ impl Schema for ObjectSchema {
                 .or_else(|| field_def.schema.default_value())
             {
                 // Field absent, has default - apply default then validate
-                match field_def.schema.parse_value(default, &field_path, ctx) {
+                match field_def.schema.parse_value(default, &field_path, &child_ctx) {
                     Ok(v) => {
                         result.insert(field_name.clone(), v);
                     }
@@ -214,10 +222,13 @@ impl Schema for ObjectSchema {
             .count();
         for key in obj.keys() {
             if !self.properties.contains_key(key) {
-                let mode = if !self.unknown_keys_explicit && unknown_count > 1 {
+                let mode = if ctx.inherited_unknown_keys.is_none()
+                    && !self.unknown_keys_explicit
+                    && unknown_count > 1
+                {
                     UnknownKeyMode::Reject
                 } else {
-                    self.effective_unknown_keys()
+                    mode
                 };
                 match mode {
                     UnknownKeyMode::Reject => {

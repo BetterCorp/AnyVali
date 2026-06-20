@@ -201,6 +201,10 @@ export type ParseResult<T> =
   | { success: true; data: T }
   | { success: false; issues: ValidationIssue[] };
 
+export interface ParseOptions {
+  unknownKeys?: UnknownKeyMode;
+}
+
 export interface ValidationIssue {
   code: string;
   message: string;
@@ -231,6 +235,8 @@ export type UnknownKeyMode = "reject" | "strip" | "allow";
 export interface ParseContext {
   path: (string | number)[];
   issues: ValidationIssue[];
+  unknownKeys?: UnknownKeyMode;
+  inheritedUnknownKeys?: Exclude<UnknownKeyMode, "allow">;
   definitions?: Record<string, SchemaNode>;
   /** Tracks objects already being validated to detect circular references. */
   seen?: WeakSet<object>;

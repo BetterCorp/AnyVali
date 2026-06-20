@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <optional>
 #include "types.hpp"
 #include "validation_issue.hpp"
 
@@ -16,6 +17,7 @@ struct ValidationContext {
     Path path;
     std::vector<ValidationIssue> issues;
     const std::map<std::string, std::shared_ptr<Schema>>* definitions = nullptr;
+    std::optional<UnknownKeyMode> inherited_unknown_key_mode;
 
     void push_path(const std::string& key) {
         path.push_back(key);

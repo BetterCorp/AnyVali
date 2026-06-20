@@ -115,4 +115,73 @@ describe("Defaults", () => {
       user: { name: "Bob", role: "guest" },
     });
   });
+
+  it("applies required object-field defaults across scalar types", () => {
+    const s = object({
+      host: string().minLength(1).default("0.0.0.0"),
+      port: int().min(1).default(3200),
+      timeoutMs: int().default(5000).min(1000),
+      enabled: bool().default(false),
+    });
+
+    expect(s.parse({})).toEqual({
+      host: "0.0.0.0",
+      port: 3200,
+      timeoutMs: 5000,
+      enabled: false,
+    });
+  });
+
+  it("applies defaults in optional inner and optional wrapper forms", () => {
+    const s = object({
+      innerDefault: optional(string().default("inner")),
+      wrapperDefault: optional(string()).default("wrapper"),
+    });
+
+    expect(s.parse({})).toEqual({
+      innerDefault: "inner",
+      wrapperDefault: "wrapper",
+    });
+  });
+
+  it("applies defaults in a plugin-style config object", () => {
+    const BetterPortalConfigSchema = object({
+      tenantId: string().minLength(1),
+      authressApiUrl: string().minLength(1),
+      authressApplicationId: string().minLength(1),
+    });
+    const PluginConfigSchema = object({
+      host: string().minLength(1).default("0.0.0.0"),
+      port: int().min(1).default(3200),
+      betterportal: BetterPortalConfigSchema,
+      dbLocation: string().minLength(1).default("data"),
+      redisUrl: string().minLength(1).default("redis://localhost:6379"),
+      gotenbergBaseUrl: string().minLength(1).default("http://localhost:3000"),
+      gotenbergTimeoutMs: int().default(5000).min(1000),
+    }, { unknownKeys: "strip" });
+
+    expect(PluginConfigSchema.parse({
+      port: 3211,
+      betterportal: {
+        tenantId: "tenant-lorem",
+        authressApiUrl: "https://auth.example.test",
+        authressApplicationId: "app_loremIpsum123",
+      },
+      redisUrl: "redis://10.1.1.4:6379",
+      gotenbergBaseUrl: "http://10.1.1.16:3000",
+      extra: true,
+    })).toEqual({
+      host: "0.0.0.0",
+      port: 3211,
+      betterportal: {
+        tenantId: "tenant-lorem",
+        authressApiUrl: "https://auth.example.test",
+        authressApplicationId: "app_loremIpsum123",
+      },
+      dbLocation: "data",
+      redisUrl: "redis://10.1.1.4:6379",
+      gotenbergBaseUrl: "http://10.1.1.16:3000",
+      gotenbergTimeoutMs: 5000,
+    });
+  });
 });

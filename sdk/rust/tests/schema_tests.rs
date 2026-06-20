@@ -895,6 +895,73 @@ fn object_unknown_keys_allow() {
 }
 
 #[test]
+fn object_parent_strip_propagates_to_nested_allow_object() {
+    let o = object()
+        .field(
+            "profile",
+            Box::new(
+                object()
+                    .field("name", Box::new(string()))
+                    .required(vec!["name"])
+                    .unknown_keys(UnknownKeyMode::Allow),
+            ),
+        )
+        .required(vec!["profile"])
+        .unknown_keys(UnknownKeyMode::Strip);
+    let result = o.parse(&json!({"profile": {"name": "Lorem", "role": "ipsum", "team": "dolor"}, "extra": true}));
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), json!({"profile": {"name": "Lorem"}}));
+}
+
+#[test]
+fn object_parent_reject_propagates_to_nested_allow_object() {
+    let o = object()
+        .field(
+            "profile",
+            Box::new(
+                object()
+                    .field("name", Box::new(string()))
+                    .required(vec!["name"])
+                    .unknown_keys(UnknownKeyMode::Allow),
+            ),
+        )
+        .required(vec!["profile"])
+        .unknown_keys(UnknownKeyMode::Reject);
+    let result = o.safe_parse(&json!({"profile": {"name": "Lorem", "role": "ipsum"}}));
+    assert!(!result.success);
+    assert_eq!(result.issues[0].code, "unknown_key");
+    assert_eq!(
+        result.issues[0].path,
+        vec![
+            PathSegment::Key("profile".to_string()),
+            PathSegment::Key("role".to_string()),
+        ]
+    );
+}
+
+#[test]
+fn object_parent_allow_does_not_override_nested_strip_object() {
+    let o = object()
+        .field(
+            "profile",
+            Box::new(
+                object()
+                    .field("name", Box::new(string()))
+                    .required(vec!["name"])
+                    .unknown_keys(UnknownKeyMode::Strip),
+            ),
+        )
+        .required(vec!["profile"])
+        .unknown_keys(UnknownKeyMode::Allow);
+    let result = o.parse(&json!({"profile": {"name": "Lorem", "role": "ipsum"}, "extra": true}));
+    assert!(result.is_ok());
+    assert_eq!(
+        result.unwrap(),
+        json!({"profile": {"name": "Lorem"}, "extra": true})
+    );
+}
+
+#[test]
 fn object_unknown_keys_reject_multiple() {
     let o = object()
         .field("id", Box::new(int()))

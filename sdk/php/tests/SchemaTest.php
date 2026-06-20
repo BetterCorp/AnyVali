@@ -697,6 +697,59 @@ final class SchemaTest extends TestCase
         $this->assertSame(['name' => 'Alice', 'extra' => 'value'], $result);
     }
 
+    public function testParentStripPropagatesToNestedAllowObject(): void
+    {
+        $s = AnyVali::object(
+            [
+                'profile' => AnyVali::object(
+                    ['name' => AnyVali::string()],
+                    ['name'],
+                    UnknownKeyMode::Allow,
+                ),
+            ],
+            ['profile'],
+            UnknownKeyMode::Strip,
+        );
+        $result = $s->parse(['profile' => ['name' => 'Lorem', 'role' => 'ipsum', 'team' => 'dolor'], 'extra' => true]);
+        $this->assertSame(['profile' => ['name' => 'Lorem']], $result);
+    }
+
+    public function testParentRejectPropagatesToNestedAllowObject(): void
+    {
+        $s = AnyVali::object(
+            [
+                'profile' => AnyVali::object(
+                    ['name' => AnyVali::string()],
+                    ['name'],
+                    UnknownKeyMode::Allow,
+                ),
+            ],
+            ['profile'],
+            UnknownKeyMode::Reject,
+        );
+        $result = $s->safeParse(['profile' => ['name' => 'Lorem', 'role' => 'ipsum']]);
+        $this->assertFalse($result->success);
+        $this->assertSame(IssueCodes::UNKNOWN_KEY, $result->issues[0]->code);
+        $this->assertSame(['profile', 'role'], $result->issues[0]->path);
+    }
+
+    public function testParentAllowDoesNotOverrideNestedStripObject(): void
+    {
+        $s = AnyVali::object(
+            [
+                'profile' => AnyVali::object(
+                    ['name' => AnyVali::string()],
+                    ['name'],
+                    UnknownKeyMode::Strip,
+                ),
+            ],
+            ['profile'],
+            UnknownKeyMode::Allow,
+        );
+        $result = $s->parse(['profile' => ['name' => 'Lorem', 'role' => 'ipsum'], 'extra' => true]);
+        $this->assertSame(['profile' => ['name' => 'Lorem'], 'extra' => true], $result);
+    }
+
     public function testObjectReportsMultipleUnknownKeys(): void
     {
         $s = AnyVali::object(['id' => AnyVali::int()], ['id']);

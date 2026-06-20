@@ -27,7 +27,7 @@ public:
         return *this;
     }
 
-    UnknownKeyMode unknown_key_mode() const { return effective_unknown_key_mode(); }
+    UnknownKeyMode unknown_key_mode() const { return effective_unknown_key_mode(std::nullopt); }
 
     nlohmann::json validate(const nlohmann::json& input, ValidationContext& ctx) const override {
         if (!input.is_object()) {
@@ -37,6 +37,11 @@ public:
 
         nlohmann::json result = nlohmann::json::object();
         bool has_errors = false;
+        auto mode = effective_unknown_key_mode(ctx.inherited_unknown_key_mode);
+        auto previous_inherited_unknown_key_mode = ctx.inherited_unknown_key_mode;
+        if (mode == UnknownKeyMode::Strip || mode == UnknownKeyMode::Reject) {
+            ctx.inherited_unknown_key_mode = mode;
+        }
 
         // Check required fields (iterate in definition order)
         for (const auto& req : required_fields_) {
@@ -101,21 +106,22 @@ public:
         }
         for (auto it = input.begin(); it != input.end(); ++it) {
             if (properties_.find(it.key()) == properties_.end()) {
-                auto mode = (!unknown_key_mode_explicit_ && unknown_count > 1)
+                auto current_mode = (!ctx.inherited_unknown_key_mode.has_value() && !unknown_key_mode_explicit_ && unknown_count > 1)
                     ? UnknownKeyMode::Reject
-                    : effective_unknown_key_mode();
-                if (mode == UnknownKeyMode::Reject) {
+                    : mode;
+                if (current_mode == UnknownKeyMode::Reject) {
                     ctx.push_path(it.key());
                     ctx.add_issue(issue_codes::UNKNOWN_KEY, "undefined", it.key());
                     ctx.pop_path();
                     has_errors = true;
-                } else if (mode == UnknownKeyMode::Allow) {
+                } else if (current_mode == UnknownKeyMode::Allow) {
                     result[it.key()] = it.value();
                 }
                 // Strip mode: just don't add it
             }
         }
 
+        ctx.inherited_unknown_key_mode = previous_inherited_unknown_key_mode;
         if (has_errors) return nullptr;
         return result;
     }
@@ -146,7 +152,8 @@ public:
     const std::vector<std::string>& required_fields() const { return required_fields_; }
 
 private:
-    UnknownKeyMode effective_unknown_key_mode() const {
+    UnknownKeyMode effective_unknown_key_mode(std::optional<UnknownKeyMode> inherited) const {
+        if (inherited.has_value()) return inherited.value();
         return unknown_key_mode_explicit_ ? unknown_key_mode_ : UnknownKeyMode::Strip;
     }
 

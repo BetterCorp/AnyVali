@@ -51,6 +51,9 @@ module AnyVali
       end
 
       output = {}
+      mode = effective_unknown_keys(context)
+      previous_inherited_unknown_keys = context.inherited_unknown_keys
+      context.inherited_unknown_keys = mode if %w[strip reject].include?(mode)
 
       # Check required fields
       @required_keys.each do |key|
@@ -102,9 +105,11 @@ module AnyVali
         end
       end
 
+      context.inherited_unknown_keys = previous_inherited_unknown_keys
+
       # Handle unknown keys
       unknown = input.keys - @properties.keys
-      case effective_unknown_keys
+      case mode
       when "reject"
         unknown.each do |key|
           issues << ValidationIssue.new(
@@ -151,7 +156,8 @@ module AnyVali
 
     private
 
-    def effective_unknown_keys
+    def effective_unknown_keys(context = nil)
+      return context.inherited_unknown_keys if context&.inherited_unknown_keys
       @unknown_keys_explicit ? @unknown_keys : "strip"
     end
 

@@ -128,6 +128,72 @@ func TestObjectSchemaUnknownKeysAllow(t *testing.T) {
 	}
 }
 
+func TestObjectSchemaParentStripPropagatesToNestedAllowObject(t *testing.T) {
+	s := Object(map[string]Schema{
+		"profile": Object(map[string]Schema{
+			"name": String(),
+		}).Required("name").UnknownKeys(Allow),
+	}).Required("profile").UnknownKeys(Strip)
+	r := s.SafeParse(map[string]any{
+		"profile": map[string]any{"name": "Lorem", "role": "ipsum"},
+		"extra":   true,
+	})
+	if !r.Success {
+		t.Fatalf("expected success with propagated strip mode: %v", r.Issues)
+	}
+	obj := r.Data.(map[string]any)
+	if _, ok := obj["extra"]; ok {
+		t.Fatal("expected root extra to be stripped")
+	}
+	profile := obj["profile"].(map[string]any)
+	if _, ok := profile["role"]; ok {
+		t.Fatal("expected nested role to be stripped")
+	}
+}
+
+func TestObjectSchemaParentRejectPropagatesToNestedAllowObject(t *testing.T) {
+	s := Object(map[string]Schema{
+		"profile": Object(map[string]Schema{
+			"name": String(),
+		}).Required("name").UnknownKeys(Allow),
+	}).Required("profile").UnknownKeys(Reject)
+	r := s.SafeParse(map[string]any{
+		"profile": map[string]any{"name": "Lorem", "role": "ipsum"},
+	})
+	if r.Success {
+		t.Fatal("expected propagated reject mode to fail")
+	}
+	if len(r.Issues) == 0 || r.Issues[0].Code != IssueUnknownKey {
+		t.Fatalf("expected unknown_key issue, got: %v", r.Issues)
+	}
+	if len(r.Issues[0].Path) != 2 || r.Issues[0].Path[0] != "profile" || r.Issues[0].Path[1] != "role" {
+		t.Fatalf("expected path [profile role], got: %v", r.Issues[0].Path)
+	}
+}
+
+func TestObjectSchemaParentAllowDoesNotOverrideNestedStripObject(t *testing.T) {
+	s := Object(map[string]Schema{
+		"profile": Object(map[string]Schema{
+			"name": String(),
+		}).Required("name").UnknownKeys(Strip),
+	}).Required("profile").UnknownKeys(Allow)
+	r := s.SafeParse(map[string]any{
+		"profile": map[string]any{"name": "Lorem", "role": "ipsum"},
+		"extra":   true,
+	})
+	if !r.Success {
+		t.Fatalf("expected success with parent allow: %v", r.Issues)
+	}
+	obj := r.Data.(map[string]any)
+	if obj["extra"] != true {
+		t.Fatal("expected root extra to be preserved")
+	}
+	profile := obj["profile"].(map[string]any)
+	if _, ok := profile["role"]; ok {
+		t.Fatal("expected nested role to be stripped")
+	}
+}
+
 func TestObjectSchemaNestedValidation(t *testing.T) {
 	s := Object(map[string]Schema{
 		"inner": Object(map[string]Schema{

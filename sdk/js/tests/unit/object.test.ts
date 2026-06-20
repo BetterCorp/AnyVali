@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { object, string, int, optional, bool, RefSchema } from "../../src/index.js";
+import { object, string, int, optional, bool, RefSchema, parse } from "../../src/index.js";
 
 describe("ObjectSchema", () => {
   it("accepts valid objects", () => {
@@ -43,6 +43,65 @@ describe("ObjectSchema", () => {
     const s = object({ name: string() }).unknownKeys("allow");
     const result = s.parse({ name: "Alice", extra: true });
     expect(result).toEqual({ name: "Alice", extra: true });
+  });
+
+  it("parse-level strip overrides object-level allow recursively", () => {
+    const s = object({
+      user: object({ name: string() }).unknownKeys("allow"),
+    }).unknownKeys("allow");
+
+    expect(
+      s.parse(
+        { user: { name: "Alice", role: "admin" }, rootExtra: true },
+        { unknownKeys: "strip" }
+      )
+    ).toEqual({ user: { name: "Alice" } });
+  });
+
+  it("top-level parse unknownKeys overrides schema unknownKeys", () => {
+    const s = object({ name: string() }).unknownKeys("strip");
+
+    expect(() =>
+      parse(s, { name: "Alice", extra: true }, { unknownKeys: "reject" })
+    ).toThrow("unknown_key");
+  });
+
+  it("parent strip overrides nested allow", () => {
+    const s = object({
+      user: object({ name: string() }).unknownKeys("allow"),
+    }).unknownKeys("strip");
+
+    expect(s.parse({ user: { name: "Alice", role: "admin" } })).toEqual({
+      user: { name: "Alice" },
+    });
+  });
+
+  it("parent reject overrides nested allow", () => {
+    const s = object({
+      user: object({ name: string() }).unknownKeys("allow"),
+    }).unknownKeys("reject");
+
+    const result = s.safeParse({ user: { name: "Alice", role: "admin" } });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues[0]).toEqual(
+        expect.objectContaining({
+          code: "unknown_key",
+          path: ["user", "role"],
+        })
+      );
+    }
+  });
+
+  it("parent allow leaves nested unknown key policy alone", () => {
+    const s = object({
+      user: object({ name: string() }).unknownKeys("strip"),
+    }).unknownKeys("allow");
+
+    expect(
+      s.parse({ user: { name: "Alice", role: "admin" }, rootExtra: true })
+    ).toEqual({ user: { name: "Alice" }, rootExtra: true });
   });
 
   it("handles optional fields", () => {

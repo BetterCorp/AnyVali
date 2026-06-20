@@ -2,12 +2,13 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-use crate::types::{ParseResult, PathSegment, ValidationError, ValidationIssue};
+use crate::types::{ParseResult, PathSegment, UnknownKeyMode, ValidationError, ValidationIssue};
 
 /// Context passed through during parsing, carrying definitions for ref resolution.
 #[derive(Debug, Clone)]
 pub struct ParseContext {
     pub definitions: HashMap<String, Box<dyn Schema>>,
+    pub inherited_unknown_keys: Option<UnknownKeyMode>,
     active_refs: Arc<Mutex<HashSet<String>>>,
 }
 
@@ -15,6 +16,7 @@ impl ParseContext {
     pub fn new() -> Self {
         ParseContext {
             definitions: HashMap::new(),
+            inherited_unknown_keys: None,
             active_refs: Arc::new(Mutex::new(HashSet::new())),
         }
     }
@@ -22,6 +24,7 @@ impl ParseContext {
     pub fn with_definitions(definitions: HashMap<String, Box<dyn Schema>>) -> Self {
         ParseContext {
             definitions,
+            inherited_unknown_keys: None,
             active_refs: Arc::new(Mutex::new(HashSet::new())),
         }
     }

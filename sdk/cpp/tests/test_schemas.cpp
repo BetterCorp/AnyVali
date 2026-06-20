@@ -739,6 +739,66 @@ TEST("object: allow mode passes unknown keys") {
     ASSERT(result.value.contains("extra"));
 }
 
+TEST("object: parent strip propagates to nested allow object") {
+    auto profile = object();
+    profile->prop("name", string_());
+    profile->required({"name"});
+    profile->unknownKeys(UnknownKeyMode::Allow);
+
+    auto s = object();
+    s->prop("profile", profile);
+    s->required({"profile"});
+    s->unknownKeys(UnknownKeyMode::Strip);
+
+    auto result = s->safe_parse(json::object({
+        {"profile", json::object({{"name", "Lorem"}, {"role", "ipsum"}, {"team", "dolor"}})},
+        {"extra", true}
+    }));
+    ASSERT(result.success);
+    ASSERT(result.value == json::object({{"profile", json::object({{"name", "Lorem"}})}}));
+}
+
+TEST("object: parent reject propagates to nested allow object") {
+    auto profile = object();
+    profile->prop("name", string_());
+    profile->required({"name"});
+    profile->unknownKeys(UnknownKeyMode::Allow);
+
+    auto s = object();
+    s->prop("profile", profile);
+    s->required({"profile"});
+    s->unknownKeys(UnknownKeyMode::Reject);
+
+    auto result = s->safe_parse(json::object({
+        {"profile", json::object({{"name", "Lorem"}, {"role", "ipsum"}})}
+    }));
+    ASSERT(!result.success);
+    ASSERT(result.issues[0].code == "unknown_key");
+    ASSERT(result.issues[0].path == std::vector<PathSegment>{PathSegment("profile"), PathSegment("role")});
+}
+
+TEST("object: parent allow does not override nested strip object") {
+    auto profile = object();
+    profile->prop("name", string_());
+    profile->required({"name"});
+    profile->unknownKeys(UnknownKeyMode::Strip);
+
+    auto s = object();
+    s->prop("profile", profile);
+    s->required({"profile"});
+    s->unknownKeys(UnknownKeyMode::Allow);
+
+    auto result = s->safe_parse(json::object({
+        {"profile", json::object({{"name", "Lorem"}, {"role", "ipsum"}})},
+        {"extra", true}
+    }));
+    ASSERT(result.success);
+    ASSERT(result.value == json::object({
+        {"profile", json::object({{"name", "Lorem"}})},
+        {"extra", true}
+    }));
+}
+
 TEST("object: reports multiple unknown keys") {
     auto s = object();
     s->prop("id", int_());

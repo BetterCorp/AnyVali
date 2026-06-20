@@ -976,6 +976,61 @@ class SchemaTest {
     }
 
     @Test
+    fun `parent strip propagates to nested allow object`() {
+        val o = obj(
+            properties = mapOf(
+                "profile" to obj(
+                    properties = mapOf("name" to string()),
+                    required = setOf("name"),
+                    unknownKeys = UnknownKeyMode.ALLOW
+                )
+            ),
+            required = setOf("profile"),
+            unknownKeys = UnknownKeyMode.STRIP
+        )
+        val result = o.parse(mapOf("profile" to mapOf("name" to "Lorem", "role" to "ipsum", "team" to "dolor"), "extra" to true)) as Map<*, *>
+        assertEquals(mapOf("name" to "Lorem"), result["profile"])
+        assertFalse(result.containsKey("extra"))
+    }
+
+    @Test
+    fun `parent reject propagates to nested allow object`() {
+        val o = obj(
+            properties = mapOf(
+                "profile" to obj(
+                    properties = mapOf("name" to string()),
+                    required = setOf("name"),
+                    unknownKeys = UnknownKeyMode.ALLOW
+                )
+            ),
+            required = setOf("profile"),
+            unknownKeys = UnknownKeyMode.REJECT
+        )
+        val result = o.safeParse(mapOf("profile" to mapOf("name" to "Lorem", "role" to "ipsum")))
+        assertIs<ParseResult.Failure>(result)
+        assertEquals(IssueCodes.UNKNOWN_KEY, result.issues[0].code)
+        assertEquals(listOf("profile", "role"), result.issues[0].path)
+    }
+
+    @Test
+    fun `parent allow does not override nested strip object`() {
+        val o = obj(
+            properties = mapOf(
+                "profile" to obj(
+                    properties = mapOf("name" to string()),
+                    required = setOf("name"),
+                    unknownKeys = UnknownKeyMode.STRIP
+                )
+            ),
+            required = setOf("profile"),
+            unknownKeys = UnknownKeyMode.ALLOW
+        )
+        val result = o.parse(mapOf("profile" to mapOf("name" to "Lorem", "role" to "ipsum"), "extra" to true)) as Map<*, *>
+        assertEquals(mapOf("name" to "Lorem"), result["profile"])
+        assertEquals(true, result["extra"])
+    }
+
+    @Test
     fun `reject mode reports multiple unknown keys`() {
         val o = obj(
             properties = mapOf("id" to int_()),

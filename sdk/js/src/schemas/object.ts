@@ -61,7 +61,9 @@ export class ObjectSchema<
     return clone;
   }
 
-  private _effectiveUnknownKeys(): UnknownKeyMode {
+  private _effectiveUnknownKeys(ctx: ParseContext): UnknownKeyMode {
+    if (ctx.inheritedUnknownKeys !== undefined) return ctx.inheritedUnknownKeys;
+    if (ctx.unknownKeys !== undefined) return ctx.unknownKeys;
     return this._unknownKeysExplicit ? this._unknownKeys : "strip";
   }
 
@@ -105,6 +107,14 @@ export class ObjectSchema<
     }
 
     // Validate declared properties
+    const unknownKeys = this._effectiveUnknownKeys(ctx);
+    const previousInheritedUnknownKeys = ctx.inheritedUnknownKeys;
+    const previousUnknownKeys = ctx.unknownKeys;
+    if (unknownKeys === "strip" || unknownKeys === "reject") {
+      ctx.inheritedUnknownKeys = unknownKeys;
+    }
+    ctx.unknownKeys = undefined;
+
     for (const [key, prop] of this._properties) {
       ctx.path.push(key);
       const hasKey = Object.prototype.hasOwnProperty.call(obj, key);
@@ -142,9 +152,12 @@ export class ObjectSchema<
       ctx.path.pop();
     }
 
+    ctx.inheritedUnknownKeys = previousInheritedUnknownKeys;
+    ctx.unknownKeys = previousUnknownKeys;
+
     // Handle unknown keys
     for (const key of inputKeys) {
-      switch (this._effectiveUnknownKeys()) {
+      switch (unknownKeys) {
         case "reject":
           ctx.issues.push({
             code: ISSUE_CODES.UNKNOWN_KEY,

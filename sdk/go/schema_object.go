@@ -90,6 +90,16 @@ func (s *ObjectSchema) SafeParse(input any) ParseResult {
 }
 
 func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
+	return s.validateWithInherited(value, "", false)
+}
+
+func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMode) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) {
+		return s.validateWithInherited(value, inherited, true)
+	})
+}
+
+func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -102,6 +112,11 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 
 	var issues []ValidationIssue
 	parsed := make(map[string]any)
+	mode := s.effectiveUnknownKeys()
+	if hasInherited {
+		mode = inherited
+	}
+	propagate := mode == Strip || mode == Reject
 
 	// Check required fields and validate known properties
 	for key, schema := range s.properties {
@@ -113,7 +128,7 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 				_, hasDefault = defaultInfo.defaultInfo()
 			}
 			if canHaveDefault && hasDefault {
-				result := schema.SafeParse(absentValue)
+				result := safeParseChild(schema, absentValue, mode, propagate)
 				if !result.Success {
 					for _, issue := range result.Issues {
 						issue.Path = append([]any{key}, issue.Path...)
@@ -136,7 +151,7 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 			continue
 		}
 
-		result := schema.SafeParse(val)
+		result := safeParseChild(schema, val, mode, propagate)
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{key}, issue.Path...)
@@ -152,7 +167,7 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 		if _, known := s.properties[key]; known {
 			continue
 		}
-		switch s.effectiveUnknownKeys() {
+		switch mode {
 		case Reject:
 			issues = append(issues, ValidationIssue{
 				Code:    IssueUnknownKey,
@@ -170,6 +185,15 @@ func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
 		return nil, issues
 	}
 	return parsed, nil
+}
+
+func safeParseChild(schema Schema, val any, mode UnknownKeyMode, propagate bool) ParseResult {
+	if propagate {
+		if obj, ok := schema.(*ObjectSchema); ok {
+			return obj.safeParseWithInherited(val, mode)
+		}
+	}
+	return schema.SafeParse(val)
 }
 
 func (s *ObjectSchema) ToNode() map[string]any {

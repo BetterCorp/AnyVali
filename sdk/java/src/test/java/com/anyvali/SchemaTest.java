@@ -764,6 +764,51 @@ class SchemaTest {
         }
 
         @Test
+        void parentStripPropagatesToNestedAllowObject() {
+            var s = object_(
+                    Map.of("profile", object_(Map.of("name", string()), Set.of("name"), UnknownKeyMode.ALLOW)),
+                    Set.of("profile"),
+                    UnknownKeyMode.STRIP
+            );
+            @SuppressWarnings("unchecked")
+            var result = (Map<String, Object>) s.parse(Map.of(
+                    "profile", Map.of("name", "Lorem", "role", "ipsum"),
+                    "extra", true
+            ));
+            assertEquals(Map.of("name", "Lorem"), result.get("profile"));
+            assertFalse(result.containsKey("extra"));
+        }
+
+        @Test
+        void parentRejectPropagatesToNestedAllowObject() {
+            var s = object_(
+                    Map.of("profile", object_(Map.of("name", string()), Set.of("name"), UnknownKeyMode.ALLOW)),
+                    Set.of("profile"),
+                    UnknownKeyMode.REJECT
+            );
+            var r = s.safeParse(Map.of("profile", Map.of("name", "Lorem", "role", "ipsum")));
+            assertFalse(r.success());
+            assertEquals(IssueCodes.UNKNOWN_KEY, r.issues().get(0).code());
+            assertEquals(List.of("profile", "role"), r.issues().get(0).path());
+        }
+
+        @Test
+        void parentAllowDoesNotOverrideNestedStripObject() {
+            var s = object_(
+                    Map.of("profile", object_(Map.of("name", string()), Set.of("name"), UnknownKeyMode.STRIP)),
+                    Set.of("profile"),
+                    UnknownKeyMode.ALLOW
+            );
+            @SuppressWarnings("unchecked")
+            var result = (Map<String, Object>) s.parse(Map.of(
+                    "profile", Map.of("name", "Lorem", "role", "ipsum"),
+                    "extra", true
+            ));
+            assertEquals(Map.of("name", "Lorem"), result.get("profile"));
+            assertEquals(true, result.get("extra"));
+        }
+
+        @Test
         void requiresMissingField() {
             var s = object_(Map.of("name", string()));
             var r = s.safeParse(Map.of());

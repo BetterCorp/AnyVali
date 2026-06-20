@@ -1,11 +1,15 @@
-import type { ParseResult } from "../types.js";
+import type { ParseOptions, ParseResult } from "../types.js";
 import { BaseSchema } from "../schemas/base.js";
 
 /**
  * Parse input with the given schema. Throws ValidationError on failure.
  */
-export function parse<T>(schema: BaseSchema<unknown, T>, input: unknown): T {
-  return schema.parse(input);
+export function parse<T>(
+  schema: BaseSchema<unknown, T>,
+  input: unknown,
+  options?: ParseOptions
+): T {
+  return schema.parse(input, options);
 }
 
 /**
@@ -13,7 +17,8 @@ export function parse<T>(schema: BaseSchema<unknown, T>, input: unknown): T {
  */
 export function safeParse<T>(
   schema: BaseSchema<unknown, T>,
-  input: unknown
+  input: unknown,
+  options?: ParseOptions
 ): ParseResult<T> {
-  return schema.safeParse(input);
+  return schema.safeParse(input, options);
 }

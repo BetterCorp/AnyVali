@@ -650,6 +650,69 @@ public class ObjectSchemaTests
     }
 
     [Fact]
+    public void ParentStripPropagatesToNestedAllowObject()
+    {
+        var s = V.Object(
+            new Dictionary<string, Schema>
+            {
+                ["profile"] = V.Object(
+                    new Dictionary<string, Schema> { ["name"] = V.String() },
+                    UnknownKeyMode.Allow),
+            },
+            UnknownKeyMode.Strip);
+        var input = new Dictionary<string, object?>
+        {
+            ["profile"] = new Dictionary<string, object?> { ["name"] = "Lorem", ["role"] = "ipsum" },
+            ["extra"] = true,
+        };
+        var result = (Dictionary<string, object?>)s.Parse(input)!;
+        Assert.Equal(new Dictionary<string, object?> { ["name"] = "Lorem" }, result["profile"]);
+        Assert.False(result.ContainsKey("extra"));
+    }
+
+    [Fact]
+    public void ParentRejectPropagatesToNestedAllowObject()
+    {
+        var s = V.Object(
+            new Dictionary<string, Schema>
+            {
+                ["profile"] = V.Object(
+                    new Dictionary<string, Schema> { ["name"] = V.String() },
+                    UnknownKeyMode.Allow),
+            },
+            UnknownKeyMode.Reject);
+        var input = new Dictionary<string, object?>
+        {
+            ["profile"] = new Dictionary<string, object?> { ["name"] = "Lorem", ["role"] = "ipsum" },
+        };
+        var result = s.SafeParse(input);
+        Assert.False(result.Success);
+        Assert.Equal(IssueCodes.UnknownKey, result.Issues[0].Code);
+        Assert.Equal(new object[] { "profile", "role" }, result.Issues[0].Path);
+    }
+
+    [Fact]
+    public void ParentAllowDoesNotOverrideNestedStripObject()
+    {
+        var s = V.Object(
+            new Dictionary<string, Schema>
+            {
+                ["profile"] = V.Object(
+                    new Dictionary<string, Schema> { ["name"] = V.String() },
+                    UnknownKeyMode.Strip),
+            },
+            UnknownKeyMode.Allow);
+        var input = new Dictionary<string, object?>
+        {
+            ["profile"] = new Dictionary<string, object?> { ["name"] = "Lorem", ["role"] = "ipsum" },
+            ["extra"] = true,
+        };
+        var result = (Dictionary<string, object?>)s.Parse(input)!;
+        Assert.Equal(new Dictionary<string, object?> { ["name"] = "Lorem" }, result["profile"]);
+        Assert.Equal(true, result["extra"]);
+    }
+
+    [Fact]
     public void OptionalFieldMissing()
     {
         var s = V.Object(new Dictionary<string, Schema>

@@ -90,6 +90,48 @@ class TestObject:
         assert result.success
         assert result.data["extra"] == 1
 
+    def test_parent_strip_propagates_to_nested_allow_object(self):
+        schema = v.object_(
+            {
+                "profile": v.object_(
+                    {"name": v.string()},
+                    unknown_keys="allow",
+                )
+            },
+            unknown_keys="strip",
+        )
+        result = schema.safe_parse({"profile": {"name": "Lorem", "role": "ipsum"}, "extra": True})
+        assert result.success
+        assert result.data == {"profile": {"name": "Lorem"}}
+
+    def test_parent_reject_propagates_to_nested_allow_object(self):
+        schema = v.object_(
+            {
+                "profile": v.object_(
+                    {"name": v.string()},
+                    unknown_keys="allow",
+                )
+            },
+            unknown_keys="reject",
+        )
+        result = schema.safe_parse({"profile": {"name": "Lorem", "role": "ipsum"}})
+        assert not result.success
+        assert any(i.code == v.UNKNOWN_KEY and i.path == ["profile", "role"] for i in result.issues)
+
+    def test_parent_allow_does_not_override_nested_strip_object(self):
+        schema = v.object_(
+            {
+                "profile": v.object_(
+                    {"name": v.string()},
+                    unknown_keys="strip",
+                )
+            },
+            unknown_keys="allow",
+        )
+        result = schema.safe_parse({"profile": {"name": "Lorem", "role": "ipsum"}, "extra": True})
+        assert result.success
+        assert result.data == {"profile": {"name": "Lorem"}, "extra": True}
+
     def test_optional_field(self):
         schema = v.object_(
             {"name": v.string(), "age": v.int_()},

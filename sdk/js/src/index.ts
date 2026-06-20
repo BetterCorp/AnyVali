@@ -10,6 +10,7 @@ export type {
   CoercionConfig,
   StringFormat,
   ParseContext,
+  ParseOptions,
   MetadataOptions,
   DescribeOptions,
 } from "./types.js";
@@ -88,7 +89,7 @@ import { OptionalSchema } from "./schemas/optional.js";
 import { NullableSchema } from "./schemas/nullable.js";
 import { BaseSchema } from "./schemas/base.js";
 
-import type { UnknownKeyMode, ParseResult, AnyValiDocument, ExportMode } from "./types.js";
+import type { UnknownKeyMode, ParseResult, ParseOptions, AnyValiDocument, ExportMode } from "./types.js";
 
 /** Create a string schema */
 export function string(): StringSchema {
@@ -254,16 +255,21 @@ export function nullable<T extends BaseSchema<any, any>>(
 // ---- Top-level parse functions ----
 
 /** Parse input using the given schema. Throws ValidationError on failure. */
-export function parse<T>(schema: BaseSchema<unknown, T>, input: unknown): T {
-  return schema.parse(input);
+export function parse<T>(
+  schema: BaseSchema<unknown, T>,
+  input: unknown,
+  options?: ParseOptions
+): T {
+  return schema.parse(input, options);
 }
 
 /** Parse input using the given schema. Returns a result object. */
 export function safeParse<T>(
   schema: BaseSchema<unknown, T>,
-  input: unknown
+  input: unknown,
+  options?: ParseOptions
 ): ParseResult<T> {
-  return schema.safeParse(input);
+  return schema.safeParse(input, options);
 }
 
 // ---- Interchange functions ----

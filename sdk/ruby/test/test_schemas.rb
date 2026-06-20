@@ -834,6 +834,55 @@ class TestObjectSchema < Minitest::Test
     assert_equal({ "name" => "Alice", "extra" => "value" }, result)
   end
 
+  def test_parent_strip_propagates_to_nested_allow_object
+    s = AnyVali.object(
+      properties: {
+        "profile" => AnyVali.object(
+          properties: { "name" => AnyVali.string },
+          required: ["name"],
+          unknown_keys: "allow"
+        )
+      },
+      required: ["profile"],
+      unknown_keys: "strip"
+    )
+    result = s.parse({ "profile" => { "name" => "Lorem", "role" => "ipsum" }, "extra" => true })
+    assert_equal({ "profile" => { "name" => "Lorem" } }, result)
+  end
+
+  def test_parent_reject_propagates_to_nested_allow_object
+    s = AnyVali.object(
+      properties: {
+        "profile" => AnyVali.object(
+          properties: { "name" => AnyVali.string },
+          required: ["name"],
+          unknown_keys: "allow"
+        )
+      },
+      required: ["profile"],
+      unknown_keys: "reject"
+    )
+    result = s.safe_parse({ "profile" => { "name" => "Lorem", "role" => "ipsum" } })
+    assert result.failure?
+    assert result.issues.any? { |i| i.code == "unknown_key" && i.path == ["profile", "role"] }
+  end
+
+  def test_parent_allow_does_not_override_nested_strip_object
+    s = AnyVali.object(
+      properties: {
+        "profile" => AnyVali.object(
+          properties: { "name" => AnyVali.string },
+          required: ["name"],
+          unknown_keys: "strip"
+        )
+      },
+      required: ["profile"],
+      unknown_keys: "allow"
+    )
+    result = s.parse({ "profile" => { "name" => "Lorem", "role" => "ipsum" }, "extra" => true })
+    assert_equal({ "profile" => { "name" => "Lorem" }, "extra" => true }, result)
+  end
+
   def test_unknown_keys_multiple_rejected
     s = AnyVali.object(
       properties: { "id" => AnyVali.int_ },

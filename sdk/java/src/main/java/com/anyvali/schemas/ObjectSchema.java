@@ -51,7 +51,10 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
         this.unknownKeysExplicit = other.unknownKeysExplicit;
     }
 
-    private UnknownKeyMode effectiveUnknownKeys() {
+    private UnknownKeyMode effectiveUnknownKeys(ValidationContext ctx) {
+        if (ctx.getInheritedUnknownKeys() != null) {
+            return ctx.getInheritedUnknownKeys();
+        }
         return unknownKeysExplicit ? unknownKeys : UnknownKeyMode.STRIP;
     }
 
@@ -71,6 +74,11 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
 
         Map<String, Object> map = (Map<String, Object>) rawMap;
         var result = new LinkedHashMap<String, Object>();
+        var mode = effectiveUnknownKeys(ctx);
+        var previousInheritedUnknownKeys = ctx.getInheritedUnknownKeys();
+        if (mode == UnknownKeyMode.STRIP || mode == UnknownKeyMode.REJECT) {
+            ctx.setInheritedUnknownKeys(mode);
+        }
 
         // Validate known properties
         for (var entry : properties.entrySet()) {
@@ -106,7 +114,7 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
         Set<String> known = properties.keySet();
         for (String key : map.keySet()) {
             if (!known.contains(key)) {
-                switch (effectiveUnknownKeys()) {
+                switch (mode) {
                     case REJECT -> {
                         var childCtx = ctx.child(key);
                         childCtx.addIssue(IssueCodes.UNKNOWN_KEY,
@@ -119,6 +127,8 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
                 }
             }
         }
+
+        ctx.setInheritedUnknownKeys(previousInheritedUnknownKeys);
 
         return result;
     }
@@ -151,6 +161,6 @@ public class ObjectSchema extends Schema<Map<String, Object>> {
     }
 
     public UnknownKeyMode getUnknownKeys() {
-        return effectiveUnknownKeys();
+        return unknownKeysExplicit ? unknownKeys : UnknownKeyMode.STRIP;
     }
 }

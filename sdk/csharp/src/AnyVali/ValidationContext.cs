@@ -7,6 +7,7 @@ public sealed class ValidationContext
 {
     public List<object> Path { get; } = new(); // string or int
     public List<ValidationIssue> Issues { get; } = new();
+    public UnknownKeyMode? InheritedUnknownKeys { get; set; }
 
     public List<object> ClonePath() => new(Path);
 

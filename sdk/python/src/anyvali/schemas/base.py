@@ -68,6 +68,7 @@ class ValidationContext:
     issues: list[ValidationIssue] = field(default_factory=list)
     definitions: dict[str, Any] = field(default_factory=dict)
     depth: int = 0
+    inherited_unknown_keys: str | None = None
 
     def add_issue(
         self,
@@ -95,6 +96,7 @@ class ValidationContext:
             issues=self.issues,
             definitions=self.definitions,
             depth=self.depth,
+            inherited_unknown_keys=self.inherited_unknown_keys,
         )
         # Propagate circular reference tracker
         if hasattr(self, '_seen'):

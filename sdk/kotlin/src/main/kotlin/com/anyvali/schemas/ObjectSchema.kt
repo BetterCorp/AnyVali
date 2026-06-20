@@ -41,7 +41,12 @@ data class ObjectSchema(
         val inputMap = input as Map<String, Any?>
         val issues = mutableListOf<ValidationIssue>()
         val result = mutableMapOf<String, Any?>()
-        val effectiveUnknownKeys = if (unknownKeysExplicit) unknownKeys else UnknownKeyMode.STRIP
+        val effectiveUnknownKeys = ctx.inheritedUnknownKeys ?: if (unknownKeysExplicit) unknownKeys else UnknownKeyMode.STRIP
+        val childBaseCtx = if (effectiveUnknownKeys == UnknownKeyMode.STRIP || effectiveUnknownKeys == UnknownKeyMode.REJECT) {
+            ctx.copy(inheritedUnknownKeys = effectiveUnknownKeys)
+        } else {
+            ctx
+        }
         val unknownCount = inputMap.keys.count { it !in properties.keys }
 
         // Check required fields
@@ -67,7 +72,7 @@ data class ObjectSchema(
 
         // Validate known properties
         for ((key, schema) in properties) {
-            val childCtx = ctx.child(key)
+            val childCtx = childBaseCtx.child(key)
 
             if (inputMap.containsKey(key)) {
                 val childResult = schema.safeParseWithContext(inputMap[key], childCtx)
@@ -104,7 +109,7 @@ data class ObjectSchema(
         val knownKeys = properties.keys
         for (key in inputMap.keys) {
             if (key !in knownKeys) {
-                val mode = if (!unknownKeysExplicit && unknownCount > 1) UnknownKeyMode.REJECT else effectiveUnknownKeys
+                val mode = if (ctx.inheritedUnknownKeys == null && !unknownKeysExplicit && unknownCount > 1) UnknownKeyMode.REJECT else effectiveUnknownKeys
                 when (mode) {
                     UnknownKeyMode.REJECT -> {
                         issues.add(
