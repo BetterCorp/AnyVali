@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.8...anyvali-v0.3.9) (2026-06-20)
+
+
+### Bug Fixes
+
+* cascade unknown key policy ([7d21a51](https://github.com/BetterCorp/AnyVali/commit/7d21a51b0d7961c9089fdc92bb1c787c33186207))
+
 ## [0.3.8](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.7...anyvali-v0.3.8) (2026-06-17)
 
 

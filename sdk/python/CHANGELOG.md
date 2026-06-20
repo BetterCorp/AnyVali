@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/BetterCorp/AnyVali/compare/python-v0.2.5...python-v0.2.6) (2026-06-20)
+
+
+### Bug Fixes
+
+* cascade unknown key policy ([7d21a51](https://github.com/BetterCorp/AnyVali/commit/7d21a51b0d7961c9089fdc92bb1c787c33186207))
+
 ## [0.2.5](https://github.com/BetterCorp/AnyVali/compare/python-v0.2.4...python-v0.2.5) (2026-06-17)
 
 

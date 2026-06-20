@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.5...js-v0.3.6) (2026-06-20)
+
+
+### Bug Fixes
+
+* cascade unknown key policy ([7d21a51](https://github.com/BetterCorp/AnyVali/commit/7d21a51b0d7961c9089fdc92bb1c787c33186207))
+
 ## [0.3.5](https://github.com/BetterCorp/AnyVali/compare/js-v0.3.4...js-v0.3.5) (2026-06-17)
 
 
