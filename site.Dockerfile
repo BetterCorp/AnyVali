@@ -2,7 +2,7 @@ FROM python:3.12-alpine AS build
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir Pillow
+RUN pip install --no-cache-dir Pillow==12.2.0
 
 COPY tools/site/build_site.py tools/site/build_site.py
 COPY site site
