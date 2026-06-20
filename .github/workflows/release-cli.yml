@@ -1,6 +1,9 @@
 name: Release CLI Binaries
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_call:
   workflow_dispatch:
 
@@ -68,7 +71,7 @@ jobs:
       - name: Find CLI release
         id: find
         run: |
-          tag=$(git tag --sort=-v:refname | grep '^cli-v' | head -1)
+          tag=$(git tag --sort=-v:refname | grep '^v' | head -1)
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Found tag: $tag"
 

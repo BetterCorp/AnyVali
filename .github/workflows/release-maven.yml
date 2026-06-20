@@ -1,6 +1,9 @@
 name: Publish Maven Central
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_call:
   workflow_dispatch:
 
