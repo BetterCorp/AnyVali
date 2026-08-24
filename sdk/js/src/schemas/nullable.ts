@@ -1,5 +1,5 @@
 import type { ParseContext, SchemaNode } from "../types.js";
-import { BaseSchema } from "./base.js";
+import { BaseSchema, ABSENT } from "./base.js";
 
 export class NullableSchema<
   T extends BaseSchema<any, any> = BaseSchema,
@@ -21,6 +21,9 @@ export class NullableSchema<
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
     if (input === null) {
       return null;
+    }
+    if ((input === undefined || input === ABSENT) && this._defaultValue !== ABSENT) {
+      return super._runPipeline(input, ctx);
     }
     return this._inner._runPipeline(input, ctx);
   }
