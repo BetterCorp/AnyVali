@@ -34,6 +34,10 @@ public class NullableSchema extends Schema<Object> {
         if (input == null) {
             return null;
         }
+        if (metadata != null && Boolean.TRUE.equals(metadata.get("sensitive"))
+                && ctx.getSensitiveMode() != null) {
+            return super.runPipeline(input, ctx);
+        }
         return inner.runPipeline(input, ctx);
     }
 

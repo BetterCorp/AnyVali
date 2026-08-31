@@ -6,6 +6,7 @@ import com.anyvali.schemas.NullableSchema;
 import com.anyvali.schemas.OptionalSchema;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -80,8 +81,49 @@ public abstract class Schema<T> {
             isAbsent = false;
         }
 
-        // Step 2: coercion (only if present)
         Object value = input;
+        if (!isAbsent && input != null && metadata != null
+                && Boolean.TRUE.equals(metadata.get("sensitive"))
+                && ctx.getSensitiveMode() != null) {
+            if ("encrypted".equals(ctx.getSensitiveMode())) {
+                if (!(input instanceof String encrypted)) {
+                    ctx.addIssue(IssueCodes.INVALID_TYPE, "Expected encrypted value",
+                            "encrypted:<value>", input.getClass().getSimpleName());
+                    return null;
+                }
+                if (!encrypted.startsWith("encrypted:") || encrypted.length() == "encrypted:".length()) {
+                    ctx.addIssue(IssueCodes.INVALID_STRING,
+                            "Encrypted value must start with \"encrypted:\" and contain a payload",
+                            "encrypted:<value>", encrypted);
+                    return null;
+                }
+                return encrypted;
+            }
+
+            var cacheKey = List.copyOf(ctx.getPath());
+            if (ctx.getSensitiveCache() != null && ctx.getSensitiveCache().containsKey(cacheKey)) {
+                return ctx.getSensitiveCache().get(cacheKey);
+            }
+            if ("encrypt".equals(ctx.getSensitiveMode())) {
+                var checked = safeParse(input);
+                if (!checked.success()) {
+                    for (var issue : checked.issues()) {
+                        var path = new java.util.ArrayList<Object>(ctx.getPath());
+                        path.addAll(issue.path());
+                        ctx.getIssues().add(new ValidationIssue(
+                                issue.code(), issue.message(), path,
+                                issue.expected(), issue.received(), issue.meta()));
+                    }
+                    return null;
+                }
+                value = checked.data();
+            }
+            value = ctx.getSensitiveTransform().apply(cacheKey, value);
+            if (ctx.getSensitiveCache() != null) ctx.getSensitiveCache().put(cacheKey, value);
+            return value;
+        }
+
+        // Step 2: coercion (only if present)
         if (!isAbsent && coercion != null) {
             int issuesBefore = ctx.issueCount();
             value = Coercion.applyCoercion(value, coercion, ctx);

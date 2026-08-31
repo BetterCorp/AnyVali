@@ -601,9 +601,10 @@ SDKs MUST reject documents with a `schemaVersion` they do not support.
 
 ### 14.1 Overview
 
-Every schema node MAY carry a `metadata` object containing descriptive, non-validation
-information. Metadata has **zero effect** on parsing or validation — it is purely
-informational and always portable.
+Every schema node MAY carry a `metadata` object containing descriptive information.
+Metadata has **zero effect** on the standard parse pipeline and is always portable.
+The explicit sensitive-data operations in Section 14.7 interpret only the reserved
+`sensitive` key.
 
 Metadata enables schemas to serve as self-documenting contracts, carrying
 documentation, lifecycle signals, and tooling hints alongside validation rules.
@@ -663,3 +664,41 @@ included in both `portable` and `extended` export modes when present.
 
 Metadata MUST NOT affect the 5-step parse pipeline (Section 2) in any way.
 It is never read during parsing or validation.
+
+### 14.7 Explicit Sensitive-Data Operations
+
+Every SDK MUST expose three opt-in operations whose names follow the target
+language's conventions:
+
+```
+safeParseEncrypted(schema, data) -> ParseResult
+encrypt(schema, data, transform) -> encrypted output
+decrypt(schema, data, transform) -> parsed plaintext output
+```
+
+`transform` receives `(path, value)`. `path` uses the same string-key and integer-index
+segments as validation issues. Operations are synchronous; an exception or error from
+`transform` MUST propagate.
+
+For these operations, a non-null node with `metadata.sensitive: true` is opaque:
+
+- Its encrypted representation MUST be a string matching `encrypted:<payload>`, where
+  `<payload>` contains at least one character.
+- The encryption transform MUST return the complete encrypted representation, including
+  the `encrypted:` prefix.
+- A composite sensitive node is transformed once; its descendants MUST NOT be traversed.
+- An absent optional node remains absent. A null node remains null when null is allowed.
+
+`safeParseEncrypted` MUST apply the original schema to non-sensitive nodes and the
+encrypted representation rule to sensitive nodes.
+
+`encrypt` MUST first run the standard parse pipeline on plaintext, then transform every
+sensitive node, then run `safeParseEncrypted` on the result.
+
+`decrypt` MUST first run `safeParseEncrypted`, then transform every sensitive node, then
+run the standard parse pipeline on the plaintext result.
+
+The `encrypted:` prefix is structural validation only. It does not establish secrecy,
+authenticity, or integrity. SDKs MUST NOT provide cryptography, manage keys, or interpret
+the payload. Applications SHOULD use authenticated encryption and provide those details
+inside their transform.

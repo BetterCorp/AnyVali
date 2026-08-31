@@ -37,6 +37,9 @@ export class IntersectionSchema<
         definitions: ctx.definitions,
         seen: ctx.seen,
         depth: ctx.depth,
+        sensitiveMode: ctx.sensitiveMode,
+        sensitiveTransform: ctx.sensitiveTransform,
+        sensitiveCache: ctx.sensitiveCache,
       };
       const validated = schema._runPipeline(input, innerCtx);
 

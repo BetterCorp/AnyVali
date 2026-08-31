@@ -19,6 +19,7 @@ public sealed class IntersectionSchema : Schema<object?>
             var innerCtx = new ValidationContext();
             foreach (var p in ctx.Path)
                 innerCtx.PushPath(p);
+            innerCtx.InheritSensitive(ctx);
 
             var validated = schema.RunPipeline(input, innerCtx);
 

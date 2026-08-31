@@ -165,6 +165,36 @@ module AnyVali
     RefSchema.new(ref: ref_path)
   end
 
+  def safe_parse_encrypted(schema, data)
+    context = ValidationContext.new
+    context.sensitive_mode = :encrypted
+    schema.safe_parse(data, context: context)
+  end
+
+  def encrypt(schema, data, transform)
+    encrypted = transform_sensitive(schema, schema.parse(data), :encrypt, transform)
+    result = safe_parse_encrypted(schema, encrypted)
+    raise ValidationError, result.issues if result.failure?
+    result.value
+  end
+
+  def decrypt(schema, data, transform)
+    encrypted = safe_parse_encrypted(schema, data)
+    raise ValidationError, encrypted.issues if encrypted.failure?
+    schema.parse(transform_sensitive(schema, encrypted.value, :decrypt, transform))
+  end
+
+  def transform_sensitive(schema, data, mode, transform)
+    context = ValidationContext.new
+    context.sensitive_mode = mode
+    context.sensitive_transform = transform
+    context.sensitive_cache = {}
+    result = schema.safe_parse(data, context: context)
+    raise ValidationError, result.issues if result.failure?
+    result.value
+  end
+  private_class_method :transform_sensitive
+
   # Interchange
 
   def export(schema, mode: :portable, definitions: {})

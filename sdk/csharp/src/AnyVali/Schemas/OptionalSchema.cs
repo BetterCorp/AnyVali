@@ -32,6 +32,9 @@ public sealed class OptionalSchema : Schema<object?>
         if (isAbsent)
             return null;
 
+        if (MetadataMap?.GetValueOrDefault("sensitive") is true && ctx.SensitiveMode is not null)
+            return base.RunPipeline(input, ctx);
+
         // Delegate to inner's pipeline for coercion etc.
         return Inner.RunPipeline(input, ctx);
     }

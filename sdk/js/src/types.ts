@@ -242,4 +242,13 @@ export interface ParseContext {
   seen?: WeakSet<object>;
   /** Current recursion depth, used to bound unbounded recursion (DoS guard). */
   depth?: number;
+  /** Internal mode used by the explicit sensitive-data helpers. */
+  sensitiveMode?: "encrypted" | "encrypt" | "decrypt";
+  sensitiveTransform?: SensitiveTransform;
+  sensitiveCache?: Map<string, unknown>;
 }
+
+export type SensitiveTransform = (
+  path: readonly (string | number)[],
+  value: unknown,
+) => unknown;

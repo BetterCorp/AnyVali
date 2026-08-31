@@ -27,6 +27,8 @@ class NullableSchema(BaseSchema[T | None], Generic[T]):
     def _run_pipeline(self, input: Any, ctx: ValidationContext) -> Any:
         if input is None:
             return None
+        if self._metadata and self._metadata.get("sensitive") is True and ctx.sensitive_mode:
+            return super()._run_pipeline(input, ctx)
         return self._inner._run_pipeline(input, ctx)
 
     def _to_node(self) -> dict[str, Any]:

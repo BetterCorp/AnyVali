@@ -19,6 +19,8 @@ module AnyVali
       # When used in objects, absence is handled by ObjectSchema
       # If called directly with a value, delegate to inner schema
       context ||= ValidationContext.new
+      handled, sensitive = handle_sensitive(input, path, context)
+      return sensitive if handled
       @inner_schema.safe_parse(input, path: path, context: context)
     end
 

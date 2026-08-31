@@ -14,6 +14,10 @@ type baseSchema struct {
 	metadata     map[string]any
 }
 
+func (b *baseSchema) isSensitive() bool {
+	return b.metadata != nil && b.metadata["sensitive"] == true
+}
+
 var reservedMetadataKeys = map[string]bool{
 	"title": true, "description": true, "deprecated": true,
 	"deprecatedMessage": true, "notStable": true, "since": true,

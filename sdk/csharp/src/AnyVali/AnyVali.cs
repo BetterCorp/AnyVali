@@ -47,6 +47,17 @@ public static class V
     /// <summary>Parse input using the given schema. Returns ParseResult.</summary>
     public static ParseResult SafeParse(Schema schema, object? input) => schema.SafeParse(input);
 
+    public static ParseResult SafeParseEncrypted(Schema schema, object? input) =>
+        SensitiveData.SafeParseEncrypted(schema, input);
+
+    public static object? Encrypt(Schema schema, object? input,
+        Func<IReadOnlyList<object>, object?, object?> transform) =>
+        SensitiveData.Encrypt(schema, input, transform);
+
+    public static object? Decrypt(Schema schema, object? input,
+        Func<IReadOnlyList<object>, object?, object?> transform) =>
+        SensitiveData.Decrypt(schema, input, transform);
+
     /// <summary>Export a schema to an AnyValiDocument.</summary>
     public static AnyValiDocument Export(Schema schema, ExportMode mode = ExportMode.Portable) =>
         Interchange.Exporter.ExportSchema(schema, mode);

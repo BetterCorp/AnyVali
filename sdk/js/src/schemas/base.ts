@@ -67,6 +67,11 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
 
   safeParse(input: unknown, options?: ParseOptions): ParseResult<TOutput> {
     const ctx: ParseContext = { path: [], issues: [], ...options };
+    return this._safeParseWithContext(input, ctx);
+  }
+
+  /** @internal */
+  _safeParseWithContext(input: unknown, ctx: ParseContext): ParseResult<TOutput> {
     let output: unknown;
     try {
       output = this._runPipeline(input, ctx);
@@ -125,6 +130,51 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     const isAbsent = input === undefined || input === ABSENT;
 
     let value: unknown = input;
+
+    if (!isAbsent && input !== null && this._metadata?.sensitive === true && ctx.sensitiveMode) {
+      if (ctx.sensitiveMode === "encrypted") {
+        if (typeof input !== "string") {
+          ctx.issues.push({
+            code: ISSUE_CODES.INVALID_TYPE,
+            message: "Expected encrypted value",
+            path: [...ctx.path],
+            expected: "encrypted:<value>",
+            received: typeof input,
+          });
+          return undefined;
+        }
+        if (!input.startsWith("encrypted:") || input.length === "encrypted:".length) {
+          ctx.issues.push({
+            code: ISSUE_CODES.INVALID_STRING,
+            message: 'Encrypted value must start with "encrypted:" and contain a payload',
+            path: [...ctx.path],
+            expected: "encrypted:<value>",
+            received: input,
+          });
+          return undefined;
+        }
+        return input;
+      }
+
+      const cacheKey = JSON.stringify(ctx.path);
+      if (ctx.sensitiveCache?.has(cacheKey)) return ctx.sensitiveCache.get(cacheKey);
+
+      if (ctx.sensitiveMode === "encrypt") {
+        const checked = this.safeParse(input);
+        if (!checked.success) {
+          ctx.issues.push(...checked.issues.map((issue) => ({
+            ...issue,
+            path: [...ctx.path, ...issue.path],
+          })));
+          return undefined;
+        }
+        value = checked.data;
+      }
+
+      const transformed = ctx.sensitiveTransform!([...ctx.path], value);
+      ctx.sensitiveCache?.set(cacheKey, transformed);
+      return transformed;
+    }
 
     // Step 2: coercion (only for present values)
     if (!isAbsent && this._coercionConfig) {

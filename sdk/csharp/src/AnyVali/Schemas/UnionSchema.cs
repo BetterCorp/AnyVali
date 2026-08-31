@@ -16,6 +16,7 @@ public sealed class UnionSchema : Schema<object?>
             var innerCtx = new ValidationContext();
             foreach (var p in ctx.Path)
                 innerCtx.PushPath(p);
+            innerCtx.InheritSensitive(ctx);
 
             var result = variant.RunPipeline(input, innerCtx);
             if (innerCtx.Issues.Count == 0)

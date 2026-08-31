@@ -23,6 +23,9 @@ export class UnionSchema<
         definitions: ctx.definitions,
         seen: ctx.seen,
         depth: ctx.depth,
+        sensitiveMode: ctx.sensitiveMode,
+        sensitiveTransform: ctx.sensitiveTransform,
+        sensitiveCache: ctx.sensitiveCache,
       };
       const result = variant._runPipeline(input, innerCtx);
       if (innerCtx.issues.length === 0) {

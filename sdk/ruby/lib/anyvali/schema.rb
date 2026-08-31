@@ -25,6 +25,8 @@ module AnyVali
 
     def safe_parse(input, path: [], context: nil)
       context ||= ValidationContext.new
+      handled, sensitive = handle_sensitive(input, path, context)
+      return sensitive if handled
       value = input
       issues = []
 
@@ -173,6 +175,45 @@ module AnyVali
     end
 
     protected
+
+    def handle_sensitive(input, path, context)
+      return [false, nil] unless @metadata["sensitive"] == true && !input.nil? && context.sensitive_mode
+
+      if context.sensitive_mode == :encrypted
+        unless input.is_a?(String)
+          return [true, ParseResult.new(value: nil, issues: [ValidationIssue.new(
+            code: IssueCodes::INVALID_TYPE,
+            path: path,
+            expected: "encrypted:<value>",
+            received: Schema.type_name(input)
+          )])]
+        end
+        unless input.start_with?("encrypted:") && input.length > "encrypted:".length
+          return [true, ParseResult.new(value: nil, issues: [ValidationIssue.new(
+            code: IssueCodes::INVALID_STRING,
+            path: path,
+            expected: "encrypted:<value>",
+            received: input
+          )])]
+        end
+        return [true, ParseResult.new(value: input, issues: [])]
+      end
+
+      key = path.freeze
+      if context.sensitive_cache&.key?(key)
+        return [true, ParseResult.new(value: context.sensitive_cache[key], issues: [])]
+      end
+
+      value = input
+      if context.sensitive_mode == :encrypt
+        checked = safe_parse(input, path: path, context: ValidationContext.new(definitions: context.definitions))
+        return [true, checked] if checked.failure?
+        value = checked.value
+      end
+      value = context.sensitive_transform.call(path.dup, value)
+      context.sensitive_cache[key] = value if context.sensitive_cache
+      [true, ParseResult.new(value: value, issues: [])]
+    end
 
     def validate(value, path, issues, context)
       raise NotImplementedError, "Subclasses must implement validate"

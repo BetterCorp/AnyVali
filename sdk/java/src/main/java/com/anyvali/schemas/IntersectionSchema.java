@@ -43,6 +43,7 @@ public class IntersectionSchema extends Schema<Object> {
                     new ArrayList<>(),
                     ctx.getDefinitions()
             );
+            trialCtx.inheritSensitive(ctx);
             Object result = schema.runPipeline(input, trialCtx);
             results.add(result);
             if (trialCtx.hasIssues()) {

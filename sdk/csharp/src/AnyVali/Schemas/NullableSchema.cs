@@ -20,6 +20,8 @@ public sealed class NullableSchema : Schema<object?>
     internal override object? RunPipeline(object? input, ValidationContext ctx)
     {
         if (input is null) return null;
+        if (MetadataMap?.GetValueOrDefault("sensitive") is true && ctx.SensitiveMode is not null)
+            return base.RunPipeline(input, ctx);
         return Inner.RunPipeline(input, ctx);
     }
 

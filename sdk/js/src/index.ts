@@ -13,6 +13,7 @@ export type {
   ParseOptions,
   MetadataOptions,
   DescribeOptions,
+  SensitiveTransform,
 } from "./types.js";
 
 export { ISSUE_CODES } from "./issue-codes.js";
@@ -21,6 +22,7 @@ export type { IssueCode } from "./issue-codes.js";
 export type { SchemaAny, Infer, InferInput } from "./infer.js";
 
 export { ValidationError } from "./errors.js";
+export { encrypt, decrypt, safeParseEncrypted } from "./sensitive.js";
 
 // ---- Re-export schema classes ----
 export {

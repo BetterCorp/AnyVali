@@ -37,6 +37,9 @@ module AnyVali
     end
 
     def safe_parse(input = nil, path: [], context: nil, **kwargs)
+      context ||= ValidationContext.new
+      handled, sensitive = handle_sensitive(input, path, context)
+      return sensitive if handled
       input = kwargs unless kwargs.empty?
       context ||= ValidationContext.new
       issues = []

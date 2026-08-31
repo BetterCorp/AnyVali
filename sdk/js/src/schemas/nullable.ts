@@ -22,6 +22,9 @@ export class NullableSchema<
     if (input === null) {
       return null;
     }
+    if (this._metadata?.sensitive === true && ctx.sensitiveMode) {
+      return super._runPipeline(input, ctx);
+    }
     if ((input === undefined || input === ABSENT) && this._defaultValue !== ABSENT) {
       return super._runPipeline(input, ctx);
     }

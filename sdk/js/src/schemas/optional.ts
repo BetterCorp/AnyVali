@@ -25,6 +25,10 @@ export class OptionalSchema<
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
     const isAbsent = input === undefined || input === ABSENT;
 
+    if (!isAbsent && this._metadata?.sensitive === true && ctx.sensitiveMode) {
+      return super._runPipeline(input, ctx);
+    }
+
     // If absent and we have a default on this wrapper, use the normal
     // BaseSchema default path so validation and cloning still run.
     if (isAbsent && this._defaultValue !== ABSENT) {

@@ -17,6 +17,9 @@ final class ValidationContext
         public readonly array $path = [],
         array $definitions = [],
         public readonly ?UnknownKeyMode $inheritedUnknownKeys = null,
+        public readonly ?string $sensitiveMode = null,
+        public readonly mixed $sensitiveTransform = null,
+        public readonly ?\ArrayObject $sensitiveCache = null,
     ) {
         $this->definitions = $definitions;
     }
@@ -30,6 +33,9 @@ final class ValidationContext
             path: array_merge($this->path, [$segment]),
             definitions: $this->definitions,
             inheritedUnknownKeys: $this->inheritedUnknownKeys,
+            sensitiveMode: $this->sensitiveMode,
+            sensitiveTransform: $this->sensitiveTransform,
+            sensitiveCache: $this->sensitiveCache,
         );
     }
 }

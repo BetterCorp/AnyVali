@@ -29,6 +29,8 @@ class OptionalSchema(BaseSchema[T | None], Generic[T]):
             if self._has_default:
                 return super()._run_pipeline(input, ctx)
             return None
+        if self._metadata and self._metadata.get("sensitive") is True and ctx.sensitive_mode:
+            return super()._run_pipeline(input, ctx)
         return self._inner._run_pipeline(input, ctx)
 
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
