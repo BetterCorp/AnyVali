@@ -103,6 +103,9 @@ final class ObjectSchema extends Schema
             inheritedUnknownKeys: in_array($unknownMode, [UnknownKeyMode::Strip, UnknownKeyMode::Reject], true)
                 ? $unknownMode
                 : $ctx->inheritedUnknownKeys,
+            sensitiveMode: $ctx->sensitiveMode,
+            sensitiveTransform: $ctx->sensitiveTransform,
+            sensitiveCache: $ctx->sensitiveCache,
         );
 
         // Check required fields

@@ -185,15 +185,44 @@ module AnyVali
   end
 
   def transform_sensitive(schema, data, mode, transform)
-    context = ValidationContext.new
-    context.sensitive_mode = mode
-    context.sensitive_transform = transform
-    context.sensitive_cache = {}
-    result = schema.safe_parse(data, context: context)
-    raise ValidationError, result.issues if result.failure?
-    result.value
+    transform_sensitive_node(schema, data, [], mode, transform, {})
   end
   private_class_method :transform_sensitive
+
+  def transform_sensitive_node(schema, data, path, mode, transform, cache)
+    if schema.metadata["sensitive"] == true && !data.nil?
+      return cache[path] if cache.key?(path)
+      value = mode == :encrypt ? schema.parse(data) : data
+      return cache[path.dup.freeze] = transform.call(path.dup, value)
+    end
+
+    case schema
+    when ObjectSchema
+      data.merge(schema.properties.each_with_object({}) do |(key, child), output|
+        output[key] = transform_sensitive_node(child, data[key], path + [key], mode, transform, cache) if data.key?(key)
+      end)
+    when ArraySchema
+      data.each_with_index.map { |value, index| transform_sensitive_node(schema.items_schema, value, path + [index], mode, transform, cache) }
+    when TupleSchema
+      data.each_with_index.map { |value, index| transform_sensitive_node(schema.element_schemas[index], value, path + [index], mode, transform, cache) }
+    when RecordSchema
+      data.each_with_object({}) do |(key, value), output|
+        output[key] = transform_sensitive_node(schema.values_schema, value, path + [key], mode, transform, cache)
+      end
+    when OptionalSchema, NullableSchema
+      data.nil? ? nil : transform_sensitive_node(schema.inner_schema, data, path, mode, transform, cache)
+    when UnionSchema
+      child = schema.variant_schemas.find do |variant|
+        mode == :decrypt ? safe_parse_encrypted(variant, data).success? : variant.safe_parse(data).success?
+      end
+      child ? transform_sensitive_node(child, data, path, mode, transform, cache) : data
+    when IntersectionSchema
+      schema.all_of_schemas.reduce(data) { |value, child| transform_sensitive_node(child, value, path, mode, transform, cache) }
+    else
+      data
+    end
+  end
+  private_class_method :transform_sensitive_node
 
   # Interchange
 

@@ -41,7 +41,7 @@ pub fn safe_parse_encrypted(schema: &dyn Schema, data: &Value) -> ParseResult {
             code: UNSUPPORTED_SCHEMA_KIND.to_string(),
             path: vec![],
             expected: "valid schema".to_string(),
-            received: error,
+            received: error.to_string(),
             meta: None,
         }]),
     }
