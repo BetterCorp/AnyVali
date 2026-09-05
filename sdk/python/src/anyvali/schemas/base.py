@@ -21,7 +21,6 @@ from ..issue_codes import COERCION_FAILED, DEFAULT_INVALID, TOO_DEEP
 # guard trips deterministically before a RecursionError.
 MAX_DEPTH = 200
 from ..types import (
-    AnyValiDocument,
     ExportMode,
     ParseResult,
     ValidationError,
@@ -131,6 +130,7 @@ class BaseSchema(ABC, Generic[T]):
         self._default_value = _SENTINEL
         self._has_default = False
         self._metadata = None
+        self._imported_definitions: dict[str, Any] = {}
 
     def _copy(self) -> BaseSchema[T]:
         return copy.deepcopy(self)
@@ -496,9 +496,9 @@ class BaseSchema(ABC, Generic[T]):
 
     def export(self, mode: ExportMode = "portable") -> dict[str, Any]:
         """Export this schema as an AnyVali document dict."""
-        node = self._to_node()
-        doc = AnyValiDocument(root=node)
-        return doc.to_dict()
+        from ..interchange.exporter import export_schema
+
+        return export_schema(self, mode=mode)
 
     def _add_common_node_fields(self, node: dict[str, Any]) -> dict[str, Any]:
         """Add default/coercion fields to a node dict."""

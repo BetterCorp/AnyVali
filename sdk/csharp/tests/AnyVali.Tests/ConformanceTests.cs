@@ -49,7 +49,9 @@ public class ConformanceTests
             yield break;
         }
 
-        foreach (var file in Directory.GetFiles(corpusPath, "*.json", SearchOption.AllDirectories))
+        var files = Directory.GetFiles(corpusPath, "*.json", SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(Path.Combine(corpusPath, "..", "interchange-corpus"), "*.json"));
+        foreach (var file in files)
         {
             yield return new object[] { file };
         }
@@ -80,9 +82,39 @@ public class ConformanceTests
 
             // Import the schema
             var schema = V.Import(schemaDoc);
+            if (testCase.TryGetProperty("roundtrip", out var roundtrip) && roundtrip.GetBoolean())
+            {
+                var exported = V.Export(schema.Describe("Imported contract"));
+                AssertOutputMatches(schemaElement.GetProperty("definitions"), exported.Definitions);
+                schema = V.Import(AnyValiDocument.FromJson(exported.ToJson()));
+            }
 
             // Convert input
             var input = JsonHelper.ElementToObject(inputElement);
+            if (testCase.TryGetProperty("sensitivePaths", out var sensitivePaths))
+            {
+                foreach (var imported in new[] { V.Import(schemaDoc), schema })
+                {
+                    Assert.False(V.SafeParseEncrypted(imported, input).Success);
+                    var paths = new List<object?>();
+                    var encrypted = V.Encrypt(imported, input, (path, value) =>
+                    {
+                        paths.Add(path.Cast<object?>().ToList());
+                        return "encrypted:" + JsonSerializer.Serialize(value);
+                    });
+                    AssertOutputMatches(sensitivePaths, paths);
+                    Assert.True(V.SafeParseEncrypted(imported, encrypted).Success);
+                    paths.Clear();
+                    var plaintext = V.Decrypt(imported, encrypted, (path, value) =>
+                    {
+                        paths.Add(path.Cast<object?>().ToList());
+                        using var decoded = JsonDocument.Parse(((string)value!)["encrypted:".Length..]);
+                        return JsonHelper.ElementToObject(decoded.RootElement);
+                    });
+                    AssertOutputMatches(sensitivePaths, paths);
+                    AssertOutputMatches(testCase.GetProperty("output"), plaintext);
+                }
+            }
 
             // Run SafeParse
             var result = schema.SafeParse(input);

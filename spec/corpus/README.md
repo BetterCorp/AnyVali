@@ -59,6 +59,17 @@ Each `.json` file in this corpus is a test suite with the following structure:
   - `received` (string): What was received (optional in test, but present when
     the spec defines it).
 
+The shared [interchange corpus](../interchange-corpus/roundtrip.json) covers
+JS, Python, and C# native document roundtrips (issue #126). Those SDK runners
+load both corpora. The interchange cases additionally use these fields:
+
+- `roundtrip` (boolean): Export a described clone of the imported schema,
+  assert definitions are preserved, serialize and reimport, then validate.
+- `sensitivePaths` (array of paths): Assert plaintext fails encrypted-storage
+  validation, encryption and decryption invoke callbacks at exactly these
+  paths, and decryption restores `output`, before and after the roundtrip.
+  The callbacks use an `encrypted:` JSON marker solely for testing.
+
 ## Directory Structure
 
 ```

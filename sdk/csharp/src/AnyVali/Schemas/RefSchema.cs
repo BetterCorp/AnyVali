@@ -39,11 +39,15 @@ public sealed class RefSchema : Schema<object?>
         return Validate(input, ctx);
     }
 
-    internal override Dictionary<string, object?> ToNode() =>
-        new() { ["kind"] = "ref", ["ref"] = _ref };
+    internal override Dictionary<string, object?> ToNode()
+    {
+        var node = new Dictionary<string, object?> { ["kind"] = "ref", ["ref"] = _ref };
+        AddDefaultAndCoercion(node);
+        return node;
+    }
 
     internal override Schema Clone() => new RefSchema(_ref, _resolver)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

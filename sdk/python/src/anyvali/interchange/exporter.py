@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any
 
@@ -19,7 +20,7 @@ def export_schema(
     """Export a schema to an AnyVali document dict."""
     root_node = schema._to_node()
 
-    defs: dict[str, Any] = {}
+    defs: dict[str, Any] = copy.deepcopy(schema._imported_definitions)
     if definitions:
         for name, defn_schema in definitions.items():
             defs[name] = defn_schema._to_node()

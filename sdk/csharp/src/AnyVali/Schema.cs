@@ -20,6 +20,7 @@ public abstract class Schema
     internal CoercionConfig? CoercionCfg { get; set; }
     internal bool IsPortable { get; set; } = true;
     internal Dictionary<string, object?>? MetadataMap { get; set; }
+    internal Dictionary<string, object?> ImportedDefinitions { get; set; } = new();
 
     // ---- Public API ----
 
@@ -297,7 +298,7 @@ public abstract class Schema
             AnyvaliVersion = AnyvaliVersionValue,
             SchemaVersion = SchemaVersionValue,
             Root = node,
-            Definitions = new Dictionary<string, object?>(),
+            Definitions = (Dictionary<string, object?>)DeepCopyDefault(ImportedDefinitions)!,
             Extensions = new Dictionary<string, object?>(),
         };
     }
@@ -409,7 +410,7 @@ public abstract class Schema
         };
     }
 
-    private static object? DeepCopyDefault(object? value)
+    internal static object? DeepCopyDefault(object? value)
     {
         switch (value)
         {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
-from .base import BaseSchema, ValidationContext
+from .base import BaseSchema, ValidationContext, _SENTINEL
 
 T = TypeVar("T")
 
@@ -27,6 +27,8 @@ class NullableSchema(BaseSchema[T | None], Generic[T]):
     def _run_pipeline(self, input: Any, ctx: ValidationContext) -> Any:
         if input is None:
             return None
+        if input is _SENTINEL and self._has_default:
+            return super()._run_pipeline(input, ctx)
         if self._metadata and self._metadata.get("sensitive") is True and ctx.sensitive_mode:
             return super()._run_pipeline(input, ctx)
         return self._inner._run_pipeline(input, ctx)

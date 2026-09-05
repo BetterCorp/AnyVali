@@ -56,6 +56,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   /** @internal */ _coercionConfig: CoercionConfig | undefined = undefined;
   /** @internal */ _isPortable: boolean = true;
   /** @internal */ _metadata: Record<string, unknown> | undefined = undefined;
+  /** @internal */ _importedDefinitions: Record<string, SchemaNode> = {};
 
   // ---------- public API ----------
 
@@ -292,7 +293,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
       anyvaliVersion: ANYVALI_VERSION,
       schemaVersion: SCHEMA_VERSION,
       root: node,
-      definitions: {},
+      definitions: structuredClone(this._importedDefinitions),
       extensions: {},
     };
   }

@@ -7,6 +7,35 @@ namespace AnyVali.Tests;
 public class ExportTests
 {
     [Fact]
+    public void ReservedAndCustomMetadataRoundtrip()
+    {
+        var metadata = new Dictionary<string, object?>
+        {
+            ["description"] = "Private", ["sensitive"] = true,
+            ["custom"] = new Dictionary<string, object?> { ["owner"] = "ports" },
+        };
+        foreach (var kind in new[] { "string", "optional", "nullable", "ref" })
+        {
+            var root = new Dictionary<string, object?> { ["kind"] = kind, ["metadata"] = metadata };
+            if (kind is "optional" or "nullable") root["inner"] = new Dictionary<string, object?> { ["kind"] = "string" };
+            if (kind == "ref") root["ref"] = "#/definitions/Secret";
+            var doc = new AnyValiDocument
+            {
+                AnyvaliVersion = "1.0", SchemaVersion = "1.1", Root = root,
+                Definitions = new() { ["Secret"] = new Dictionary<string, object?> { ["kind"] = "string" } },
+                Extensions = new(),
+            };
+            var schema = V.Import(AnyValiDocument.FromJson(doc.ToJson()));
+            var exported = schema.Export();
+            Assert.Equal(System.Text.Json.JsonSerializer.Serialize(metadata),
+                System.Text.Json.JsonSerializer.Serialize(exported.Root["metadata"]));
+            Assert.Equal(exported.ToJson(), V.Export(V.Import(exported)).ToJson());
+            root["metadata"] = null;
+            Assert.Throws<InvalidOperationException>(() => V.Import(doc));
+        }
+    }
+
+    [Fact]
     public void ExportStringSchema()
     {
         var s = V.String().MinLength(1).MaxLength(100);

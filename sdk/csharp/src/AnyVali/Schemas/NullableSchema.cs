@@ -1,3 +1,5 @@
+using AnyVali.Parse;
+
 namespace AnyVali.Schemas;
 
 public sealed class NullableSchema : Schema<object?>
@@ -20,6 +22,8 @@ public sealed class NullableSchema : Schema<object?>
     internal override object? RunPipeline(object? input, ValidationContext ctx)
     {
         if (input is null) return null;
+        if (Absent.IsAbsent(input) && !Absent.IsAbsent(DefaultValue))
+            return base.RunPipeline(input, ctx);
         if (MetadataMap?.GetValueOrDefault("sensitive") is true && ctx.SensitiveMode is not null)
             return base.RunPipeline(input, ctx);
         return Inner.RunPipeline(input, ctx);
@@ -38,6 +42,6 @@ public sealed class NullableSchema : Schema<object?>
 
     internal override Schema Clone() => new NullableSchema(Inner)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

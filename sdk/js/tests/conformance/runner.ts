@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import assert from "node:assert/strict";
 import { importSchema } from "../../src/interchange/importer.js";
+import { exportSchema, encrypt, decrypt, safeParseEncrypted } from "../../src/index.js";
 import type { AnyValiDocument } from "../../src/types.js";
 
 export interface CorpusFile {
@@ -14,6 +16,8 @@ export interface CorpusTestCase {
   input: unknown;
   valid: boolean;
   output: unknown;
+  roundtrip?: boolean;
+  sensitivePaths?: (string | number)[][];
   issues: Array<{
     code: string;
     path: (string | number)[];
@@ -62,7 +66,31 @@ export function loadCorpus(corpusDir: string): CorpusFile[] {
  */
 export function runTestCase(tc: CorpusTestCase): CorpusTestResult {
   try {
-    const schema = importSchema(tc.schema);
+    let schema = importSchema(tc.schema);
+    if (tc.roundtrip) {
+      const exported = exportSchema(schema.describe("Imported contract"));
+      assert.deepEqual(exported.definitions, tc.schema.definitions);
+      schema = importSchema(JSON.parse(JSON.stringify(exported)));
+    }
+    if (tc.sensitivePaths) {
+      for (const imported of [importSchema(tc.schema), schema]) {
+        assert.equal(safeParseEncrypted(imported, tc.input).success, false);
+        const paths: (string | number)[][] = [];
+        const encrypted = encrypt(imported, tc.input, (path, value) => {
+          paths.push([...path]);
+          return `encrypted:${JSON.stringify(value)}`;
+        });
+        assert.deepEqual(paths, tc.sensitivePaths);
+        assert.equal(safeParseEncrypted(imported, encrypted).success, true);
+        paths.length = 0;
+        const plaintext = decrypt(imported, encrypted, (path, value) => {
+          paths.push([...path]);
+          return JSON.parse((value as string).slice("encrypted:".length));
+        });
+        assert.deepEqual(paths, tc.sensitivePaths);
+        assert.deepEqual(plaintext, tc.output);
+      }
+    }
     const result = schema.safeParse(tc.input);
 
     if (tc.valid) {

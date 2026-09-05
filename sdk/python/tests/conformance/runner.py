@@ -19,7 +19,7 @@ def _find_test_files() -> list[Path]:
     """Find all JSON test files in the corpus directory."""
     if not _CORPUS_DIR.exists():
         return []
-    return sorted(_CORPUS_DIR.rglob("*.json"))
+    return sorted([*_CORPUS_DIR.rglob("*.json"), *(_CORPUS_DIR.parent / "interchange-corpus").rglob("*.json")])
 
 
 def load_corpus() -> list[dict[str, Any]]:
@@ -46,7 +46,7 @@ def load_corpus() -> list[dict[str, Any]]:
         except (json.JSONDecodeError, OSError):
             continue
 
-        rel_path = path.relative_to(_CORPUS_DIR)
+        rel_path = path.relative_to(_CORPUS_DIR.parent)
 
         if isinstance(data, list):
             for i, case in enumerate(data):

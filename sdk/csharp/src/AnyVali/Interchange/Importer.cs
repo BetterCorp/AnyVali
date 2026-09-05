@@ -10,7 +10,8 @@ public static class Importer
 {
     public static Schema ImportSchema(AnyValiDocument doc)
     {
-        var definitions = doc.Definitions ?? new Dictionary<string, object?>();
+        var definitions = (Dictionary<string, object?>)Schema.DeepCopyDefault(
+            doc.Definitions ?? new Dictionary<string, object?>())!;
         var resolvedDefs = new Dictionary<string, Schema>();
 
         Schema ImportNode(object? nodeObj)
@@ -230,7 +231,7 @@ public static class Importer
             }
 
             // Apply default
-            if (node.TryGetValue("default", out var defaultVal) && defaultVal is not null)
+            if (node.TryGetValue("default", out var defaultVal))
             {
                 schema = schema.Default(defaultVal);
             }
@@ -242,10 +243,19 @@ public static class Importer
                 schema = schema.Coerce(config);
             }
 
+            if (node.TryGetValue("metadata", out var metadata))
+            {
+                if (metadata is not Dictionary<string, object?>)
+                    throw new InvalidOperationException("Schema metadata must be an object");
+                schema.MetadataMap = (Dictionary<string, object?>)Schema.DeepCopyDefault(metadata)!;
+            }
+
             return schema;
         }
 
-        return ImportNode(doc.Root);
+        var root = ImportNode(doc.Root);
+        root.ImportedDefinitions = definitions;
+        return root;
     }
 
     private static NumberSchema ApplyNumericConstraints(NumberSchema schema, Dictionary<string, object?> node)

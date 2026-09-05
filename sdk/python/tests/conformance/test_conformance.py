@@ -7,6 +7,7 @@ expected outcomes.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -29,6 +30,31 @@ def test_conformance(case: dict[str, Any]) -> None:
 
     # Import the schema from the document
     schema = v.import_schema(schema_doc)
+    if case.get("roundtrip"):
+        exported = v.export_schema(schema.describe("Imported contract"))
+        assert exported.get("definitions", {}) == schema_doc["definitions"]
+        schema = v.import_schema(json.dumps(exported))
+
+    if "sensitivePaths" in case:
+        for imported in (v.import_schema(schema_doc), schema):
+            assert not v.safe_parse_encrypted(imported, input_value).success
+            paths = []
+
+            def encrypt_value(path, value):
+                paths.append(path)
+                return "encrypted:" + json.dumps(value)
+
+            encrypted = v.encrypt(imported, input_value, encrypt_value)
+            assert paths == case["sensitivePaths"]
+            assert v.safe_parse_encrypted(imported, encrypted).success
+            paths.clear()
+
+            def decrypt_value(path, value):
+                paths.append(path)
+                return json.loads(value[len("encrypted:"):])
+
+            assert v.decrypt(imported, encrypted, decrypt_value) == expected_output
+            assert paths == case["sensitivePaths"]
 
     # Run safe_parse
     result = schema.safe_parse(input_value)
