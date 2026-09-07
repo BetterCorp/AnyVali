@@ -156,6 +156,20 @@ public final class AnyVali {
         return new RefSchema(reference);
     }
 
+    public static ParseResult<Object> safeParseEncrypted(Schema<?> schema, Object data) {
+        return SensitiveData.safeParseEncrypted(schema, data);
+    }
+
+    public static Object encrypt(Schema<?> schema, Object data,
+                                 java.util.function.BiFunction<java.util.List<Object>, Object, Object> transform) {
+        return SensitiveData.encrypt(schema, data, transform);
+    }
+
+    public static <T> T decrypt(Schema<T> schema, Object data,
+                                java.util.function.BiFunction<java.util.List<Object>, Object, Object> transform) {
+        return SensitiveData.decrypt(schema, data, transform);
+    }
+
     // ---- Interchange ----
 
     public static Map<String, Object> exportSchema(Schema<?> schema) {
