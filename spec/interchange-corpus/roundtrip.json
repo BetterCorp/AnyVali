@@ -1,0 +1,430 @@
+{
+  "suite": "interchange-roundtrip",
+  "cases": [
+    {
+      "description": "Imported sensitive property invokes native encryption and decryption",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "unknownKeys": "reject",
+          "required": [
+            "secret"
+          ],
+          "properties": {
+            "secret": {
+              "kind": "string",
+              "metadata": {
+                "description": "Private setting",
+                "sensitive": true,
+                "title": "Secret",
+                "custom": {
+                  "owner": "ports"
+                }
+              }
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "secret": "plaintext"
+      },
+      "valid": true,
+      "output": {
+        "secret": "plaintext"
+      },
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        [
+          "secret"
+        ]
+      ]
+    },
+    {
+      "description": "Imported sensitive optional wrapper retains encryption semantics",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "optional",
+          "inner": {
+            "kind": "string"
+          },
+          "metadata": {
+            "description": "Private setting",
+            "sensitive": true,
+            "title": "Secret",
+            "custom": {
+              "owner": "ports"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "plaintext",
+      "valid": true,
+      "output": "plaintext",
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        []
+      ]
+    },
+    {
+      "description": "Imported sensitive nullable wrapper retains encryption semantics",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "nullable",
+          "inner": {
+            "kind": "string"
+          },
+          "metadata": {
+            "description": "Private setting",
+            "sensitive": true,
+            "title": "Secret",
+            "custom": {
+              "owner": "ports"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "plaintext",
+      "valid": true,
+      "output": "plaintext",
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        []
+      ]
+    },
+    {
+      "description": "Imported sensitive definition invokes native encryption through ref",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "ref",
+          "ref": "#/definitions/Secret"
+        },
+        "definitions": {
+          "Secret": {
+            "kind": "string",
+            "metadata": {
+              "description": "Private setting",
+              "sensitive": true,
+              "title": "Secret",
+              "custom": {
+                "owner": "ports"
+              }
+            }
+          }
+        },
+        "extensions": {}
+      },
+      "input": "plaintext",
+      "valid": true,
+      "output": "plaintext",
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        []
+      ]
+    },
+    {
+      "description": "Node record and wrapper keys import with an explicit null default",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "unknownKeys": "reject",
+          "required": [
+            "labels",
+            "value"
+          ],
+          "properties": {
+            "labels": {
+              "kind": "record",
+              "valueSchema": {
+                "kind": "string"
+              }
+            },
+            "alias": {
+              "kind": "optional",
+              "inner": {
+                "kind": "string"
+              }
+            },
+            "value": {
+              "kind": "nullable",
+              "inner": {
+                "kind": "string"
+              },
+              "default": null
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "labels": {
+          "role": "admin"
+        }
+      },
+      "valid": true,
+      "output": {
+        "labels": {
+          "role": "admin"
+        },
+        "value": null
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "Null default preserves present value None",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "unknownKeys": "reject",
+          "required": [
+            "labels",
+            "value"
+          ],
+          "properties": {
+            "labels": {
+              "kind": "record",
+              "valueSchema": {
+                "kind": "string"
+              }
+            },
+            "alias": {
+              "kind": "optional",
+              "inner": {
+                "kind": "string"
+              }
+            },
+            "value": {
+              "kind": "nullable",
+              "inner": {
+                "kind": "string"
+              },
+              "default": null
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "labels": {},
+        "alias": "name",
+        "value": null
+      },
+      "valid": true,
+      "output": {
+        "labels": {},
+        "alias": "name",
+        "value": null
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "Null default preserves present value 'present'",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "unknownKeys": "reject",
+          "required": [
+            "labels",
+            "value"
+          ],
+          "properties": {
+            "labels": {
+              "kind": "record",
+              "valueSchema": {
+                "kind": "string"
+              }
+            },
+            "alias": {
+              "kind": "optional",
+              "inner": {
+                "kind": "string"
+              }
+            },
+            "value": {
+              "kind": "nullable",
+              "inner": {
+                "kind": "string"
+              },
+              "default": null
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "labels": {},
+        "alias": "name",
+        "value": "present"
+      },
+      "valid": true,
+      "output": {
+        "labels": {},
+        "alias": "name",
+        "value": "present"
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "Nullable non-null default only materializes when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "nullable",
+              "inner": {
+                "kind": "string"
+              },
+              "default": "fallback"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "value": "fallback"
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "Nullable explicit null is not replaced by a non-null default",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "nullable",
+              "inner": {
+                "kind": "string"
+              },
+              "default": "fallback"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "value": null
+      },
+      "valid": true,
+      "output": {
+        "value": null
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "Recursive definitions survive native export and reimport",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "record",
+          "valueSchema": {
+            "kind": "ref",
+            "ref": "#/definitions/JsonValue"
+          }
+        },
+        "definitions": {
+          "JsonValue": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "null"
+              },
+              {
+                "kind": "bool"
+              },
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "number"
+              },
+              {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              },
+              {
+                "kind": "record",
+                "valueSchema": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              }
+            ]
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "a": [
+          null,
+          true,
+          {
+            "x": 2
+          }
+        ]
+      },
+      "valid": true,
+      "output": {
+        "a": [
+          null,
+          true,
+          {
+            "x": 2
+          }
+        ]
+      },
+      "issues": [],
+      "roundtrip": true
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import { loadCorpus, runTestCase } from "./runner.js";
 
 const corpusDir = path.resolve(__dirname, "../../../../spec/corpus");
 
-const suites = loadCorpus(corpusDir);
+const suites = [...loadCorpus(corpusDir), ...loadCorpus(path.resolve(corpusDir, "../interchange-corpus"))];
 
 if (suites.length === 0) {
   describe("Conformance corpus", () => {

@@ -40,6 +40,7 @@ if(ANYVALI_BUILD_TESTS)
         tests/test_interchange.cpp
         tests/test_conformance.cpp
         tests/test_defaults.cpp
+        tests/test_sensitive.cpp
     )
     target_link_libraries(anyvali_tests PRIVATE anyvali)
 

@@ -16,6 +16,7 @@ public sealed class UnionSchema : Schema<object?>
             var innerCtx = new ValidationContext();
             foreach (var p in ctx.Path)
                 innerCtx.PushPath(p);
+            innerCtx.InheritSensitive(ctx);
 
             var result = variant.RunPipeline(input, innerCtx);
             if (innerCtx.Issues.Count == 0)
@@ -47,6 +48,6 @@ public sealed class UnionSchema : Schema<object?>
 
     internal override Schema Clone() => new UnionSchema(_variants)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }
