@@ -32,6 +32,9 @@ public sealed class OptionalSchema : Schema<object?>
         if (isAbsent)
             return null;
 
+        if (MetadataMap?.GetValueOrDefault("sensitive") is true && ctx.SensitiveMode is not null)
+            return base.RunPipeline(input, ctx);
+
         // Delegate to inner's pipeline for coercion etc.
         return Inner.RunPipeline(input, ctx);
     }
@@ -49,6 +52,6 @@ public sealed class OptionalSchema : Schema<object?>
 
     internal override Schema Clone() => new OptionalSchema(Inner)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

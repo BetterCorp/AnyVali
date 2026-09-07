@@ -10,7 +10,8 @@ An AnyVali SDK must:
 2. Implement the five-step parse pipeline
 3. Support schema export to the canonical JSON format
 4. Support schema import from the canonical JSON format
-5. Pass the shared conformance test suite
+5. Support explicit sensitive-data transforms
+6. Pass the shared conformance test suite
 
 ## Required Operations
 
@@ -76,6 +77,20 @@ schema.safeParse(input) -> ParseResult
 - On failure: `{ success: false, issues: [...] }`
 
 The result type should be idiomatic. In Go, use the `(result, error)` pattern. In Rust, use `Result<T, Vec<Issue>>`. In Java, return a `ParseResult<T>` object.
+
+### Sensitive Data (Opt-In)
+
+```
+safeParseEncrypted(schema, input) -> ParseResult
+encrypt(schema, input, transform) -> encrypted output
+decrypt(schema, input, transform) -> parsed plaintext output
+```
+
+These SDK-level helpers interpret `metadata.sensitive: true`; normal schema parsing must
+remain unchanged. The transform receives the validation path and value. Encryption runs
+normal parse, transform, then encrypted validation. Decryption runs encrypted validation,
+transform, then normal parse. Sensitive composite values are opaque and use the storage
+shape `encrypted:<payload>`. Do not add cryptography or key management to an SDK.
 
 ### Export
 
