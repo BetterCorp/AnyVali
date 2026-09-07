@@ -49,6 +49,22 @@ class TestExport:
 
 
 class TestImport:
+    def test_reserved_and_custom_metadata_roundtrip(self):
+        metadata = {"description": "Private", "sensitive": True, "custom": {"owner": "ports"}}
+        for root in (
+            {"kind": "string", "metadata": metadata},
+            {"kind": "optional", "inner": {"kind": "string"}, "metadata": metadata},
+            {"kind": "nullable", "inner": {"kind": "string"}, "metadata": metadata},
+            {"kind": "ref", "ref": "#/definitions/Secret", "metadata": metadata},
+        ):
+            doc = {"anyvaliVersion": "1.0", "schemaVersion": "1.1", "root": root,
+                   "definitions": {"Secret": {"kind": "string"}}, "extensions": {}}
+            schema = v.import_schema(doc)
+            assert schema.export()["root"]["metadata"] == metadata
+            assert v.export_schema(v.import_schema(schema.export()))["root"]["metadata"] == metadata
+        with pytest.raises(ValueError, match="Schema metadata must be an object"):
+            v.import_schema({**doc, "root": {"kind": "string", "metadata": None}})
+
     def test_string_import(self):
         doc = {
             "anyvaliVersion": "1.0",

@@ -44,6 +44,7 @@ nav:
       - Overview: docs/overview.md
       - Numeric Semantics: docs/numeric-semantics.md
       - Portability Guide: docs/portability-guide.md
+      - Sensitive Data: docs/sensitive-data.md
       - SDK Authors Guide: docs/sdk-authors-guide.md
   - SDK Reference:
       - JavaScript / TypeScript: docs/sdk-js.md
