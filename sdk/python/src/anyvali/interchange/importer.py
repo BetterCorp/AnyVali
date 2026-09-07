@@ -6,6 +6,7 @@ import copy
 import json
 from typing import Any
 
+from ..issue_codes import UNSUPPORTED_EXTENSION
 from ..schemas.any import AnySchema
 from ..schemas.array import ArraySchema
 from ..schemas.base import BaseSchema, CoercionConfig
@@ -36,7 +37,7 @@ from ..schemas.string import StringSchema
 from ..schemas.tuple import TupleSchema
 from ..schemas.union import UnionSchema
 from ..schemas.unknown import UnknownSchema
-from ..types import AnyValiDocument
+from ..types import AnyValiDocument, ValidationError, ValidationIssue
 
 
 def import_schema(source: dict[str, Any] | str) -> BaseSchema[Any]:
@@ -49,6 +50,20 @@ def import_schema(source: dict[str, Any] | str) -> BaseSchema[Any]:
     assert isinstance(source, dict)
 
     doc = AnyValiDocument.from_dict(source)
+    if not isinstance(doc.extensions, dict):
+        raise ValueError("Document extensions must be an object")
+    for namespace, extension in doc.extensions.items():
+        if not isinstance(extension, dict):
+            raise ValueError(f"Extension namespace must be an object: {namespace}")
+        if extension.get("_criticality", "informational") not in ("informational", "semantic"):
+            raise ValueError(f"Invalid extension criticality: {namespace}")
+        # No semantic extension handlers exist, including language/default fallbacks.
+        if extension.get("_criticality") == "semantic":
+            raise ValidationError([ValidationIssue(
+                code=UNSUPPORTED_EXTENSION,
+                message=f"Unsupported semantic extension namespace: {namespace}",
+                path=["extensions", namespace],
+            )])
 
     # Two-pass definition building to handle recursive refs:
     # Pass 1: Create placeholder RefSchema entries so recursive refs can find them
@@ -65,6 +80,7 @@ def import_schema(source: dict[str, Any] | str) -> BaseSchema[Any]:
         _resolve_refs(defn_schema, definitions)
     _resolve_refs(root, definitions)
     root._imported_definitions = copy.deepcopy(doc.definitions)
+    root._imported_extensions = copy.deepcopy(doc.extensions)
 
     return root
 

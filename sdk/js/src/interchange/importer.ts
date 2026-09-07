@@ -3,6 +3,8 @@ import type {
   SchemaNode,
 } from "../types.js";
 import { BaseSchema } from "../schemas/base.js";
+import { ValidationError } from "../errors.js";
+import { ISSUE_CODES } from "../issue-codes.js";
 import { StringSchema } from "../schemas/string.js";
 import {
   NumberSchema,
@@ -51,6 +53,27 @@ import type { StringFormat, UnknownKeyMode } from "../types.js";
 const MAX_IMPORT_DEPTH = 512;
 
 export function importSchema(doc: AnyValiDocument): BaseSchema {
+  const extensions = doc.extensions === undefined ? {} : doc.extensions;
+  if (extensions === null || typeof extensions !== "object" || Array.isArray(extensions)) {
+    throw new Error("Document extensions must be an object");
+  }
+  for (const [namespace, extension] of Object.entries(extensions)) {
+    if (extension === null || typeof extension !== "object" || Array.isArray(extension)) {
+      throw new Error(`Extension namespace must be an object: ${namespace}`);
+    }
+    if (extension._criticality !== undefined &&
+        extension._criticality !== "informational" && extension._criticality !== "semantic") {
+      throw new Error(`Invalid extension criticality: ${namespace}`);
+    }
+    // No semantic extension handlers are implemented, including language/default fallbacks.
+    if (extension._criticality === "semantic") {
+      throw new ValidationError([{
+        code: ISSUE_CODES.UNSUPPORTED_EXTENSION,
+        message: `Unsupported semantic extension namespace: ${namespace}`,
+        path: ["extensions", namespace],
+      }]);
+    }
+  }
   const definitions = structuredClone(doc.definitions ?? {});
   const resolvedDefs = new Map<string, BaseSchema>();
 
@@ -275,6 +298,7 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
 
   const root = importNode(doc.root);
   root._importedDefinitions = definitions;
+  root._importedExtensions = structuredClone(extensions);
   return root;
 }
 

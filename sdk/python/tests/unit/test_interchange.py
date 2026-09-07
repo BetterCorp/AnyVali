@@ -2,11 +2,71 @@
 
 from __future__ import annotations
 
+import copy
 import json
 
 import pytest
 
 import anyvali as v
+
+
+class TestDocumentExtensions:
+    @staticmethod
+    def document(extensions):
+        return {"anyvaliVersion": "1.0", "schemaVersion": "1.1",
+                "root": {"kind": "string"}, "definitions": {}, "extensions": extensions}
+
+    @pytest.mark.parametrize("namespace", ["vendor", "python", "default"])
+    @pytest.mark.parametrize("as_json", [False, True])
+    def test_rejects_unsupported_semantic_namespace(self, namespace, as_json):
+        doc = self.document({
+            "default": {"_criticality": "informational", "hint": "not an implementation"},
+            namespace: {"_criticality": "semantic", "feature": True},
+        })
+        with pytest.raises(v.ValidationError) as error:
+            v.import_schema(json.dumps(doc) if as_json else doc)
+        assert error.value.issues[0].code == v.UNSUPPORTED_EXTENSION
+
+    @pytest.mark.parametrize("extensions", [None, [], "invalid", {"vendor": None},
+        {"vendor": []}, {"vendor": True}, {"vendor": {"_criticality": "unknown"}},
+        {"vendor": {"_criticality": None}}])
+    def test_rejects_malformed_extensions(self, extensions):
+        with pytest.raises(ValueError):
+            v.import_schema(self.document(extensions))
+
+    def test_informational_namespaces_are_retained_and_copied(self):
+        extensions = {"vendor": {"_criticality": "informational", "hint": {"values": ["keep"]}},
+                      "default": {"hint": "implicit informational"}}
+        original = copy.deepcopy(extensions)
+        schema = v.import_schema(self.document(extensions)).default("fallback")
+        extensions["vendor"]["hint"]["values"].append("changed input")
+        assert schema.parse("ok") == "ok"
+        exported = v.export_schema(schema, mode="extended")
+        assert exported["extensions"] == original
+        exported["extensions"]["vendor"]["hint"]["values"].append("changed output")
+        assert schema.export(mode="extended")["extensions"] == original
+        roundtrip = v.import_schema(v.export_schema_json(schema, mode="extended"))
+        assert roundtrip.export(mode="extended")["extensions"] == original
+        assert v.export_schema(schema, mode="portable")["extensions"] == {}
+
+    def test_composed_and_explicit_namespaces_reject_conflicts(self):
+        child = v.import_schema(self.document({"vendor": {"a": 1, "b": 2}}))
+        for parent in (v.object_({"value": child}), v.array(child), v.record(child), v.tuple_([child]),
+                       v.optional(child), v.nullable(child), v.union([child, v.bool_()]),
+                       v.intersection([child, v.string()])):
+            assert parent.export(mode="extended")["extensions"] == {"vendor": {"a": 1, "b": 2}}
+        equal = v.import_schema(self.document({"vendor": {"b": 2, "a": 1.0}, "other": {"hint": True}}))
+        expected = {"vendor": {"a": 1, "b": 2}, "other": {"hint": True}}
+        assert v.object_({"child": child, "equal": equal}).export(mode="extended")["extensions"] == expected
+        assert v.export_schema(child, mode="extended", extensions={"other": {"hint": True}})["extensions"] == expected
+        assert v.export_schema(v.ref("S"), mode="extended", definitions={"S": child})["extensions"] == {"vendor": {"a": 1, "b": 2}}
+        conflicting = v.import_schema(self.document({"vendor": {"a": 3}}))
+        parent = v.object_({"child": child, "conflicting": conflicting})
+        with pytest.raises(ValueError, match="Conflicting extension namespace: vendor"):
+            parent.export(mode="extended")
+        with pytest.raises(ValueError, match="Conflicting extension namespace: vendor"):
+            v.export_schema(child, mode="extended", extensions={"vendor": {"a": 3}})
+        assert parent.export(mode="portable")["extensions"] == {}
 
 
 class TestExport:
