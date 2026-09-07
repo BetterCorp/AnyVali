@@ -10,6 +10,17 @@ from ..schemas.base import BaseSchema
 from ..types import AnyValiDocument, ExportMode
 
 
+def _json_equal(left: Any, right: Any) -> bool:
+    """Compare JSON values, allowing equal numbers but keeping booleans distinct."""
+    if type(left) is not type(right):
+        return type(left) in (int, float) and type(right) in (int, float) and left == right
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(_json_equal(value, right[key]) for key, value in left.items())
+    if isinstance(left, list):
+        return len(left) == len(right) and all(_json_equal(a, b) for a, b in zip(left, right))
+    return left == right
+
+
 def export_schema(
     schema: BaseSchema,
     *,
@@ -23,7 +34,7 @@ def export_schema(
     defs: dict[str, Any] = {}
 
     def add_definition(name: str, node: Any) -> None:
-        if name in defs and json.dumps(defs[name], sort_keys=True) != json.dumps(node, sort_keys=True):
+        if name in defs and not _json_equal(defs[name], node):
             raise ValueError(f"Conflicting definition: {name}")
         defs[name] = node
 

@@ -10,6 +10,31 @@ import anyvali as v
 
 
 class TestExport:
+    @pytest.mark.parametrize("left,right,equal", [
+        ({"min": 1}, {"min": 1.0}, True),
+        ({"min": 1}, {"min": 1.5}, False),
+        ({"metadata": {"custom": {"a": [1, None], "b": 2}}},
+         {"metadata": {"custom": {"b": 2.0, "a": [1.0, None]}}}, True),
+        ({"metadata": {"custom": [True]}}, {"metadata": {"custom": [1]}}, False),
+        ({"metadata": {"custom": [1]}}, {"metadata": {"custom": ["1"]}}, False),
+        ({"metadata": {"custom": [1, 2]}}, {"metadata": {"custom": [2, 1]}}, False),
+        ({"metadata": {"custom": [1]}}, {"metadata": {"custom": [1, 2]}}, False),
+    ])
+    def test_definition_json_equality(self, left, right, equal):
+        def child(fields):
+            return v.import_schema({
+                "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+                "root": {"kind": "ref", "ref": "#/definitions/Value"},
+                "definitions": {"Value": {"kind": "number", **fields}}, "extensions": {},
+            })
+
+        parent = v.object_({"first": child(left), "second": child(right)})
+        if equal:
+            assert v.import_schema(parent.export()).parse({"first": 2, "second": 3}) == {"first": 2, "second": 3}
+        else:
+            with pytest.raises(ValueError, match="Conflicting definition: Value"):
+                parent.export()
+
     def test_composite_definitions_and_conflicts(self):
         doc = {"anyvaliVersion": "1.0", "schemaVersion": "1.1",
                "root": {"kind": "ref", "ref": "#/definitions/Value"},

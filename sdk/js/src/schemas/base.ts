@@ -297,7 +297,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     const seen = new Set<BaseSchema>();
     const canonical = (value: unknown) => JSON.stringify(value, (_key, item) =>
       item && typeof item === "object" && !Array.isArray(item)
-        ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+        ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))
         : item);
     while (pending.length) {
       const schema = pending.pop()!;

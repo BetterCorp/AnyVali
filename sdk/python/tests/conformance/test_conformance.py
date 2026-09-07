@@ -74,7 +74,7 @@ def test_conformance(case: dict[str, Any]) -> None:
     )
 
     # If expected success, check output data
-    if expected_valid and expected_output is not None:
+    if expected_valid and "output" in case:
         assert result.data == expected_output, (
             f"Expected output={expected_output!r}, got data={result.data!r}"
         )

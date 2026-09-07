@@ -16,6 +16,20 @@ import {
 } from "../../src/index.js";
 
 describe("Export", () => {
+  it("merges identical definitions with reordered Unicode keys", () => {
+    const child = (custom: Record<string, number>) => importSchema({
+      anyvaliVersion: "1.0", schemaVersion: "1.1",
+      root: { kind: "ref", ref: "#/definitions/Value" },
+      definitions: { Value: { kind: "string", metadata: { custom } } }, extensions: {},
+    } as any);
+    const parent = object({
+      first: child({ "\u00e9": 1, "e\u0301": 2 }),
+      second: child({ "e\u0301": 2, "\u00e9": 1 }),
+    });
+    expect(importSchema(parent.export()).parse({ first: "a", second: "b" }))
+      .toEqual({ first: "a", second: "b" });
+  });
+
   it("collects child definitions through every composite and rejects conflicting names", () => {
     const doc = { anyvaliVersion: "1.0", schemaVersion: "1.1",
       root: { kind: "ref", ref: "#/definitions/Value" },
