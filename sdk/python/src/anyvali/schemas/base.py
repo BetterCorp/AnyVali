@@ -137,15 +137,15 @@ class BaseSchema(ABC, Generic[T]):
 
     # ── Public parse API ──────────────────────────────────────────
 
-    def parse(self, input: Any) -> T:
-        """Parse input, raising ValidationError on failure."""
+    def parse(self, input: Any = _SENTINEL) -> T:
+        """Parse input (omitted means absent), raising ValidationError on failure."""
         result = self.safe_parse(input)
         if not result.success:
             raise ValidationError(result.issues)
         return result.data  # type: ignore[return-value]
 
-    def safe_parse(self, input: Any) -> ParseResult[T]:
-        """Parse input, returning a ParseResult.
+    def safe_parse(self, input: Any = _SENTINEL) -> ParseResult[T]:
+        """Parse input (omitted means absent), returning a ParseResult.
 
         Never raises: the depth guard bounds recursion, and a RecursionError
         backstop converts any residual stack exhaustion into a TOO_DEEP issue

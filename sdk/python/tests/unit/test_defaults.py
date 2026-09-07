@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import anyvali as v
+import pytest
 
 
 class TestDefaults:
@@ -24,14 +25,33 @@ class TestDefaults:
         assert result.success
         assert result.data["role"] == "admin"
 
-    def test_default_on_primitive(self):
-        schema = v.int_().default(42)
-        # When used standalone, we pass the sentinel to trigger default
-        from anyvali.schemas.base import _SENTINEL, ValidationContext
-        ctx = ValidationContext()
-        result = schema._run_pipeline(_SENTINEL, ctx)
-        assert not ctx.issues
-        assert result == 42
+    @pytest.mark.parametrize("schema,fallback", [
+        (v.int_(), 42), (v.string(), "fallback"), (v.bool_(), False),
+        (v.number(), 1.5), (v.record(v.string()), {}),
+    ])
+    def test_public_root_defaults(self, schema, fallback):
+        schema = schema.default(fallback)
+        for current in (schema, v.import_schema(schema.export())):
+            assert current.parse() == fallback
+            assert v.parse(current) == fallback
+            for result in (current.safe_parse(), v.safe_parse(current)):
+                assert result.success
+                assert result.data == fallback
+            assert not current.safe_parse(None).success
+            assert not v.safe_parse(current, None).success
+            with pytest.raises(v.ValidationError):
+                current.parse(None)
+            with pytest.raises(v.ValidationError):
+                v.parse(current, None)
+
+    def test_omitted_root_still_validates(self):
+        assert not v.string().safe_parse().success
+        invalid = v.int_().min(0).default(-1).safe_parse()
+        assert not invalid.success
+        assert invalid.issues[0].code == v.DEFAULT_INVALID
+        nullable = v.nullable(v.string()).default("fallback")
+        assert nullable.parse() == "fallback"
+        assert nullable.parse(None) is None
 
     def test_default_value_is_validated(self):
         schema = v.object_({
