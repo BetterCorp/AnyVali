@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any
 
@@ -63,6 +64,7 @@ def import_schema(source: dict[str, Any] | str) -> BaseSchema[Any]:
     for defn_schema in definitions.values():
         _resolve_refs(defn_schema, definitions)
     _resolve_refs(root, definitions)
+    root._imported_definitions = copy.deepcopy(doc.definitions)
 
     return root
 
@@ -135,6 +137,11 @@ def _import_node(node: dict[str, Any], definitions: dict[str, BaseSchema]) -> Ba
 
     if "coerce" in node:
         schema._coercion = _parse_coercion(node["coerce"])
+
+    if "metadata" in node:
+        if not isinstance(node["metadata"], dict):
+            raise ValueError("Schema metadata must be an object")
+        schema._metadata = copy.deepcopy(node["metadata"])
 
     return schema
 
@@ -225,7 +232,7 @@ def _build_schema(
         unknown_keys = node.get("unknownKeys", "strip")
         return ObjectSchema(props, required=required, unknown_keys=unknown_keys)
     elif kind == "record":
-        value_schema = _import_node(node["values"], definitions)
+        value_schema = _import_node(node["values"] if "values" in node else node["valueSchema"], definitions)
         return RecordSchema(value_schema)
     elif kind == "union":
         # Support both "schemas" and "variants" keys
@@ -238,10 +245,10 @@ def _build_schema(
         schemas = [_import_node(s, definitions) for s in schemas_raw]
         return IntersectionSchema(schemas)
     elif kind == "optional":
-        inner = _import_node(node["schema"], definitions)
+        inner = _import_node(node["schema"] if "schema" in node else node["inner"], definitions)
         return OptionalSchema(inner)
     elif kind == "nullable":
-        inner = _import_node(node["schema"], definitions)
+        inner = _import_node(node["schema"] if "schema" in node else node["inner"], definitions)
         return NullableSchema(inner)
     elif kind == "ref":
         return RefSchema(node["ref"])
