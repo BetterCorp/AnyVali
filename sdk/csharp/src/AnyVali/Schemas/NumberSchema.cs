@@ -151,7 +151,7 @@ public class NumberSchema : Schema<double>
             _exclusiveMin = _exclusiveMin, _exclusiveMax = _exclusiveMax,
             _multipleOf = _multipleOf,
             DefaultValue = DefaultValue, CoercionCfg = CoercionCfg,
-            IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+            IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
         };
     }
 
@@ -170,7 +170,7 @@ public sealed class Float32Schema : NumberSchema
     {
         _min = _min, _max = _max, _exclusiveMin = _exclusiveMin,
         _exclusiveMax = _exclusiveMax, _multipleOf = _multipleOf,
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
     };
 }
 
@@ -181,6 +181,6 @@ public sealed class Float64Schema : NumberSchema
     {
         _min = _min, _max = _max, _exclusiveMin = _exclusiveMin,
         _exclusiveMax = _exclusiveMax, _multipleOf = _multipleOf,
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
     };
 }

@@ -23,6 +23,7 @@ public abstract class Schema
     internal bool IsPortable { get; set; } = true;
     internal Dictionary<string, object?>? MetadataMap { get; set; }
     internal Dictionary<string, object?> ImportedDefinitions { get; set; } = new();
+    internal Dictionary<string, object?> ImportedExtensions { get; set; } = new();
 
     // ---- Public API ----
 
@@ -296,6 +297,7 @@ public abstract class Schema
 
         var node = ToNode();
         var definitions = new Dictionary<string, object?>();
+        var extensions = new Dictionary<string, object?>();
         var pending = new Stack<Schema>();
         var seen = new HashSet<Schema>();
         pending.Push(this);
@@ -309,6 +311,16 @@ public abstract class Schema
                     throw new InvalidOperationException($"Conflicting definition: {name}");
                 definitions[name] = definition;
             }
+            if (mode == ExportMode.Extended)
+            {
+                foreach (var (name, extension) in schema.ImportedExtensions)
+                {
+                    if (extensions.TryGetValue(name, out var existing)
+                        && !JsonNode.DeepEquals(JsonSerializer.SerializeToNode(existing), JsonSerializer.SerializeToNode(extension)))
+                        throw new InvalidOperationException($"Conflicting extension namespace: {name}");
+                    extensions[name] = extension;
+                }
+            }
             foreach (var child in schema.Children) pending.Push(child);
         }
         return new AnyValiDocument
@@ -317,7 +329,7 @@ public abstract class Schema
             SchemaVersion = SchemaVersionValue,
             Root = node,
             Definitions = (Dictionary<string, object?>)DeepCopyDefault(definitions)!,
-            Extensions = new Dictionary<string, object?>(),
+            Extensions = (Dictionary<string, object?>)DeepCopyDefault(extensions)!,
         };
     }
 

@@ -64,6 +64,6 @@ public sealed class IntersectionSchema : Schema<object?>
 
     internal override Schema Clone() => new IntersectionSchema(_schemas)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
     };
 }

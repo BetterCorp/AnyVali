@@ -10,6 +10,24 @@ public static class Importer
 {
     public static Schema ImportSchema(AnyValiDocument doc)
     {
+        if (doc.Extensions is null)
+            throw new InvalidOperationException("Document extensions must be an object");
+        foreach (var (name, extension) in doc.Extensions)
+        {
+            if (extension is not Dictionary<string, object?> payload)
+                throw new InvalidOperationException($"Extension namespace must be an object: {name}");
+            if (payload.TryGetValue("_criticality", out var criticality)
+                && criticality is not ("informational" or "semantic"))
+                throw new InvalidOperationException($"Invalid extension criticality: {name}");
+            if (criticality is "semantic")
+                throw new ValidationError([new ValidationIssue
+                {
+                    Code = IssueCodes.UnsupportedExtension,
+                    Message = $"Unsupported semantic extension namespace: {name}",
+                    Path = ["extensions", name],
+                }]);
+        }
+        var extensions = (Dictionary<string, object?>)Schema.DeepCopyDefault(doc.Extensions)!;
         var definitions = (Dictionary<string, object?>)Schema.DeepCopyDefault(
             doc.Definitions ?? new Dictionary<string, object?>())!;
         var resolvedDefs = new Dictionary<string, Schema>();
@@ -255,6 +273,7 @@ public static class Importer
 
         var root = ImportNode(doc.Root);
         root.ImportedDefinitions = definitions;
+        root.ImportedExtensions = extensions;
         return root;
     }
 
