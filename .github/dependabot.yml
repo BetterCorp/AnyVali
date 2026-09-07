@@ -35,6 +35,23 @@ updates:
       - python
     open-pull-requests-limit: 10
 
+  # Documentation and site build tools (pip)
+  - package-ecosystem: pip
+    directory: /tools/docs
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - python
+
+  - package-ecosystem: pip
+    directory: /tools/site
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - python
+
   # Go (gomod)
   - package-ecosystem: gomod
     directory: /sdk/go
