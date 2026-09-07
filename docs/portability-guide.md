@@ -85,13 +85,24 @@ v.importSchema(roundtrip).parse(input);
 The equivalent calls are `export_schema(import_schema(document))` in Python
 and `V.Export(V.Import(document))` in C#. The schema instance's `export()` /
 `Export()` method also preserves definitions. Descriptive clones retain the
-same definition context. This does not merge definitions when an imported
-root is embedded in a newly constructed parent schema.
+same definition context. Native parents collect definition contexts from
+their imported children, including children inside arrays, records, tuples,
+unions, intersections, and optional/nullable wrappers:
+
+```typescript
+const parent = v.object({ payload: v.importSchema(document) });
+v.importSchema(v.exportSchema(parent)).parse({ payload: input });
+```
+
+Identical definitions with the same name are shared. Different definitions
+with the same name cause export to throw `Conflicting definition: <name>`;
+rename those definitions and their references before composing the schemas.
 
 Imported metadata, including `sensitive` and custom keys, survives re-export.
 Sensitive fields continue to use the native encryption/decryption callbacks
-and encrypted-storage validation. Explicit null defaults remain distinct
-from absent defaults and apply only when the value is missing.
+and encrypted-storage validation, including annotations on reference nodes.
+Explicit null defaults remain distinct from absent defaults and apply only
+when the value is missing.
 
 ### Use only portable schema kinds
 

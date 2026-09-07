@@ -151,6 +151,8 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
         return result;
     }
 
+    internal override IEnumerable<Schema> Children => _properties.Values.Select(prop => prop.Schema);
+
     internal override Dictionary<string, object?> ToNode()
     {
         var properties = new Dictionary<string, object?>();

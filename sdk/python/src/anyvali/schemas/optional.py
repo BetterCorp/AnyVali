@@ -36,6 +36,9 @@ class OptionalSchema(BaseSchema[T | None], Generic[T]):
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
         return self._inner._validate(input, ctx)
 
+    def _children(self) -> list[BaseSchema]:
+        return [self._inner]
+
     def _to_node(self) -> dict[str, Any]:
         return self._add_common_node_fields({
             "kind": "optional",

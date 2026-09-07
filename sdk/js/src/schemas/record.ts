@@ -44,6 +44,8 @@ export class RecordSchema<
     return result;
   }
 
+  _children(): BaseSchema[] { return [this._valueSchema]; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "record" as const,

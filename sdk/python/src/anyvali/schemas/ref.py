@@ -44,8 +44,8 @@ class RefSchema(BaseSchema[Any]):
             return resolved._accepts_none()
         return False
 
-    def _run_pipeline(self, input: Any, ctx: ValidationContext) -> Any:
-        """Override to delegate the full pipeline to the resolved schema."""
+    def _validate(self, input: Any, ctx: ValidationContext) -> Any:  # noqa: A002 - schema API
+        """Delegate after the base pipeline applies this reference's modifiers."""
         resolved = self._get_resolved()
         if resolved is not None:
             return resolved._run_pipeline(input, ctx)
@@ -55,13 +55,6 @@ class RefSchema(BaseSchema[Any]):
             ref_name = ref_name[len("#/definitions/"):]
         if ref_name in ctx.definitions:
             return ctx.definitions[ref_name]._run_pipeline(input, ctx)
-        ctx.add_issue(INVALID_TYPE, f"Unresolved reference: {self._ref}", expected=self._ref)
-        return None
-
-    def _validate(self, input: Any, ctx: ValidationContext) -> Any:
-        resolved = self._get_resolved()
-        if resolved is not None:
-            return resolved._validate(input, ctx)
         ctx.add_issue(INVALID_TYPE, f"Unresolved reference: {self._ref}", expected=self._ref)
         return None
 
