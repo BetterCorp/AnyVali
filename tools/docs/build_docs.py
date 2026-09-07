@@ -14,6 +14,7 @@ SOURCE_FILES = [
     Path("docs/overview.md"),
     Path("docs/numeric-semantics.md"),
     Path("docs/portability-guide.md"),
+    Path("docs/sensitive-data.md"),
     Path("docs/sdk-authors-guide.md"),
     Path("docs/sdk-js.md"),
     Path("docs/sdk-python.md"),
