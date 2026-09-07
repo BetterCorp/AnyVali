@@ -53,6 +53,44 @@ class TestDefaults:
         assert nullable.parse() == "fallback"
         assert nullable.parse(None) is None
 
+    @pytest.mark.parametrize("resolution", ["direct", "definitions", "context", "import"])
+    def test_reference_defaults_use_wrapper_pipeline(self, resolution):
+        from anyvali.schemas.base import ValidationContext, _SENTINEL
+
+        schema = v.ref("#/definitions/S").default("fallback")
+        ctx = ValidationContext()
+        target = v.string().default("target")
+        if resolution == "direct":
+            schema.resolve(target)
+        elif resolution == "definitions":
+            schema.set_definitions({"S": target})
+        elif resolution == "context":
+            ctx.definitions = {"S": target}
+        else:
+            schema = v.import_schema({
+                "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+                "root": {"kind": "ref", "ref": "#/definitions/S", "default": "fallback"},
+                "definitions": {"S": {"kind": "string", "default": "target"}},
+                "extensions": {},
+            })
+
+        assert schema._run_pipeline(_SENTINEL, ctx) == "fallback"
+        assert not ctx.issues
+        if resolution != "context":
+            assert schema.parse() == "fallback"
+            assert v.object_({"value": schema}).parse({}) == {"value": "fallback"}
+            assert schema.parse("present") == "present"
+            assert not schema.safe_parse(None).success
+            invalid = schema.default(42).safe_parse()
+            assert not invalid.success
+            assert invalid.issues[0].code == v.DEFAULT_INVALID
+
+    def test_reference_coercion_and_target_default(self):
+        schema = v.ref("S")
+        schema.resolve(v.string().default("target"))
+        assert schema.parse() == "target"
+        assert schema.coerce(trim=True).parse(" value ") == "value"
+
     def test_default_value_is_validated(self):
         schema = v.object_({
             "count": v.int_().min(0).default(-1),

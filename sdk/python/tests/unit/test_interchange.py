@@ -99,6 +99,21 @@ class TestExport:
 
 
 class TestImport:
+    @pytest.mark.parametrize("kind,value,expected", [
+        ("int", "7", 7), ("number", "1.5", 1.5), ("bool", "true", True),
+    ])
+    @pytest.mark.parametrize("coerce", [{}, {"from": "string"}])
+    def test_sdk_coercion_object_survives_export(self, kind, value, expected, coerce):
+        schema = v.import_schema({
+            "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+            "root": {"kind": kind, "coerce": coerce},
+            "definitions": {}, "extensions": {},
+        })
+        assert schema.parse(value) == expected
+        exported = schema.export()
+        assert "coerce" in exported["root"]
+        assert v.import_schema(exported).parse(value) == expected
+
     def test_reserved_and_custom_metadata_roundtrip(self):
         metadata = {"description": "Private", "sensitive": True, "custom": {"owner": "ports"}}
         for root in (

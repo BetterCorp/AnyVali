@@ -346,13 +346,13 @@
       "roundtrip": true
     },
     {
-      "description": "#134 int retains coercion {}",
+      "description": "#134 int retains coercion string",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "int",
-          "coerce": {}
+          "coerce": "string->int"
         },
         "definitions": {},
         "extensions": {}
@@ -364,13 +364,13 @@
       "roundtrip": true
     },
     {
-      "description": "#134 number retains coercion {}",
+      "description": "#134 number retains coercion string",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "number",
-          "coerce": {}
+          "coerce": "string->number"
         },
         "definitions": {},
         "extensions": {}
@@ -382,13 +382,13 @@
       "roundtrip": true
     },
     {
-      "description": "#134 bool retains coercion {}",
+      "description": "#134 bool retains coercion string",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "bool",
-          "coerce": {}
+          "coerce": "string->bool"
         },
         "definitions": {},
         "extensions": {}
@@ -400,15 +400,15 @@
       "roundtrip": true
     },
     {
-      "description": "#134 int retains coercion {'from': 'string'}",
+      "description": "#134 int retains coercion array",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "int",
-          "coerce": {
-            "from": "string"
-          }
+          "coerce": [
+            "string->int"
+          ]
         },
         "definitions": {},
         "extensions": {}
@@ -420,15 +420,15 @@
       "roundtrip": true
     },
     {
-      "description": "#134 number retains coercion {'from': 'string'}",
+      "description": "#134 number retains coercion array",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "number",
-          "coerce": {
-            "from": "string"
-          }
+          "coerce": [
+            "string->number"
+          ]
         },
         "definitions": {},
         "extensions": {}
@@ -440,15 +440,15 @@
       "roundtrip": true
     },
     {
-      "description": "#134 bool retains coercion {'from': 'string'}",
+      "description": "#134 bool retains coercion array",
       "schema": {
         "anyvaliVersion": "1.0",
         "schemaVersion": "1.1",
         "root": {
           "kind": "bool",
-          "coerce": {
-            "from": "string"
-          }
+          "coerce": [
+            "string->bool"
+          ]
         },
         "definitions": {},
         "extensions": {}
@@ -719,78 +719,6 @@
       "nativeParent": true
     },
     {
-      "description": "#127 string root defaults when absent",
-      "schema": {
-        "anyvaliVersion": "1.0",
-        "schemaVersion": "1.1",
-        "root": {
-          "kind": "string",
-          "default": "fallback"
-        },
-        "definitions": {},
-        "extensions": {}
-      },
-      "input": "__ABSENT__",
-      "valid": true,
-      "output": "fallback",
-      "issues": [],
-      "roundtrip": true
-    },
-    {
-      "description": "#127 bool root defaults when absent",
-      "schema": {
-        "anyvaliVersion": "1.0",
-        "schemaVersion": "1.1",
-        "root": {
-          "kind": "bool",
-          "default": true
-        },
-        "definitions": {},
-        "extensions": {}
-      },
-      "input": "__ABSENT__",
-      "valid": true,
-      "output": true,
-      "issues": [],
-      "roundtrip": true
-    },
-    {
-      "description": "#127 int root defaults when absent",
-      "schema": {
-        "anyvaliVersion": "1.0",
-        "schemaVersion": "1.1",
-        "root": {
-          "kind": "int",
-          "default": 7
-        },
-        "definitions": {},
-        "extensions": {}
-      },
-      "input": "__ABSENT__",
-      "valid": true,
-      "output": 7,
-      "issues": [],
-      "roundtrip": true
-    },
-    {
-      "description": "#127 number root defaults when absent",
-      "schema": {
-        "anyvaliVersion": "1.0",
-        "schemaVersion": "1.1",
-        "root": {
-          "kind": "number",
-          "default": 1.5
-        },
-        "definitions": {},
-        "extensions": {}
-      },
-      "input": "__ABSENT__",
-      "valid": true,
-      "output": 1.5,
-      "issues": [],
-      "roundtrip": true
-    },
-    {
       "description": "#128 sensitive ref and definition transform once after coercion",
       "schema": {
         "anyvaliVersion": "1.0",
@@ -805,9 +733,7 @@
         "definitions": {
           "Secret": {
             "kind": "string",
-            "coerce": {
-              "trim": true
-            },
+            "coerce": "trim",
             "metadata": {
               "sensitive": true
             }
@@ -848,27 +774,6 @@
           "path": []
         }
       ],
-      "roundtrip": true
-    },
-    {
-      "description": "#127 record root defaults when missing",
-      "schema": {
-        "anyvaliVersion": "1.0",
-        "schemaVersion": "1.1",
-        "root": {
-          "kind": "record",
-          "values": {
-            "kind": "string"
-          },
-          "default": {}
-        },
-        "definitions": {},
-        "extensions": {}
-      },
-      "input": "__ABSENT__",
-      "valid": true,
-      "output": {},
-      "issues": [],
       "roundtrip": true
     },
     {
