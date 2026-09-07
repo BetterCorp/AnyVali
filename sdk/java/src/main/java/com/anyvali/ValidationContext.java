@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * Internal context for collecting validation issues during parsing.
@@ -16,6 +17,9 @@ public class ValidationContext {
     private final Map<String, Schema<?>> definitions;
     private final Set<String> activeRefs;
     private UnknownKeyMode inheritedUnknownKeys;
+    private String sensitiveMode;
+    private BiFunction<List<Object>, Object, Object> sensitiveTransform;
+    private Map<List<Object>, Object> sensitiveCache;
 
     public ValidationContext() {
         this(new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashSet<>());
@@ -58,6 +62,7 @@ public class ValidationContext {
         childPath.add(key);
         var child = new ValidationContext(childPath, this.issues, this.definitions, this.activeRefs);
         child.setInheritedUnknownKeys(this.inheritedUnknownKeys);
+        child.inheritSensitive(this);
         return child;
     }
 
@@ -95,5 +100,18 @@ public class ValidationContext {
 
     public void setInheritedUnknownKeys(UnknownKeyMode inheritedUnknownKeys) {
         this.inheritedUnknownKeys = inheritedUnknownKeys;
+    }
+
+    public String getSensitiveMode() { return sensitiveMode; }
+    public void setSensitiveMode(String mode) { sensitiveMode = mode; }
+    public BiFunction<List<Object>, Object, Object> getSensitiveTransform() { return sensitiveTransform; }
+    public void setSensitiveTransform(BiFunction<List<Object>, Object, Object> transform) { sensitiveTransform = transform; }
+    public Map<List<Object>, Object> getSensitiveCache() { return sensitiveCache; }
+    public void setSensitiveCache(Map<List<Object>, Object> cache) { sensitiveCache = cache; }
+
+    public void inheritSensitive(ValidationContext parent) {
+        sensitiveMode = parent.sensitiveMode;
+        sensitiveTransform = parent.sensitiveTransform;
+        sensitiveCache = parent.sensitiveCache;
     }
 }

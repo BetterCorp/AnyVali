@@ -70,6 +70,29 @@ These features work within a single SDK but cannot be serialized. Attempting to 
 
 ## Designing Portable Schemas
 
+### Re-exporting imported documents
+
+The JS, Python, and C# SDKs retain the imported document's definitions on its
+root schema, including recursive definitions. Export that root to preserve
+them without separately supplying a definitions map:
+
+```typescript
+const schema = v.importSchema(document);
+const roundtrip = v.exportSchema(schema);
+v.importSchema(roundtrip).parse(input);
+```
+
+The equivalent calls are `export_schema(import_schema(document))` in Python
+and `V.Export(V.Import(document))` in C#. The schema instance's `export()` /
+`Export()` method also preserves definitions. Descriptive clones retain the
+same definition context. This does not merge definitions when an imported
+root is embedded in a newly constructed parent schema.
+
+Imported metadata, including `sensitive` and custom keys, survives re-export.
+Sensitive fields continue to use the native encryption/decryption callbacks
+and encrypted-storage validation. Explicit null defaults remain distinct
+from absent defaults and apply only when the value is missing.
+
 ### Use only portable schema kinds
 
 Stick to the kinds defined in the AnyVali spec:

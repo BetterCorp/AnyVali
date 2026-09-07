@@ -215,7 +215,7 @@ public sealed class StringSchema : Schema<string>
             _endsWith = _endsWith, _includes = _includes,
             _format = _format,
             DefaultValue = DefaultValue, CoercionCfg = CoercionCfg,
-            IsPortable = IsPortable, MetadataMap = MetadataMap,
+            IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
         };
     }
 }

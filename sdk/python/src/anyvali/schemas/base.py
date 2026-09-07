@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Literal, TypeVar
 
 if TYPE_CHECKING:
     from .nullable import NullableSchema
@@ -21,7 +21,6 @@ from ..issue_codes import COERCION_FAILED, DEFAULT_INVALID, TOO_DEEP
 # guard trips deterministically before a RecursionError.
 MAX_DEPTH = 200
 from ..types import (
-    AnyValiDocument,
     ExportMode,
     ParseResult,
     ValidationError,
@@ -69,6 +68,9 @@ class ValidationContext:
     definitions: dict[str, Any] = field(default_factory=dict)
     depth: int = 0
     inherited_unknown_keys: str | None = None
+    sensitive_mode: Literal["encrypted", "encrypt", "decrypt"] | None = None
+    sensitive_transform: Callable[[list[str | int], Any], Any] | None = None
+    sensitive_cache: dict[tuple[str | int, ...], Any] | None = None
 
     def add_issue(
         self,
@@ -97,6 +99,9 @@ class ValidationContext:
             definitions=self.definitions,
             depth=self.depth,
             inherited_unknown_keys=self.inherited_unknown_keys,
+            sensitive_mode=self.sensitive_mode,
+            sensitive_transform=self.sensitive_transform,
+            sensitive_cache=self.sensitive_cache,
         )
         # Propagate circular reference tracker
         if hasattr(self, '_seen'):
@@ -125,6 +130,7 @@ class BaseSchema(ABC, Generic[T]):
         self._default_value = _SENTINEL
         self._has_default = False
         self._metadata = None
+        self._imported_definitions: dict[str, Any] = {}
 
     def _copy(self) -> BaseSchema[T]:
         return copy.deepcopy(self)
@@ -146,6 +152,9 @@ class BaseSchema(ABC, Generic[T]):
         so a crafted deeply nested payload cannot crash the caller (DoS).
         """
         ctx = ValidationContext()
+        return self._safe_parse_with_context(input, ctx)
+
+    def _safe_parse_with_context(self, input: Any, ctx: ValidationContext) -> ParseResult[T]:
         try:
             value = self._run_pipeline(input, ctx)
         except RecursionError:
@@ -194,8 +203,60 @@ class BaseSchema(ABC, Generic[T]):
         if input is None and self._accepts_none():
             is_absent = False
 
-        # Step 2: coercion (only if present)
         value = input
+        if (
+            not is_absent
+            and input is not None
+            and self._metadata
+            and self._metadata.get("sensitive") is True
+            and ctx.sensitive_mode
+        ):
+            if ctx.sensitive_mode == "encrypted":
+                if not isinstance(input, str):
+                    ctx.add_issue(
+                        "invalid_type",
+                        "Expected encrypted value",
+                        expected="encrypted:<value>",
+                        received=_anyvali_type_name(input),
+                    )
+                    return None
+                if not input.startswith("encrypted:") or len(input) == len("encrypted:"):
+                    ctx.add_issue(
+                        "invalid_string",
+                        'Encrypted value must start with "encrypted:" and contain a payload',
+                        expected="encrypted:<value>",
+                        received=input,
+                    )
+                    return None
+                return input
+
+            cache_key = tuple(ctx.path)
+            if ctx.sensitive_cache is not None and cache_key in ctx.sensitive_cache:
+                return ctx.sensitive_cache[cache_key]
+
+            if ctx.sensitive_mode == "encrypt":
+                checked = self.safe_parse(input)
+                if not checked.success:
+                    for issue in checked.issues:
+                        ctx.issues.append(
+                            ValidationIssue(
+                                code=issue.code,
+                                message=issue.message,
+                                path=[*ctx.path, *issue.path],
+                                expected=issue.expected,
+                                received=issue.received,
+                                meta=issue.meta,
+                            )
+                        )
+                    return None
+                value = checked.data
+
+            transformed = ctx.sensitive_transform(list(ctx.path), value)  # type: ignore[misc]
+            if ctx.sensitive_cache is not None:
+                ctx.sensitive_cache[cache_key] = transformed
+            return transformed
+
+        # Step 2: coercion (only if present)
         if not is_absent and self._coercion is not None:
             value = self._apply_coercion(value, ctx)
             if ctx.issues:
@@ -435,9 +496,9 @@ class BaseSchema(ABC, Generic[T]):
 
     def export(self, mode: ExportMode = "portable") -> dict[str, Any]:
         """Export this schema as an AnyVali document dict."""
-        node = self._to_node()
-        doc = AnyValiDocument(root=node)
-        return doc.to_dict()
+        from ..interchange.exporter import export_schema
+
+        return export_schema(self, mode=mode)
 
     def _add_common_node_fields(self, node: dict[str, Any]) -> dict[str, Any]:
         """Add default/coercion fields to a node dict."""
