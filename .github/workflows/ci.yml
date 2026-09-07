@@ -293,6 +293,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - run: chmod +x runner.sh
       - run: ./runner.sh ci kotlin
+      - name: Validate signed publication locally
+        working-directory: sdk/kotlin
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ""
+        run: |
+          export GNUPGHOME="$(mktemp -d)"
+          gpg --batch --pinentry-mode loopback --passphrase "" --quick-generate-key "AnyVali CI <ci@anyvali.invalid>" rsa2048 sign 1d
+          export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --armor --export-secret-keys ci@anyvali.invalid)"
+          gradle --no-daemon publishToMavenLocal
       - run: ./runner.sh coverage kotlin
       - uses: codecov/codecov-action@v7
         if: github.event_name == 'push'
