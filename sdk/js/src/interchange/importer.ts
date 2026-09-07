@@ -51,7 +51,7 @@ import type { StringFormat, UnknownKeyMode } from "../types.js";
 const MAX_IMPORT_DEPTH = 512;
 
 export function importSchema(doc: AnyValiDocument): BaseSchema {
-  const definitions = doc.definitions ?? {};
+  const definitions = structuredClone(doc.definitions ?? {});
   const resolvedDefs = new Map<string, BaseSchema>();
 
   function importNode(node: any, depth: number = 0): BaseSchema {
@@ -263,10 +263,19 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
       schema = schema.coerce(config);
     }
 
+    if (node.metadata !== undefined) {
+      if (node.metadata === null || typeof node.metadata !== "object" || Array.isArray(node.metadata)) {
+        throw new Error("Schema metadata must be an object");
+      }
+      schema._metadata = structuredClone(node.metadata);
+    }
+
     return schema;
   }
 
-  return importNode(doc.root);
+  const root = importNode(doc.root);
+  root._importedDefinitions = definitions;
+  return root;
 }
 
 function applyNumericConstraints<T extends NumberSchema>(

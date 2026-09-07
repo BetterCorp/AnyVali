@@ -13,6 +13,11 @@ updates:
   # JavaScript (npm)
   - package-ecosystem: npm
     directory: /sdk/js
+    groups:
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
     schedule:
       interval: weekly
     labels:
@@ -93,6 +98,11 @@ updates:
   # Kotlin (Gradle)
   - package-ecosystem: gradle
     directory: /sdk/kotlin
+    groups:
+      kotlin-plugins:
+        patterns:
+          - jvm
+          - plugin.serialization
     schedule:
       interval: weekly
     labels:

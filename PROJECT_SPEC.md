@@ -445,6 +445,9 @@ The spec should explicitly define these public concepts.
 - `Schema<TInput, TOutput>` or closest language equivalent
 - `parse(input): output`
 - `safeParse(input): ParseResult`
+- `safeParseEncrypted(schema, input): ParseResult`
+- `encrypt(schema, input, transform): encrypted output`
+- `decrypt(schema, input, transform): parsed plaintext output`
 - `export(options): AnyValiDocument`
 - `import(document): Schema`
 

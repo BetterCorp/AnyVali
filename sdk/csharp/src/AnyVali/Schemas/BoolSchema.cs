@@ -33,6 +33,6 @@ public sealed class BoolSchema : Schema<bool>
 
     internal override Schema Clone() => new BoolSchema
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

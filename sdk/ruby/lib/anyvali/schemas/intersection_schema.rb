@@ -17,6 +17,8 @@ module AnyVali
 
     def safe_parse(input, path: [], context: nil)
       context ||= ValidationContext.new
+      handled, sensitive = handle_sensitive(input, path, context)
+      return sensitive if handled
       all_issues = []
       merged_output = nil
 
