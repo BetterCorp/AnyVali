@@ -141,6 +141,8 @@ jobs:
           cache: maven
       - run: chmod +x runner.sh
       - run: ./runner.sh ci java
+      - name: Validate release packaging without publishing
+        run: mvn -B -f sdk/java/pom.xml -Prelease -Dgpg.skip=true -DskipTests verify
       - run: ./runner.sh coverage java
       - uses: codecov/codecov-action@v7
         if: github.event_name == 'push' && matrix.java-version == '17'
