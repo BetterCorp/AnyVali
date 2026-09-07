@@ -40,6 +40,7 @@ public class UnionSchema extends Schema<Object> {
                     new ArrayList<>(),
                     ctx.getDefinitions()
             );
+            trialCtx.inheritSensitive(ctx);
             Object result = schema.runPipeline(input, trialCtx);
             if (!trialCtx.hasIssues()) {
                 return result;

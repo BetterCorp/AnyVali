@@ -19,6 +19,7 @@ public sealed class IntersectionSchema : Schema<object?>
             var innerCtx = new ValidationContext();
             foreach (var p in ctx.Path)
                 innerCtx.PushPath(p);
+            innerCtx.InheritSensitive(ctx);
 
             var validated = schema.RunPipeline(input, innerCtx);
 
@@ -61,6 +62,6 @@ public sealed class IntersectionSchema : Schema<object?>
 
     internal override Schema Clone() => new IntersectionSchema(_schemas)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

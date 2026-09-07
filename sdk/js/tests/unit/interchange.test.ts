@@ -48,6 +48,25 @@ describe("Export", () => {
 });
 
 describe("Import", () => {
+  it("preserves reserved and custom metadata on every imported node", () => {
+    const metadata = { description: "Private", sensitive: true, custom: { owner: "ports" } };
+    for (const root of [
+      { kind: "string", metadata },
+      { kind: "optional", inner: { kind: "string" }, metadata },
+      { kind: "nullable", inner: { kind: "string" }, metadata },
+      { kind: "ref", ref: "#/definitions/Secret", metadata },
+    ]) {
+      const doc = { anyvaliVersion: "1.0", schemaVersion: "1.1", root, definitions: {
+        Secret: { kind: "string" },
+      }, extensions: {} };
+      const schema = importSchema(doc as any);
+      expect(schema.export().root.metadata).toEqual(metadata);
+      expect(exportSchema(importSchema(schema.export())).root.metadata).toEqual(metadata);
+    }
+    expect(() => importSchema({ ...exportSchema(string()), root: { kind: "string", metadata: null } } as any))
+      .toThrow("Schema metadata must be an object");
+  });
+
   it("round-trips a string schema", () => {
     const original = string().minLength(1).maxLength(100);
     const doc = exportSchema(original);
