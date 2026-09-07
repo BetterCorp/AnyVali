@@ -32,11 +32,17 @@ def export_schema(
     root_node = schema._to_node()
 
     defs: dict[str, Any] = {}
+    ext: dict[str, Any] = {}
 
     def add_definition(name: str, node: Any) -> None:
         if name in defs and not _json_equal(defs[name], node):
             raise ValueError(f"Conflicting definition: {name}")
         defs[name] = node
+
+    def add_extension(namespace: str, extension: Any) -> None:
+        if namespace in ext and not _json_equal(ext[namespace], extension):
+            raise ValueError(f"Conflicting extension namespace: {namespace}")
+        ext[namespace] = extension
 
     pending = [schema, *(definitions or {}).values()]
     seen: set[int] = set()
@@ -47,22 +53,27 @@ def export_schema(
         seen.add(id(current))
         for name, node in current._imported_definitions.items():
             add_definition(name, node)
+        if mode == "extended":
+            for namespace, extension in current._imported_extensions.items():
+                add_extension(namespace, extension)
         pending.extend(current._children())
     if definitions:
         for name, defn_schema in definitions.items():
             add_definition(name, defn_schema._to_node())
     defs = copy.deepcopy(defs)
 
-    ext: dict[str, Any] = {}
     if mode == "extended" and extensions:
-        ext = dict(extensions)
+        for namespace, extension in extensions.items():
+            add_extension(namespace, extension)
 
     doc = AnyValiDocument(
         root=root_node,
         definitions=defs,
-        extensions=ext,
+        extensions=copy.deepcopy(ext),
     )
-    return doc.to_dict()
+    result = doc.to_dict()
+    result["extensions"] = doc.extensions
+    return result
 
 
 def export_schema_json(

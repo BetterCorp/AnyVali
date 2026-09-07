@@ -131,6 +131,7 @@ class BaseSchema(ABC, Generic[T]):
         self._has_default = False
         self._metadata = None
         self._imported_definitions: dict[str, Any] = {}
+        self._imported_extensions: dict[str, Any] = {}
 
     def _copy(self) -> BaseSchema[T]:
         return copy.deepcopy(self)

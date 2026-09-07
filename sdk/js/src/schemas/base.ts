@@ -57,6 +57,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   /** @internal */ _isPortable: boolean = true;
   /** @internal */ _metadata: Record<string, unknown> | undefined = undefined;
   /** @internal */ _importedDefinitions: Record<string, SchemaNode> = {};
+  /** @internal */ _importedExtensions: AnyValiDocument["extensions"] = {};
 
   // ---------- public API ----------
 
@@ -293,6 +294,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     }
     const node = this._toNode();
     const definitions: Record<string, SchemaNode> = Object.create(null);
+    const extensions: AnyValiDocument["extensions"] = Object.create(null);
     const pending: BaseSchema[] = [this];
     const seen = new Set<BaseSchema>();
     const canonical = (value: unknown) => JSON.stringify(value, (_key, item) =>
@@ -309,6 +311,14 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
         }
         definitions[name] = definition;
       }
+      if (mode === "extended") {
+        for (const [namespace, extension] of Object.entries(schema._importedExtensions)) {
+          if (Object.hasOwn(extensions, namespace) && canonical(extensions[namespace]) !== canonical(extension)) {
+            throw new Error(`Conflicting extension namespace: ${namespace}`);
+          }
+          extensions[namespace] = extension;
+        }
+      }
       pending.push(...schema._children());
     }
     return {
@@ -316,7 +326,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
       schemaVersion: SCHEMA_VERSION,
       root: node,
       definitions: structuredClone(definitions),
-      extensions: {},
+      extensions: structuredClone(extensions),
     };
   }
 

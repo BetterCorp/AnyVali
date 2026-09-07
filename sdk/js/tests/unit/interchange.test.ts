@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { AnyValiDocument } from "../../src/types.js";
 import {
   string,
   int,
@@ -14,6 +15,62 @@ import {
   union,
   intersection,
 } from "../../src/index.js";
+
+describe("Document extensions", () => {
+  const document = (extensions: AnyValiDocument["extensions"]): AnyValiDocument => ({
+    anyvaliVersion: "1.0", schemaVersion: "1.1", root: { kind: "string" },
+    definitions: {}, extensions,
+  });
+
+  it.each(["vendor", "js", "default"])("rejects unsupported semantic namespace %s", namespace => {
+    const doc = document({
+      default: { _criticality: "informational", hint: "not an implementation" },
+      [namespace]: { _criticality: "semantic", feature: true },
+    });
+    expect(() => importSchema(doc)).toThrow("unsupported_extension");
+  });
+
+  it.each([null, [], "invalid", { vendor: null }, { vendor: [] }, { vendor: true },
+    { vendor: { _criticality: "unknown" } }, { vendor: { _criticality: null } }])(
+    "rejects malformed extensions %j", extensions => {
+      expect(() => importSchema(document(extensions as any))).toThrow();
+    },
+  );
+
+  it("retains informational namespaces without sharing mutable input or output", () => {
+    const extensions = {
+      vendor: { _criticality: "informational", hint: { values: ["keep"] } },
+      default: { hint: "implicit informational" },
+    };
+    const original = structuredClone(extensions);
+    const schema = importSchema(document(extensions)).default("fallback");
+    extensions.vendor.hint.values.push("changed input");
+    expect(schema.parse("ok")).toBe("ok");
+    const exported = exportSchema(schema, "extended");
+    expect(exported.extensions).toEqual(original);
+    (exported.extensions.vendor.hint as { values: string[] }).values.push("changed output");
+    expect(schema.export("extended").extensions).toEqual(original);
+    expect(importSchema(schema.export("extended")).export("extended").extensions).toEqual(original);
+    expect(exportSchema(schema, "portable").extensions).toEqual({});
+  });
+
+  it("collects composed namespaces and rejects conflicting payloads only in extended mode", () => {
+    const child = importSchema(document({ vendor: { a: 1, b: 2 } }));
+    for (const parent of [object({ value: child }), array(child), record(child), tuple([child]),
+      optional(child), nullable(child), union([child, bool()]), intersection([child, string()])]) {
+      expect(parent.export("extended").extensions).toEqual({ vendor: { a: 1, b: 2 } });
+    }
+    const equal = importSchema(document({ vendor: { b: 2, a: 1 }, other: { hint: true } }));
+    expect(object({ child, equal }).export("extended").extensions)
+      .toEqual({ vendor: { a: 1, b: 2 }, other: { hint: true } });
+    const conflicting = importSchema(document({ vendor: { a: 3 } }));
+    const parent = object({ child, conflicting });
+    expect(() => parent.export("extended")).toThrow("Conflicting extension namespace: vendor");
+    expect(parent.export("portable").extensions).toEqual({});
+    const special = JSON.parse('{"__proto__":{"hint":"keep"}}');
+    expect(importSchema(document(special)).export("extended").extensions).toEqual(special);
+  });
+});
 
 describe("Export", () => {
   it("merges identical definitions with reordered Unicode keys", () => {
