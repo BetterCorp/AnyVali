@@ -44,6 +44,6 @@ public sealed class NullableSchema : Schema<object?>
 
     internal override Schema Clone() => new NullableSchema(Inner)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
     };
 }

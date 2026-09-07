@@ -83,6 +83,6 @@ public sealed class ArraySchema : Schema<List<object?>>
     internal override Schema Clone() => new ArraySchema(_items)
     {
         _minItems = _minItems, _maxItems = _maxItems,
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions, ImportedExtensions = ImportedExtensions,
     };
 }

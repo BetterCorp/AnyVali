@@ -218,7 +218,7 @@ Examples:
 
 When importing a schema with informational extensions for an unknown namespace, the SDK silently ignores them. The schema imports and validates correctly.
 
-JavaScript and Python retain imported document-level namespaces for extended
+JavaScript, Python, and C# retain imported document-level namespaces for extended
 export, including when the imported schema is wrapped or composed into a parent.
 Extended export rejects conflicting payloads for the same namespace. Portable
 export emits an empty document-level `extensions` object.
@@ -239,7 +239,7 @@ When importing a schema with semantic extensions for an unknown namespace:
 2. If the target SDK's namespace is missing but a `default` extension is provided, use the default.
 3. If neither the target namespace nor a default can satisfy the requirement, the import fails.
 
-JavaScript and Python currently have no document-level semantic extension
+JavaScript, Python, and C# currently have no document-level semantic extension
 handlers. They reject these requirements with `unsupported_extension`, including
 requirements in their own language namespace or `default`; a namespace name
 alone does not provide an implementation.
