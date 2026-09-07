@@ -102,6 +102,9 @@ class ObjectSchema(BaseSchema[dict[str, Any]]):
 
         return result
 
+    def _children(self) -> list[BaseSchema]:
+        return list(self._properties.values())
+
     def _to_node(self) -> dict[str, Any]:
         props = {k: v._to_node() for k, v in self._properties.items()}
         node: dict[str, Any] = {

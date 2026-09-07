@@ -73,6 +73,8 @@ export class IntersectionSchema<
     return result;
   }
 
+  _children(): BaseSchema[] { return this._schemas; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "intersection" as const,

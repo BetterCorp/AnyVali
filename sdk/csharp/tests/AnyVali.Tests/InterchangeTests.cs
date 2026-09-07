@@ -7,6 +7,40 @@ namespace AnyVali.Tests;
 public class ExportTests
 {
     [Fact]
+    public void CompositeDefinitionsAndConflicts()
+    {
+        var doc = AnyValiDocument.FromJson("""
+            {"anyvaliVersion":"1.0","schemaVersion":"1.1",
+             "root":{"kind":"ref","ref":"#/definitions/Value"},
+             "definitions":{"Value":{"kind":"string","minLength":1}},"extensions":{}}
+            """);
+        var child = V.Import(doc);
+        var cases = new (Schema, object)[]
+        {
+            (V.Object(new() { ["value"] = child }), new Dictionary<string, object?> { ["value"] = "ok" }),
+            (V.Array(child), new List<object?> { "ok" }),
+            (V.Record(child), new Dictionary<string, object?> { ["key"] = "ok" }),
+            (V.Tuple(child), new List<object?> { "ok" }),
+            (V.Optional(child), "ok"), (V.Nullable(child), "ok"),
+            (V.Union(child, V.Bool()), "ok"), (V.Intersection(child, V.String()), "ok"),
+        };
+        foreach (var (parent, input) in cases)
+        {
+            var expected = System.Text.Json.JsonSerializer.Serialize(parent.Parse(input));
+            var exported = parent.Export();
+            Assert.Single(exported.Definitions);
+            Assert.Equal(expected, System.Text.Json.JsonSerializer.Serialize(V.Import(exported).Parse(input)));
+        }
+        var reordered = V.Import(AnyValiDocument.FromJson(doc.ToJson().Replace(
+            "\"kind\":\"string\",\"minLength\":1", "\"minLength\":1,\"kind\":\"string\"")));
+        V.Object(new() { ["first"] = child, ["second"] = child, ["third"] = reordered }).Export();
+        var conflicting = V.Import(AnyValiDocument.FromJson(doc.ToJson().Replace("\"string\"", "\"bool\"")));
+        var mixed = V.Object(new() { ["first"] = child, ["second"] = conflicting });
+        Assert.True(mixed.SafeParse(new Dictionary<string, object?> { ["first"] = "ok", ["second"] = true }).Success);
+        Assert.Equal("Conflicting definition: Value", Assert.Throws<InvalidOperationException>(() => V.Export(mixed)).Message);
+    }
+
+    [Fact]
     public void ReservedAndCustomMetadataRoundtrip()
     {
         var metadata = new Dictionary<string, object?>

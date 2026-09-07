@@ -61,6 +61,8 @@ public sealed class TupleSchema : Schema<List<object?>>
         return result;
     }
 
+    internal override IEnumerable<Schema> Children => _items;
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>

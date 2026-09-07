@@ -63,6 +63,8 @@ export class TupleSchema<
     return result;
   }
 
+  _children(): BaseSchema[] { return this._items; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "tuple" as const,

@@ -16,7 +16,7 @@ public sealed class RefSchema : Schema<object?>
         if (_resolver is not null)
         {
             var resolved = _resolver();
-            return resolved.Validate(input, ctx);
+            return resolved.RunPipeline(input, ctx);
         }
 
         ctx.Issues.Add(new ValidationIssue
@@ -30,6 +30,8 @@ public sealed class RefSchema : Schema<object?>
 
     internal override object? RunPipeline(object? input, ValidationContext ctx)
     {
+        if (MetadataMap?.GetValueOrDefault("sensitive") is true && ctx.SensitiveMode is not null)
+            return base.RunPipeline(input, ctx);
         if (_resolver is not null)
         {
             var resolved = _resolver();
