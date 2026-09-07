@@ -65,6 +65,47 @@ abstract class Schema
         $ctx ??= new ValidationContext();
         $value = $input;
 
+        if (($this->metadata['sensitive'] ?? false) === true && $input !== null && $ctx->sensitiveMode !== null) {
+            if ($ctx->sensitiveMode === 'encrypted') {
+                if (!is_string($input)) {
+                    return ParseResult::fail([new ValidationIssue(
+                        code: IssueCodes::INVALID_TYPE,
+                        message: 'Expected encrypted value',
+                        path: $ctx->path,
+                        expected: 'encrypted:<value>',
+                        received: self::getTypeName($input),
+                    )]);
+                }
+                if (!str_starts_with($input, 'encrypted:') || $input === 'encrypted:') {
+                    return ParseResult::fail([new ValidationIssue(
+                        code: IssueCodes::INVALID_STRING,
+                        message: 'Encrypted value must start with "encrypted:" and contain a payload',
+                        path: $ctx->path,
+                        expected: 'encrypted:<value>',
+                        received: $input,
+                    )]);
+                }
+                return ParseResult::ok($input);
+            }
+
+            $cacheKey = json_encode($ctx->path, JSON_THROW_ON_ERROR);
+            if ($ctx->sensitiveCache !== null && $ctx->sensitiveCache->offsetExists($cacheKey)) {
+                return ParseResult::ok($ctx->sensitiveCache[$cacheKey]);
+            }
+            if ($ctx->sensitiveMode === 'encrypt') {
+                $checked = $this->safeParse($input, new ValidationContext(
+                    path: $ctx->path,
+                    definitions: $ctx->definitions,
+                    inheritedUnknownKeys: $ctx->inheritedUnknownKeys,
+                ));
+                if (!$checked->success) return $checked;
+                $value = $checked->value;
+            }
+            $value = ($ctx->sensitiveTransform)($ctx->path, $value);
+            if ($ctx->sensitiveCache !== null) $ctx->sensitiveCache[$cacheKey] = $value;
+            return ParseResult::ok($value);
+        }
+
         // Step 1: Coercion (only if value is present)
         if ($this->coerce !== null) {
             $coercions = is_array($this->coerce) ? $this->coerce : [$this->coerce];

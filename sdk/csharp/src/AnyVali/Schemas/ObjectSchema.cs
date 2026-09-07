@@ -182,6 +182,6 @@ public sealed class ObjectSchema : Schema<Dictionary<string, object?>>
 
     internal override Schema Clone() => new ObjectSchema(_properties, _unknownKeys, _unknownKeysExplicit)
     {
-        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap,
+        DefaultValue = DefaultValue, CoercionCfg = CoercionCfg, IsPortable = IsPortable, MetadataMap = MetadataMap, ImportedDefinitions = ImportedDefinitions,
     };
 }

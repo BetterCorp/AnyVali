@@ -26,10 +26,16 @@ export class RefSchema extends BaseSchema<unknown, unknown> {
     return undefined;
   }
 
+  _runPipeline(input: unknown, ctx: ParseContext): unknown {
+    return this._resolver
+      ? this._resolver()._runPipeline(input, ctx)
+      : this._validate(input, ctx);
+  }
+
   _toNode(): SchemaNode {
-    return {
+    return this._addDefault({
       kind: "ref" as const,
       ref: this._ref,
-    } as unknown as SchemaNode;
+    } as unknown as SchemaNode);
   }
 }

@@ -62,6 +62,7 @@ from .schemas.object import ObjectSchema
 from .schemas.optional import OptionalSchema
 from .schemas.record import RecordSchema
 from .schemas.ref import RefSchema
+from .sensitive import SensitiveTransform, decrypt, encrypt, safe_parse_encrypted
 from .schemas.string import StringSchema
 from .schemas.tuple import TupleSchema
 from .schemas.union import UnionSchema
@@ -270,6 +271,10 @@ __all__ = [
     # Parse
     "parse",
     "safe_parse",
+    "safe_parse_encrypted",
+    "encrypt",
+    "decrypt",
+    "SensitiveTransform",
     # Interchange
     "export_schema",
     "export_schema_json",

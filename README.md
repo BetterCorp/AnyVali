@@ -202,6 +202,31 @@ schema = v.import_schema(json.loads(schema_json))
 result = schema.safe_parse(request_body)  # Same validation rules!
 ```
 
+## Sensitive Data
+
+Mark secrets with `sensitive: true`, then supply your own encryption function. AnyVali validates before and after transformation but never ships encryption logic or keys.
+
+```typescript
+import { decrypt, encrypt, object, safeParseEncrypted, string } from "anyvali";
+
+const Credentials = object({
+  username: string(),
+  password: string().minLength(12).describe("Password", { sensitive: true }),
+});
+
+const stored = encrypt(Credentials, input, (path, value) =>
+  `encrypted:${encryptWithYourKms(path, value)}`,
+);
+
+safeParseEncrypted(Credentials, stored); // validates the encrypted storage shape
+
+const clear = decrypt(Credentials, stored, (path, value) =>
+  decryptWithYourKms(path, value.slice("encrypted:".length)),
+);
+```
+
+Sensitive objects and arrays are encrypted as one opaque value. See the [sensitive data guide](docs/sensitive-data.md) for behavior, security boundaries, and every SDK's API names.
+
 ## Forms
 
 The JS SDK also ships a small forms layer for browser-native fields, HTML5 attributes, and AnyVali validation.
