@@ -293,6 +293,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - run: chmod +x runner.sh
       - run: ./runner.sh ci kotlin
+      - name: Validate publication locally without signing
+        working-directory: sdk/kotlin
+        run: gradle --no-daemon publishToMavenLocal -x signMavenPublication
       - run: ./runner.sh coverage kotlin
       - uses: codecov/codecov-action@v6
         if: github.event_name == 'push'
