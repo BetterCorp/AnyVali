@@ -45,6 +45,8 @@ export class UnionSchema<
     return undefined;
   }
 
+  _children(): BaseSchema[] { return this._variants; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "union" as const,

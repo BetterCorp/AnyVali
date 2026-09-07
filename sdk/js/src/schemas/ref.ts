@@ -15,7 +15,7 @@ export class RefSchema extends BaseSchema<unknown, unknown> {
   _validate(input: unknown, ctx: ParseContext): unknown {
     if (this._resolver) {
       const resolved = this._resolver();
-      return resolved._validate(input, ctx);
+      return resolved._runPipeline(input, ctx);
     }
 
     ctx.issues.push({
@@ -27,6 +27,9 @@ export class RefSchema extends BaseSchema<unknown, unknown> {
   }
 
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
+    if (this._metadata?.sensitive === true && ctx.sensitiveMode) {
+      return super._runPipeline(input, ctx);
+    }
     return this._resolver
       ? this._resolver()._runPipeline(input, ctx)
       : this._validate(input, ctx);

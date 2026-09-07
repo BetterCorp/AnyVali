@@ -52,6 +52,9 @@ class IntersectionSchema(BaseSchema[Any]):
         # For non-dict, return the last result
         return results[-1] if results else input
 
+    def _children(self) -> list[BaseSchema]:
+        return self._schemas
+
     def _to_node(self) -> dict[str, Any]:
         return self._add_common_node_fields({
             "kind": "intersection",

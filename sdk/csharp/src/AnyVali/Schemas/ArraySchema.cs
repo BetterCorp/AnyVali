@@ -65,6 +65,8 @@ public sealed class ArraySchema : Schema<List<object?>>
         return result;
     }
 
+    internal override IEnumerable<Schema> Children => new[] { _items };
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>

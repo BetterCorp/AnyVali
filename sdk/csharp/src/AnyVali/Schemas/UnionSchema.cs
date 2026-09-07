@@ -35,6 +35,8 @@ public sealed class UnionSchema : Schema<object?>
         return null;
     }
 
+    internal override IEnumerable<Schema> Children => _variants;
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>

@@ -9,9 +9,52 @@ import {
   bool,
   exportSchema,
   importSchema,
+  record,
+  tuple,
+  union,
+  intersection,
 } from "../../src/index.js";
 
 describe("Export", () => {
+  it("merges identical definitions with reordered Unicode keys", () => {
+    const child = (custom: Record<string, number>) => importSchema({
+      anyvaliVersion: "1.0", schemaVersion: "1.1",
+      root: { kind: "ref", ref: "#/definitions/Value" },
+      definitions: { Value: { kind: "string", metadata: { custom } } }, extensions: {},
+    } as any);
+    const parent = object({
+      first: child({ "\u00e9": 1, "e\u0301": 2 }),
+      second: child({ "e\u0301": 2, "\u00e9": 1 }),
+    });
+    expect(importSchema(parent.export()).parse({ first: "a", second: "b" }))
+      .toEqual({ first: "a", second: "b" });
+  });
+
+  it("collects child definitions through every composite and rejects conflicting names", () => {
+    const doc = { anyvaliVersion: "1.0", schemaVersion: "1.1",
+      root: { kind: "ref", ref: "#/definitions/Value" },
+      definitions: { Value: { kind: "string", minLength: 1 } }, extensions: {} };
+    const child = importSchema(doc as any);
+    const cases = [
+      [object({ value: child }), { value: "ok" }],
+      [array(child), ["ok"]], [record(child), { key: "ok" }],
+      [tuple([child]), ["ok"]], [optional(child), "ok"], [nullable(child), "ok"],
+      [union([child, bool()]), "ok"], [intersection([child, string()]), "ok"],
+    ] as const;
+    for (const [parent, input] of cases) {
+      expect(parent.parse(input)).toEqual(input);
+      const exported = parent.export();
+      expect(exported.definitions).toEqual(doc.definitions);
+      expect(importSchema(exported).parse(input)).toEqual(input);
+    }
+    const reordered = importSchema({ ...doc, definitions: { Value: { minLength: 1, kind: "string" } } } as any);
+    expect(() => object({ first: child, second: child, third: reordered }).export()).not.toThrow();
+    const conflicting = importSchema({ ...doc, definitions: { Value: { kind: "bool" } } } as any);
+    const parent = object({ first: child, second: conflicting });
+    expect(parent.parse({ first: "ok", second: true })).toEqual({ first: "ok", second: true });
+    expect(() => exportSchema(parent)).toThrow("Conflicting definition: Value");
+  });
+
   it("exports a simple string schema", () => {
     const doc = exportSchema(string().minLength(1).maxLength(100));
     expect(doc.anyvaliVersion).toBe("1.0");

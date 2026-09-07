@@ -34,6 +34,9 @@ class TupleSchema(BaseSchema[list[Any]]):
 
         return result
 
+    def _children(self) -> list[BaseSchema]:
+        return self._items
+
     def _to_node(self) -> dict[str, Any]:
         return self._add_common_node_fields({
             "kind": "tuple",

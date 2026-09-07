@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  array, decrypt, encrypt, nullable, object, safeParseEncrypted, string,
+  array, decrypt, encrypt, importSchema, nullable, object, safeParseEncrypted, string,
 } from "../../src/index.js";
 
 const sensitive = <T extends ReturnType<typeof string>>(schema: T): T =>
@@ -47,5 +47,17 @@ describe("sensitive data", () => {
   it("rejects broken envelopes and encrypt callbacks", () => {
     expect(safeParseEncrypted(schema, { ...plain, secret: "abc" }).success).toBe(false);
     expect(() => encrypt(schema, plain, () => "broken")).toThrow();
+  });
+
+  it("preserves null through sensitive refs to nullable targets", () => {
+    const schema = importSchema({
+      anyvaliVersion: "1.0", schemaVersion: "1.1",
+      root: { kind: "ref", ref: "#/definitions/Secret", metadata: { sensitive: true } },
+      definitions: { Secret: { kind: "nullable", inner: { kind: "string" } } }, extensions: {},
+    } as any);
+    const transform = () => { throw new Error("Null must not invoke the callback"); };
+    expect(encrypt(schema, null, transform)).toBeNull();
+    expect(safeParseEncrypted(schema, null)).toMatchObject({ success: true, data: null });
+    expect(decrypt(schema, null, transform)).toBeNull();
   });
 });
