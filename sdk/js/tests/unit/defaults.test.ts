@@ -95,6 +95,13 @@ describe("Defaults", () => {
     expect(s.parse({ value: null })).toEqual({ value: null });
   });
 
+  it("applies default on nullable wrapper field", () => {
+    const s = object({
+      uniqueId: nullable(string()).default(null),
+    });
+    expect(s.parse({})).toEqual({ uniqueId: null });
+  });
+
   it("applies falsy defaults", () => {
     const s = object({
       count: int().default(0),

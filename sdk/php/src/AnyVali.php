@@ -202,6 +202,21 @@ final class AnyVali
         return new RefSchema($ref);
     }
 
+    public static function safeParseEncrypted(Schema $schema, mixed $data): ParseResult
+    {
+        return SensitiveData::safeParseEncrypted($schema, $data);
+    }
+
+    public static function encrypt(Schema $schema, mixed $data, callable $transform): mixed
+    {
+        return SensitiveData::encrypt($schema, $data, $transform);
+    }
+
+    public static function decrypt(Schema $schema, mixed $data, callable $transform): mixed
+    {
+        return SensitiveData::decrypt($schema, $data, $transform);
+    }
+
     /**
      * Import a schema from a portable document.
      */

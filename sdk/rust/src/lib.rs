@@ -4,12 +4,14 @@ pub mod issue_codes;
 pub mod parse;
 pub mod schema;
 pub mod schemas;
+pub mod sensitive;
 pub mod typed;
 pub mod types;
 
 // Re-export key types
 pub use schema::{DescribeOpts, ParseContext, Schema};
 pub use schemas::*;
+pub use sensitive::{decrypt, encrypt, safe_parse_encrypted, SensitiveError};
 pub use typed::{parse_as, TypedSchema};
 
 /// Any AnyVali schema. Use as a generic constraint. Equivalent to Zod's ZodTypeAny.
