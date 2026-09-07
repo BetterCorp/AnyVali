@@ -176,11 +176,11 @@ run_js() {
       (cd "$ROOT_DIR/sdk/js" && npm run lint 2>/dev/null || log_skip "js:lint" "no lint script defined")
       ;;
     coverage)
-      (cd "$ROOT_DIR/sdk/js" && npm run coverage 2>/dev/null || npm test -- --coverage 2>/dev/null || log_skip "js:coverage" "no coverage script defined")
+      (cd "$ROOT_DIR/sdk/js" && npm test -- --coverage)
       ;;
     ci)
-      run_js install
-      run_js build
+      run_js install || return $?
+      run_js build || return $?
       run_js test
       ;;
     *)
