@@ -41,6 +41,10 @@ Use scopes when the change is specific to one SDK or subsystem.
 
 ## Development Workflow
 
+JavaScript SDK development requires Node.js 22.22.2+ or 24.15.0+ within
+those release lines (or Node.js 26+) for jsdom 30. CI tests the latest Node.js
+22 and 24 releases.
+
 Use the root runner where possible:
 
 ```bash
