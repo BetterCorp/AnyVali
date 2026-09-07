@@ -39,6 +39,8 @@ public sealed class OptionalSchema : Schema<object?>
         return Inner.RunPipeline(input, ctx);
     }
 
+    internal override IEnumerable<Schema> Children => new[] { Inner };
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>

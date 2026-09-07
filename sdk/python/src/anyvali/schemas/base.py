@@ -197,11 +197,7 @@ class BaseSchema(ABC, Generic[T]):
 
     def _run_pipeline_inner(self, input: Any, ctx: ValidationContext) -> Any:
         # Step 1: presence check
-        is_absent = input is _SENTINEL or input is None and not self._accepts_none()
-
-        # For optional/nullable wrappers, None is 'present'
-        if input is None and self._accepts_none():
-            is_absent = False
+        is_absent = input is _SENTINEL
 
         value = input
         if (
@@ -500,6 +496,10 @@ class BaseSchema(ABC, Generic[T]):
 
         return export_schema(self, mode=mode)
 
+    def _children(self) -> list[BaseSchema]:
+        """Direct schema children; refs retain their document context separately."""
+        return []
+
     def _add_common_node_fields(self, node: dict[str, Any]) -> dict[str, Any]:
         """Add default/coercion fields to a node dict."""
         if self._has_default:
@@ -518,8 +518,7 @@ class BaseSchema(ABC, Generic[T]):
                 coerce_dict["lower"] = True
             if self._coercion.upper:
                 coerce_dict["upper"] = True
-            if coerce_dict:
-                node["coerce"] = coerce_dict
+            node["coerce"] = coerce_dict
         if self._metadata:
             node["metadata"] = dict(self._metadata)
         return node

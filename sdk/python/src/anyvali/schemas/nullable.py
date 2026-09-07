@@ -33,6 +33,9 @@ class NullableSchema(BaseSchema[T | None], Generic[T]):
             return super()._run_pipeline(input, ctx)
         return self._inner._run_pipeline(input, ctx)
 
+    def _children(self) -> list[BaseSchema]:
+        return [self._inner]
+
     def _to_node(self) -> dict[str, Any]:
         return self._add_common_node_fields({
             "kind": "nullable",

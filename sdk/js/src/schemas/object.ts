@@ -193,6 +193,8 @@ export class ObjectSchema<
     return result;
   }
 
+  _children(): BaseSchema[] { return [...this._properties.values()].map((prop) => prop.schema); }
+
   _toNode(): SchemaNode {
     const properties: Record<string, SchemaNode> = {};
     const required: string[] = [];

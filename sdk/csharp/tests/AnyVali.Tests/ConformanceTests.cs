@@ -71,6 +71,8 @@ public class ConformanceTests
             var description = testCase.GetProperty("description").GetString()!;
             var schemaElement = testCase.GetProperty("schema");
             var inputElement = testCase.GetProperty("input");
+            var input = inputElement.ValueKind == JsonValueKind.String && inputElement.GetString() == "__ABSENT__"
+                ? Absent.Value : JsonHelper.ElementToObject(inputElement);
             var expectedValid = testCase.GetProperty("valid").GetBoolean();
             var expectedIssues = testCase.GetProperty("issues");
 
@@ -82,15 +84,21 @@ public class ConformanceTests
 
             // Import the schema
             var schema = V.Import(schemaDoc);
+            if (testCase.TryGetProperty("nativeParent", out var nativeParent) && nativeParent.GetBoolean())
+            {
+                schema = V.Object(new Dictionary<string, Schema> { ["payload"] = schema });
+                AssertOutputMatches(testCase.GetProperty("output"), schema.Parse(input));
+            }
             if (testCase.TryGetProperty("roundtrip", out var roundtrip) && roundtrip.GetBoolean())
             {
+                var original = schema.SafeParse(input);
+                Assert.Equal(expectedValid, original.Success);
+                if (original.Success) AssertOutputMatches(testCase.GetProperty("output"), original.Data);
                 var exported = V.Export(schema.Describe("Imported contract"));
                 AssertOutputMatches(schemaElement.GetProperty("definitions"), exported.Definitions);
                 schema = V.Import(AnyValiDocument.FromJson(exported.ToJson()));
             }
 
-            // Convert input
-            var input = JsonHelper.ElementToObject(inputElement);
             if (testCase.TryGetProperty("sensitivePaths", out var sensitivePaths))
             {
                 foreach (var imported in new[] { V.Import(schemaDoc), schema })
@@ -179,7 +187,9 @@ public class ConformanceTests
                 if (expected.TryGetInt64(out var l))
                 {
                     // actual could be long or double
-                    if (actual is long al)
+                    if (actual is int ai)
+                        Assert.Equal(l, (long)ai);
+                    else if (actual is long al)
                         Assert.Equal(l, al);
                     else if (actual is double ad)
                         Assert.Equal((double)l, ad);

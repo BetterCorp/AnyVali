@@ -1,4 +1,6 @@
 using AnyVali.Parse;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace AnyVali;
 
@@ -293,12 +295,28 @@ public abstract class Schema
                 "Cannot export in portable mode: schema contains non-portable features");
 
         var node = ToNode();
+        var definitions = new Dictionary<string, object?>();
+        var pending = new Stack<Schema>();
+        var seen = new HashSet<Schema>();
+        pending.Push(this);
+        while (pending.TryPop(out var schema))
+        {
+            if (!seen.Add(schema)) continue;
+            foreach (var (name, definition) in schema.ImportedDefinitions)
+            {
+                if (definitions.TryGetValue(name, out var existing)
+                    && !JsonNode.DeepEquals(JsonSerializer.SerializeToNode(existing), JsonSerializer.SerializeToNode(definition)))
+                    throw new InvalidOperationException($"Conflicting definition: {name}");
+                definitions[name] = definition;
+            }
+            foreach (var child in schema.Children) pending.Push(child);
+        }
         return new AnyValiDocument
         {
             AnyvaliVersion = AnyvaliVersionValue,
             SchemaVersion = SchemaVersionValue,
             Root = node,
-            Definitions = (Dictionary<string, object?>)DeepCopyDefault(ImportedDefinitions)!,
+            Definitions = (Dictionary<string, object?>)DeepCopyDefault(definitions)!,
             Extensions = new Dictionary<string, object?>(),
         };
     }
@@ -306,6 +324,8 @@ public abstract class Schema
     // ---- Internal helpers ----
 
     internal abstract Schema Clone();
+
+    internal virtual IEnumerable<Schema> Children => Array.Empty<Schema>();
 
     internal void AddDefaultAndCoercion(Dictionary<string, object?> node)
     {

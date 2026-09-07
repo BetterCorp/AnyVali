@@ -49,6 +49,8 @@ public sealed class IntersectionSchema : Schema<object?>
         return anyFailed ? null : result;
     }
 
+    internal override IEnumerable<Schema> Children => _schemas;
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>

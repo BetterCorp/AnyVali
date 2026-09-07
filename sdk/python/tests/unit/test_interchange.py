@@ -10,6 +10,31 @@ import anyvali as v
 
 
 class TestExport:
+    def test_composite_definitions_and_conflicts(self):
+        doc = {"anyvaliVersion": "1.0", "schemaVersion": "1.1",
+               "root": {"kind": "ref", "ref": "#/definitions/Value"},
+               "definitions": {"Value": {"kind": "string", "minLength": 1}}, "extensions": {}}
+        child = v.import_schema(doc)
+        for parent, value in (
+            (v.object_({"value": child}), {"value": "ok"}),
+            (v.array(child), ["ok"]), (v.record(child), {"key": "ok"}),
+            (v.tuple_([child]), ["ok"]), (v.optional(child), "ok"), (v.nullable(child), "ok"),
+            (v.union([child, v.bool_()]), "ok"), (v.intersection([child, v.string()]), "ok"),
+        ):
+            assert parent.parse(value) == value
+            exported = parent.export()
+            assert exported["definitions"] == doc["definitions"]
+            assert v.import_schema(exported).parse(value) == value
+        reordered = v.import_schema({**doc, "definitions": {"Value": {"minLength": 1, "kind": "string"}}})
+        v.object_({"first": child, "second": child, "third": reordered}).export()
+        conflicting = v.import_schema({**doc, "definitions": {"Value": {"kind": "bool"}}})
+        parent = v.object_({"first": child, "second": conflicting})
+        assert parent.parse({"first": "ok", "second": True}) == {"first": "ok", "second": True}
+        with pytest.raises(ValueError, match="Conflicting definition: Value"):
+            v.export_schema(parent)
+        with pytest.raises(ValueError, match="Conflicting definition: Value"):
+            v.export_schema(child, definitions={"Value": v.bool_()})
+
     def test_string_export(self):
         schema = v.string().min_length(1)
         doc = schema.export()

@@ -235,6 +235,9 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
 
   abstract _toNode(): SchemaNode;
 
+  /** @internal Direct schema children; refs retain their document context separately. */
+  _children(): BaseSchema[] { return []; }
+
   // optional() and nullable() are provided via standalone functions
   // to avoid circular imports. See index.ts.
 
@@ -289,11 +292,30 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
       );
     }
     const node = this._toNode();
+    const definitions: Record<string, SchemaNode> = Object.create(null);
+    const pending: BaseSchema[] = [this];
+    const seen = new Set<BaseSchema>();
+    const canonical = (value: unknown) => JSON.stringify(value, (_key, item) =>
+      item && typeof item === "object" && !Array.isArray(item)
+        ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+        : item);
+    while (pending.length) {
+      const schema = pending.pop()!;
+      if (seen.has(schema)) continue;
+      seen.add(schema);
+      for (const [name, definition] of Object.entries(schema._importedDefinitions)) {
+        if (Object.hasOwn(definitions, name) && canonical(definitions[name]) !== canonical(definition)) {
+          throw new Error(`Conflicting definition: ${name}`);
+        }
+        definitions[name] = definition;
+      }
+      pending.push(...schema._children());
+    }
     return {
       anyvaliVersion: ANYVALI_VERSION,
       schemaVersion: SCHEMA_VERSION,
       root: node,
-      definitions: structuredClone(this._importedDefinitions),
+      definitions: structuredClone(definitions),
       extensions: {},
     };
   }

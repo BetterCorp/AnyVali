@@ -32,6 +32,9 @@ class RecordSchema(BaseSchema[dict[str, Any]]):
 
         return result
 
+    def _children(self) -> list[BaseSchema]:
+        return [self._value_schema]
+
     def _to_node(self) -> dict[str, Any]:
         return self._add_common_node_fields({
             "kind": "record",

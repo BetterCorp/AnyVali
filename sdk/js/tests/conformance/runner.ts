@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import assert from "node:assert/strict";
 import { importSchema } from "../../src/interchange/importer.js";
-import { exportSchema, encrypt, decrypt, safeParseEncrypted } from "../../src/index.js";
+import { exportSchema, encrypt, decrypt, safeParseEncrypted, object, ABSENT } from "../../src/index.js";
 import type { AnyValiDocument } from "../../src/types.js";
 
 export interface CorpusFile {
@@ -17,6 +17,7 @@ export interface CorpusTestCase {
   valid: boolean;
   output: unknown;
   roundtrip?: boolean;
+  nativeParent?: boolean;
   sensitivePaths?: (string | number)[][];
   issues: Array<{
     code: string;
@@ -66,17 +67,25 @@ export function loadCorpus(corpusDir: string): CorpusFile[] {
  */
 export function runTestCase(tc: CorpusTestCase): CorpusTestResult {
   try {
+    const input = tc.input === "__ABSENT__" ? ABSENT : tc.input;
     let schema = importSchema(tc.schema);
+    if (tc.nativeParent) {
+      schema = object({ payload: schema });
+      assert.deepEqual(schema.parse(input), tc.output);
+    }
     if (tc.roundtrip) {
+      const original = schema.safeParse(input);
+      assert.equal(original.success, tc.valid);
+      if (original.success) assert.deepEqual(original.data, tc.output);
       const exported = exportSchema(schema.describe("Imported contract"));
       assert.deepEqual(exported.definitions, tc.schema.definitions);
       schema = importSchema(JSON.parse(JSON.stringify(exported)));
     }
     if (tc.sensitivePaths) {
       for (const imported of [importSchema(tc.schema), schema]) {
-        assert.equal(safeParseEncrypted(imported, tc.input).success, false);
+        assert.equal(safeParseEncrypted(imported, input).success, false);
         const paths: (string | number)[][] = [];
-        const encrypted = encrypt(imported, tc.input, (path, value) => {
+        const encrypted = encrypt(imported, input, (path, value) => {
           paths.push([...path]);
           return `encrypted:${JSON.stringify(value)}`;
         });
@@ -91,7 +100,7 @@ export function runTestCase(tc: CorpusTestCase): CorpusTestResult {
         assert.deepEqual(plaintext, tc.output);
       }
     }
-    const result = schema.safeParse(tc.input);
+    const result = schema.safeParse(input);
 
     if (tc.valid) {
       // Expect success

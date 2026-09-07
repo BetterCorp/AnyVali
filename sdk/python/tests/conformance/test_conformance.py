@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 import anyvali as v
+from anyvali.schemas.base import _SENTINEL
 from .runner import corpus_ids, load_corpus
 
 _CORPUS = load_corpus()
@@ -23,14 +24,21 @@ _CORPUS = load_corpus()
 def test_conformance(case: dict[str, Any]) -> None:
     """Run a single conformance test case."""
     schema_doc = case["schema"]
-    input_value = case["input"]
+    input_value = _SENTINEL if case["input"] == "__ABSENT__" else case["input"]
     expected_valid = case["valid"]
     expected_output = case.get("output")
     expected_issues = case.get("issues", [])
 
     # Import the schema from the document
     schema = v.import_schema(schema_doc)
+    if case.get("nativeParent"):
+        schema = v.object_({"payload": schema})
+        assert schema.parse(input_value) == expected_output
     if case.get("roundtrip"):
+        original = schema.safe_parse(input_value)
+        assert original.success == expected_valid
+        if original.success:
+            assert original.data == expected_output
         exported = v.export_schema(schema.describe("Imported contract"))
         assert exported.get("definitions", {}) == schema_doc["definitions"]
         schema = v.import_schema(json.dumps(exported))

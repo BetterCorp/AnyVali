@@ -46,6 +46,8 @@ class RefSchema(BaseSchema[Any]):
 
     def _run_pipeline(self, input: Any, ctx: ValidationContext) -> Any:
         """Override to delegate the full pipeline to the resolved schema."""
+        if self._metadata and self._metadata.get("sensitive") is True and ctx.sensitive_mode:
+            return super()._run_pipeline(input, ctx)
         resolved = self._get_resolved()
         if resolved is not None:
             return resolved._run_pipeline(input, ctx)
@@ -61,7 +63,7 @@ class RefSchema(BaseSchema[Any]):
     def _validate(self, input: Any, ctx: ValidationContext) -> Any:
         resolved = self._get_resolved()
         if resolved is not None:
-            return resolved._validate(input, ctx)
+            return resolved._run_pipeline(input, ctx)
         ctx.add_issue(INVALID_TYPE, f"Unresolved reference: {self._ref}", expected=self._ref)
         return None
 

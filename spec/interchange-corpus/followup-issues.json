@@ -1,0 +1,944 @@
+{
+  "suite": "interchange-followup-issues",
+  "cases": [
+    {
+      "description": "#127 string root rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "string",
+          "default": "fallback"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": []
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 string field defaults only when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "string",
+              "default": "fallback"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "value": "fallback"
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 string field rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "string",
+              "default": "fallback"
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "value": null
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": [
+            "value"
+          ]
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 bool root rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "bool",
+          "default": true
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": []
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 bool field defaults only when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "bool",
+              "default": true
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "value": true
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 bool field rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "bool",
+              "default": true
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "value": null
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": [
+            "value"
+          ]
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 int root rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "int",
+          "default": 7
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": []
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 int field defaults only when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "int",
+              "default": 7
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "value": 7
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 int field rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "int",
+              "default": 7
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "value": null
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": [
+            "value"
+          ]
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 number root rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "number",
+          "default": 1.5
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": []
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 number field defaults only when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "number",
+              "default": 1.5
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "value": 1.5
+      },
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 number field rejects present null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "kind": "number",
+              "default": 1.5
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "value": null
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": [
+            "value"
+          ]
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 int retains coercion {}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "int",
+          "coerce": {}
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "7",
+      "valid": true,
+      "output": 7,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 number retains coercion {}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "number",
+          "coerce": {}
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "1.5",
+      "valid": true,
+      "output": 1.5,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 bool retains coercion {}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "bool",
+          "coerce": {}
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "true",
+      "valid": true,
+      "output": true,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 int retains coercion {'from': 'string'}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "int",
+          "coerce": {
+            "from": "string"
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "7",
+      "valid": true,
+      "output": 7,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 number retains coercion {'from': 'string'}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "number",
+          "coerce": {
+            "from": "string"
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "1.5",
+      "valid": true,
+      "output": 1.5,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#134 bool retains coercion {'from': 'string'}",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "bool",
+          "coerce": {
+            "from": "string"
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "true",
+      "valid": true,
+      "output": true,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#128 sensitive ref encrypts and rejects plaintext",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "secret"
+          ],
+          "properties": {
+            "secret": {
+              "kind": "ref",
+              "ref": "#/definitions/Secret",
+              "metadata": {
+                "sensitive": true
+              }
+            }
+          }
+        },
+        "definitions": {
+          "Secret": {
+            "kind": "string"
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "secret": "plaintext"
+      },
+      "valid": true,
+      "output": {
+        "secret": "plaintext"
+      },
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        [
+          "secret"
+        ]
+      ]
+    },
+    {
+      "description": "#128 nested recursive sensitive refs retain transforms",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "ref",
+          "ref": "#/definitions/Node"
+        },
+        "definitions": {
+          "Node": {
+            "kind": "object",
+            "required": [
+              "secret",
+              "children"
+            ],
+            "properties": {
+              "secret": {
+                "kind": "ref",
+                "ref": "#/definitions/Secret",
+                "metadata": {
+                  "sensitive": true
+                }
+              },
+              "children": {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "ref": "#/definitions/Node"
+                }
+              }
+            }
+          },
+          "Secret": {
+            "kind": "string"
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "secret": "first",
+        "children": [
+          {
+            "secret": "second",
+            "children": []
+          }
+        ]
+      },
+      "valid": true,
+      "output": {
+        "secret": "first",
+        "children": [
+          {
+            "secret": "second",
+            "children": []
+          }
+        ]
+      },
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        [
+          "secret"
+        ],
+        [
+          "children",
+          0,
+          "secret"
+        ]
+      ]
+    },
+    {
+      "description": "#128 sensitive recursive ref encrypts one whole value",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "ref",
+          "ref": "#/definitions/JsonValue",
+          "metadata": {
+            "sensitive": true
+          }
+        },
+        "definitions": {
+          "JsonValue": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "null"
+              },
+              {
+                "kind": "bool"
+              },
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "number"
+              },
+              {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              },
+              {
+                "kind": "record",
+                "valueSchema": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              }
+            ]
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "a": [
+          null,
+          true,
+          {
+            "x": 2
+          }
+        ]
+      },
+      "valid": true,
+      "output": {
+        "a": [
+          null,
+          true,
+          {
+            "x": 2
+          }
+        ]
+      },
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        []
+      ]
+    },
+    {
+      "description": "#133 native parent preserves imported recursive child",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "record",
+          "valueSchema": {
+            "kind": "ref",
+            "ref": "#/definitions/JsonValue"
+          }
+        },
+        "definitions": {
+          "JsonValue": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "null"
+              },
+              {
+                "kind": "bool"
+              },
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "number"
+              },
+              {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              },
+              {
+                "kind": "record",
+                "valueSchema": {
+                  "kind": "ref",
+                  "ref": "#/definitions/JsonValue"
+                }
+              }
+            ]
+          }
+        },
+        "extensions": {}
+      },
+      "input": {
+        "payload": {
+          "a": [
+            null,
+            true,
+            {
+              "x": 2
+            }
+          ]
+        }
+      },
+      "valid": true,
+      "output": {
+        "payload": {
+          "a": [
+            null,
+            true,
+            {
+              "x": 2
+            }
+          ]
+        }
+      },
+      "issues": [],
+      "roundtrip": true,
+      "nativeParent": true
+    },
+    {
+      "description": "#127 string root defaults when absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "string",
+          "default": "fallback"
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "__ABSENT__",
+      "valid": true,
+      "output": "fallback",
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 bool root defaults when absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "bool",
+          "default": true
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "__ABSENT__",
+      "valid": true,
+      "output": true,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 int root defaults when absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "int",
+          "default": 7
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "__ABSENT__",
+      "valid": true,
+      "output": 7,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 number root defaults when absent",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "number",
+          "default": 1.5
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "__ABSENT__",
+      "valid": true,
+      "output": 1.5,
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#128 sensitive ref and definition transform once after coercion",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "ref",
+          "ref": "#/definitions/Secret",
+          "metadata": {
+            "sensitive": true
+          }
+        },
+        "definitions": {
+          "Secret": {
+            "kind": "string",
+            "coerce": {
+              "trim": true
+            },
+            "metadata": {
+              "sensitive": true
+            }
+          }
+        },
+        "extensions": {}
+      },
+      "input": " secret ",
+      "output": "secret",
+      "valid": true,
+      "issues": [],
+      "roundtrip": true,
+      "sensitivePaths": [
+        []
+      ]
+    },
+    {
+      "description": "#127 record root rejects null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "record",
+          "values": {
+            "kind": "string"
+          },
+          "default": {}
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": null,
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": []
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 record root defaults when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "record",
+          "values": {
+            "kind": "string"
+          },
+          "default": {}
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": "__ABSENT__",
+      "valid": true,
+      "output": {},
+      "issues": [],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 record field rejects null",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "dependencies"
+          ],
+          "properties": {
+            "dependencies": {
+              "kind": "record",
+              "values": {
+                "kind": "string"
+              },
+              "default": {}
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {
+        "dependencies": null
+      },
+      "valid": false,
+      "output": null,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "path": [
+            "dependencies"
+          ]
+        }
+      ],
+      "roundtrip": true
+    },
+    {
+      "description": "#127 record field defaults when missing",
+      "schema": {
+        "anyvaliVersion": "1.0",
+        "schemaVersion": "1.1",
+        "root": {
+          "kind": "object",
+          "required": [
+            "dependencies"
+          ],
+          "properties": {
+            "dependencies": {
+              "kind": "record",
+              "values": {
+                "kind": "string"
+              },
+              "default": {}
+            }
+          }
+        },
+        "definitions": {},
+        "extensions": {}
+      },
+      "input": {},
+      "valid": true,
+      "output": {
+        "dependencies": {}
+      },
+      "issues": [],
+      "roundtrip": true
+    }
+  ]
+}
