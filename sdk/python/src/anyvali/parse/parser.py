@@ -20,11 +20,11 @@ from ..types import ParseResult, ValidationError
 T = TypeVar("T")
 
 
-def parse(schema: BaseSchema[T], input: Any = _SENTINEL) -> T:
+def parse(schema: BaseSchema[T], input: Any = _SENTINEL) -> T:  # noqa: A002 - preserve input=
     """Parse input (omitted means absent), raising ValidationError on failure."""
     return schema.parse(input)
 
 
-def safe_parse(schema: BaseSchema[T], input: Any = _SENTINEL) -> ParseResult[T]:
+def safe_parse(schema: BaseSchema[T], input: Any = _SENTINEL) -> ParseResult[T]:  # noqa: A002 - preserve input=
     """Parse input (omitted means absent), returning a ParseResult."""
     return schema.safe_parse(input)
