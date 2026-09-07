@@ -20,6 +20,7 @@ public abstract class Schema
     internal CoercionConfig? CoercionCfg { get; set; }
     internal bool IsPortable { get; set; } = true;
     internal Dictionary<string, object?>? MetadataMap { get; set; }
+    internal Dictionary<string, object?> ImportedDefinitions { get; set; } = new();
 
     // ---- Public API ----
 
@@ -54,6 +55,67 @@ public abstract class Schema
         var isAbsent = Absent.IsAbsent(input) || input is null && IsAbsentNull(input);
 
         var value = input;
+
+        if (!isAbsent && input is not null && MetadataMap?.GetValueOrDefault("sensitive") is true
+            && ctx.SensitiveMode is not null)
+        {
+            if (ctx.SensitiveMode == "encrypted")
+            {
+                if (input is not string encrypted)
+                {
+                    ctx.Issues.Add(new ValidationIssue
+                    {
+                        Code = IssueCodes.InvalidType,
+                        Message = "Expected encrypted value",
+                        Path = ctx.ClonePath(),
+                        Expected = "encrypted:<value>",
+                        Received = DescribeType(input),
+                    });
+                    return null;
+                }
+                if (!encrypted.StartsWith("encrypted:", StringComparison.Ordinal)
+                    || encrypted.Length == "encrypted:".Length)
+                {
+                    ctx.Issues.Add(new ValidationIssue
+                    {
+                        Code = IssueCodes.InvalidString,
+                        Message = "Encrypted value must start with \"encrypted:\" and contain a payload",
+                        Path = ctx.ClonePath(),
+                        Expected = "encrypted:<value>",
+                        Received = encrypted,
+                    });
+                    return null;
+                }
+                return encrypted;
+            }
+
+            var cacheKey = System.Text.Json.JsonSerializer.Serialize(ctx.Path);
+            if (ctx.SensitiveCache?.TryGetValue(cacheKey, out var cached) == true) return cached;
+            if (ctx.SensitiveMode == "encrypt")
+            {
+                var checkedValue = SafeParse(input);
+                if (!checkedValue.Success)
+                {
+                    foreach (var issue in checkedValue.Issues)
+                    {
+                        ctx.Issues.Add(new ValidationIssue
+                        {
+                            Code = issue.Code,
+                            Message = issue.Message,
+                            Path = [.. ctx.Path, .. issue.Path],
+                            Expected = issue.Expected,
+                            Received = issue.Received,
+                            Meta = issue.Meta,
+                        });
+                    }
+                    return null;
+                }
+                value = checkedValue.Data;
+            }
+            value = ctx.SensitiveTransform!(ctx.ClonePath(), value);
+            if (ctx.SensitiveCache is not null) ctx.SensitiveCache[cacheKey] = value;
+            return value;
+        }
 
         // Step 2: coercion (only for present values)
         if (!isAbsent && CoercionCfg is not null)
@@ -236,7 +298,7 @@ public abstract class Schema
             AnyvaliVersion = AnyvaliVersionValue,
             SchemaVersion = SchemaVersionValue,
             Root = node,
-            Definitions = new Dictionary<string, object?>(),
+            Definitions = (Dictionary<string, object?>)DeepCopyDefault(ImportedDefinitions)!,
             Extensions = new Dictionary<string, object?>(),
         };
     }
@@ -348,7 +410,7 @@ public abstract class Schema
         };
     }
 
-    private static object? DeepCopyDefault(object? value)
+    internal static object? DeepCopyDefault(object? value)
     {
         switch (value)
         {

@@ -42,6 +42,10 @@ public class OptionalSchema extends Schema<Object> {
             }
             return null;
         }
+        if (metadata != null && Boolean.TRUE.equals(metadata.get("sensitive"))
+                && ctx.getSensitiveMode() != null) {
+            return super.runPipeline(input, ctx);
+        }
         return inner.runPipeline(input, ctx);
     }
 
