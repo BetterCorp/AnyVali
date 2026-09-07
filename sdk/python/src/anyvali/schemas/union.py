@@ -26,6 +26,9 @@ class UnionSchema(BaseSchema[Any]):
                 issues=[],
                 definitions=ctx.definitions,
                 depth=ctx.depth,
+                sensitive_mode=ctx.sensitive_mode,
+                sensitive_transform=ctx.sensitive_transform,
+                sensitive_cache=ctx.sensitive_cache,
             )
             result = schema._run_pipeline(input, trial_ctx)
             if not trial_ctx.issues:

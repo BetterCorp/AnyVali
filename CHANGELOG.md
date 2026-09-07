@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0](https://github.com/BetterCorp/AnyVali/compare/v1.0.7...v1.1.0) (2026-08-31)
+
+### Features
+
+* add validated sensitive-data encryption and decryption hooks across all SDKs
+
 ## [0.3.9](https://github.com/BetterCorp/AnyVali/compare/anyvali-v0.3.8...anyvali-v0.3.9) (2026-06-20)
 
 
