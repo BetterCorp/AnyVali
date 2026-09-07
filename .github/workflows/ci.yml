@@ -78,7 +78,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -359,7 +359,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: sdk/js/package-lock.json
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: actions/setup-go@v6
