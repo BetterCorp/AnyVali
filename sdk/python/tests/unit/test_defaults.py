@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import anyvali as v
+import pytest
 
 
 class TestDefaults:
@@ -24,14 +25,71 @@ class TestDefaults:
         assert result.success
         assert result.data["role"] == "admin"
 
-    def test_default_on_primitive(self):
-        schema = v.int_().default(42)
-        # When used standalone, we pass the sentinel to trigger default
-        from anyvali.schemas.base import _SENTINEL, ValidationContext
+    @pytest.mark.parametrize("schema,fallback", [
+        (v.int_(), 42), (v.string(), "fallback"), (v.bool_(), False),
+        (v.number(), 1.5), (v.record(v.string()), {}),
+    ])
+    def test_public_root_defaults(self, schema, fallback):
+        schema = schema.default(fallback)
+        for current in (schema, v.import_schema(schema.export())):
+            assert current.parse() == fallback
+            assert v.parse(current) == fallback
+            for result in (current.safe_parse(), v.safe_parse(current)):
+                assert result.success
+                assert result.data == fallback
+            assert not current.safe_parse(None).success
+            assert not v.safe_parse(current, None).success
+            with pytest.raises(v.ValidationError):
+                current.parse(None)
+            with pytest.raises(v.ValidationError):
+                v.parse(current, None)
+
+    def test_omitted_root_still_validates(self):
+        assert not v.string().safe_parse().success
+        invalid = v.int_().min(0).default(-1).safe_parse()
+        assert not invalid.success
+        assert invalid.issues[0].code == v.DEFAULT_INVALID
+        nullable = v.nullable(v.string()).default("fallback")
+        assert nullable.parse() == "fallback"
+        assert nullable.parse(None) is None
+
+    @pytest.mark.parametrize("resolution", ["direct", "definitions", "context", "import"])
+    def test_reference_defaults_use_wrapper_pipeline(self, resolution):
+        from anyvali.schemas.base import ValidationContext, _SENTINEL
+
+        schema = v.ref("#/definitions/S").default("fallback")
         ctx = ValidationContext()
-        result = schema._run_pipeline(_SENTINEL, ctx)
+        target = v.string().default("target")
+        if resolution == "direct":
+            schema.resolve(target)
+        elif resolution == "definitions":
+            schema.set_definitions({"S": target})
+        elif resolution == "context":
+            ctx.definitions = {"S": target}
+        else:
+            schema = v.import_schema({
+                "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+                "root": {"kind": "ref", "ref": "#/definitions/S", "default": "fallback"},
+                "definitions": {"S": {"kind": "string", "default": "target"}},
+                "extensions": {},
+            })
+
+        assert schema._run_pipeline(_SENTINEL, ctx) == "fallback"
         assert not ctx.issues
-        assert result == 42
+        if resolution != "context":
+            assert schema.parse() == "fallback"
+            assert v.object_({"value": schema}).parse({}) == {"value": "fallback"}
+            assert schema.parse("present") == "present"
+            assert not schema.safe_parse(None).success
+            invalid = schema.default(42).safe_parse()
+            assert not invalid.success
+            assert invalid.issues[0].code == v.DEFAULT_INVALID
+
+    def test_reference_coercion_and_target_default(self):
+        schema = v.ref("S")
+        schema.resolve(v.string().default("target"))
+        assert schema.parse() == "target"
+        assert schema.coerce(trim=True).parse(" value ") == "value"
 
     def test_default_value_is_validated(self):
         schema = v.object_({

@@ -10,6 +10,56 @@ import anyvali as v
 
 
 class TestExport:
+    @pytest.mark.parametrize("left,right,equal", [
+        ({"min": 1}, {"min": 1.0}, True),
+        ({"min": 1}, {"min": 1.5}, False),
+        ({"metadata": {"custom": {"a": [1, None], "b": 2}}},
+         {"metadata": {"custom": {"b": 2.0, "a": [1.0, None]}}}, True),
+        ({"metadata": {"custom": [True]}}, {"metadata": {"custom": [1]}}, False),
+        ({"metadata": {"custom": [1]}}, {"metadata": {"custom": ["1"]}}, False),
+        ({"metadata": {"custom": [1, 2]}}, {"metadata": {"custom": [2, 1]}}, False),
+        ({"metadata": {"custom": [1]}}, {"metadata": {"custom": [1, 2]}}, False),
+    ])
+    def test_definition_json_equality(self, left, right, equal):
+        def child(fields):
+            return v.import_schema({
+                "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+                "root": {"kind": "ref", "ref": "#/definitions/Value"},
+                "definitions": {"Value": {"kind": "number", **fields}}, "extensions": {},
+            })
+
+        parent = v.object_({"first": child(left), "second": child(right)})
+        if equal:
+            assert v.import_schema(parent.export()).parse({"first": 2, "second": 3}) == {"first": 2, "second": 3}
+        else:
+            with pytest.raises(ValueError, match="Conflicting definition: Value"):
+                parent.export()
+
+    def test_composite_definitions_and_conflicts(self):
+        doc = {"anyvaliVersion": "1.0", "schemaVersion": "1.1",
+               "root": {"kind": "ref", "ref": "#/definitions/Value"},
+               "definitions": {"Value": {"kind": "string", "minLength": 1}}, "extensions": {}}
+        child = v.import_schema(doc)
+        for parent, value in (
+            (v.object_({"value": child}), {"value": "ok"}),
+            (v.array(child), ["ok"]), (v.record(child), {"key": "ok"}),
+            (v.tuple_([child]), ["ok"]), (v.optional(child), "ok"), (v.nullable(child), "ok"),
+            (v.union([child, v.bool_()]), "ok"), (v.intersection([child, v.string()]), "ok"),
+        ):
+            assert parent.parse(value) == value
+            exported = parent.export()
+            assert exported["definitions"] == doc["definitions"]
+            assert v.import_schema(exported).parse(value) == value
+        reordered = v.import_schema({**doc, "definitions": {"Value": {"minLength": 1, "kind": "string"}}})
+        v.object_({"first": child, "second": child, "third": reordered}).export()
+        conflicting = v.import_schema({**doc, "definitions": {"Value": {"kind": "bool"}}})
+        parent = v.object_({"first": child, "second": conflicting})
+        assert parent.parse({"first": "ok", "second": True}) == {"first": "ok", "second": True}
+        with pytest.raises(ValueError, match="Conflicting definition: Value"):
+            v.export_schema(parent)
+        with pytest.raises(ValueError, match="Conflicting definition: Value"):
+            v.export_schema(child, definitions={"Value": v.bool_()})
+
     def test_string_export(self):
         schema = v.string().min_length(1)
         doc = schema.export()
@@ -49,6 +99,21 @@ class TestExport:
 
 
 class TestImport:
+    @pytest.mark.parametrize("kind,value,expected", [
+        ("int", "7", 7), ("number", "1.5", 1.5), ("bool", "true", True),
+    ])
+    @pytest.mark.parametrize("coerce", [{}, {"from": "string"}])
+    def test_sdk_coercion_object_survives_export(self, kind, value, expected, coerce):
+        schema = v.import_schema({
+            "anyvaliVersion": "1.0", "schemaVersion": "1.1",
+            "root": {"kind": kind, "coerce": coerce},
+            "definitions": {}, "extensions": {},
+        })
+        assert schema.parse(value) == expected
+        exported = schema.export()
+        assert "coerce" in exported["root"]
+        assert v.import_schema(exported).parse(value) == expected
+
     def test_reserved_and_custom_metadata_roundtrip(self):
         metadata = {"description": "Private", "sensitive": True, "custom": {"owner": "ports"}}
         for root in (

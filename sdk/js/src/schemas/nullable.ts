@@ -31,6 +31,8 @@ export class NullableSchema<
     return this._inner._runPipeline(input, ctx);
   }
 
+  _children(): BaseSchema[] { return [this._inner]; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "nullable" as const,

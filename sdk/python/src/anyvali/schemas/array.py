@@ -55,6 +55,9 @@ class ArraySchema(BaseSchema[list[Any]]):
 
         return result
 
+    def _children(self) -> list[BaseSchema]:
+        return [self._items]
+
     def _to_node(self) -> dict[str, Any]:
         node: dict[str, Any] = {"kind": "array", "items": self._items._to_node()}
         if self._min_items is not None:

@@ -70,6 +70,8 @@ export class ArraySchema<
     return result;
   }
 
+  _children(): BaseSchema[] { return [this._items]; }
+
   _toNode(): SchemaNode {
     const node = {
       kind: "array" as const,

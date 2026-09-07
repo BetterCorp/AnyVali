@@ -36,6 +36,8 @@ public sealed class RecordSchema : Schema<Dictionary<string, object?>>
         return result;
     }
 
+    internal override IEnumerable<Schema> Children => new[] { _valueSchema };
+
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?>
