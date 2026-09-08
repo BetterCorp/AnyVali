@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Globalization;
 
 namespace AnyVali.Schemas;
 
@@ -32,6 +33,16 @@ public class IntSchema : NumberSchema
     public new IntSchema ExclusiveMin(double n) => (IntSchema)base.ExclusiveMin(n);
     public new IntSchema ExclusiveMax(double n) => (IntSchema)base.ExclusiveMax(n);
     public new IntSchema MultipleOf(double n) => (IntSchema)base.MultipleOf(n);
+    public IntSchema Min(long n) => (IntSchema)WithConstraint("min", n);
+    public IntSchema Min(ulong n) => (IntSchema)WithConstraint("min", n);
+    public IntSchema Max(long n) => (IntSchema)WithConstraint("max", n);
+    public IntSchema Max(ulong n) => (IntSchema)WithConstraint("max", n);
+    public IntSchema ExclusiveMin(long n) => (IntSchema)WithConstraint("exclusiveMin", n);
+    public IntSchema ExclusiveMin(ulong n) => (IntSchema)WithConstraint("exclusiveMin", n);
+    public IntSchema ExclusiveMax(long n) => (IntSchema)WithConstraint("exclusiveMax", n);
+    public IntSchema ExclusiveMax(ulong n) => (IntSchema)WithConstraint("exclusiveMax", n);
+    public IntSchema MultipleOf(long n) => (IntSchema)WithConstraint("multipleOf", n);
+    public IntSchema MultipleOf(ulong n) => (IntSchema)WithConstraint("multipleOf", n);
     public new IntSchema Default(object? value) => (IntSchema)base.Default(value);
     public new IntSchema Coerce(Parse.CoercionConfig? config = null) => (IntSchema)base.Coerce(config);
 
@@ -65,14 +76,7 @@ public class IntSchema : NumberSchema
 
         // Compare exact integer values before narrowing; double bounds would round
         // Int64.MaxValue/UInt64.MaxValue up to the first out-of-range integer.
-        var val = input switch
-        {
-            ulong u => new BigInteger(u),
-            double d => new BigInteger(d),
-            float f => new BigInteger(f),
-            decimal m => new BigInteger(m),
-            _ => new BigInteger(Convert.ToInt64(input)),
-        };
+        var val = ToInteger(input!);
 
         if (val > _rangeMax)
         {
@@ -100,8 +104,61 @@ public class IntSchema : NumberSchema
             return null;
         }
 
-        ValidateConstraints((double)val, ctx);
+        ValidateIntegerConstraints(val, ctx);
         return Kind == "uint64" ? (object)(ulong)val : (long)val;
+    }
+
+    private static BigInteger ToInteger(object value) => value switch
+    {
+        ulong u => new BigInteger(u),
+        double d => new BigInteger(d),
+        float f => new BigInteger(f),
+        decimal m => new BigInteger(m),
+        _ => new BigInteger(Convert.ToInt64(value)),
+    };
+
+    private void ValidateIntegerConstraints(BigInteger value, ValidationContext ctx)
+    {
+        foreach (var (name, bound) in new[] { ("min", _min), ("max", _max),
+            ("exclusiveMin", _exclusiveMin), ("exclusiveMax", _exclusiveMax), ("multipleOf", _multipleOf) })
+        {
+            if (bound is null) continue;
+            var (numerator, denominator) = ConstraintFraction(bound);
+            var scaled = value * denominator;
+            var invalid = name switch
+            {
+                "min" => scaled < numerator,
+                "max" => scaled > numerator,
+                "exclusiveMin" => scaled <= numerator,
+                "exclusiveMax" => scaled >= numerator,
+                _ => scaled % numerator != 0,
+            };
+            if (invalid)
+                ctx.Issues.Add(new ValidationIssue
+                {
+                    Code = name is "min" or "exclusiveMin" ? IssueCodes.TooSmall
+                        : name is "max" or "exclusiveMax" ? IssueCodes.TooLarge : IssueCodes.InvalidNumber,
+                    Message = $"Integer violates {name}: {Convert.ToString(bound, CultureInfo.InvariantCulture)}",
+                    Path = ctx.ClonePath(),
+                    Expected = Convert.ToString(bound, CultureInfo.InvariantCulture),
+                    Received = value.ToString(CultureInfo.InvariantCulture),
+                });
+        }
+    }
+
+    private static (BigInteger numerator, BigInteger denominator) ConstraintFraction(object bound)
+    {
+        if (IsInteger(bound)) return (ToInteger(bound), BigInteger.One);
+
+        // Fractional constraints use their decimal representation, including
+        // scientific notation, so neither the integer nor the remainder is rounded.
+        var parts = Convert.ToString(bound, CultureInfo.InvariantCulture)!.Split('E', 'e');
+        var mantissa = parts[0];
+        var exponent = parts.Length == 2 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
+        var point = mantissa.IndexOf('.');
+        var scale = (point < 0 ? 0 : mantissa.Length - point - 1) - exponent;
+        var numerator = BigInteger.Parse(mantissa.Replace(".", ""), CultureInfo.InvariantCulture);
+        return (numerator, BigInteger.Pow(10, scale));
     }
 
     internal override Schema Clone()

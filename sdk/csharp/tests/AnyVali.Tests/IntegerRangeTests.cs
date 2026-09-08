@@ -85,6 +85,104 @@ public class IntegerRangeTests
     }
 
     [Fact]
+    public void IntegerConstraintsKeepPrecisionThroughClonesAndRoundtrips()
+    {
+        var cases = new (Schema schema, object valid, object invalid, string code)[]
+        {
+            (V.Uint64().MultipleOf(3), ulong.MaxValue, ulong.MaxValue - 1, IssueCodes.InvalidNumber),
+            (V.Int64().MultipleOf(2), long.MaxValue - 1, long.MaxValue, IssueCodes.InvalidNumber),
+            (V.Uint64().Max(9007199254740992d), 9007199254740992UL, 9007199254740993UL, IssueCodes.TooLarge),
+            (V.Uint64().Min(9007199254740992d), 9007199254740992UL, 9007199254740991UL, IssueCodes.TooSmall),
+            (V.Uint64().ExclusiveMin(9007199254740992d), 9007199254740993UL, 9007199254740992UL, IssueCodes.TooSmall),
+            (V.Uint64().ExclusiveMax(9007199254740992d), 9007199254740991UL, 9007199254740992UL, IssueCodes.TooLarge),
+            (V.Int().Min(-1.5).Max(1.5), 1L, 2L, IssueCodes.TooLarge),
+            (V.Int().MultipleOf(1.5), 3L, 2L, IssueCodes.InvalidNumber),
+        };
+        foreach (var (native, valid, invalid, code) in cases)
+        foreach (var schema in new[] { native, native.Describe("clone"), Roundtrip(native) })
+        {
+            Assert.True(schema.SafeParse(valid).Success);
+            Assert.Equal(code, Assert.Single(schema.SafeParse(invalid).Issues).Code);
+        }
+        Assert.True(V.Uint64().MultipleOf(0.1).SafeParse(ulong.MaxValue).Success);
+        Assert.True(V.Uint64().MultipleOf(1.5e-20).SafeParse(ulong.MaxValue).Success);
+        Assert.False(V.Uint64().MultipleOf(1.5e-20).SafeParse(ulong.MaxValue - 1).Success);
+    }
+
+    [Fact]
+    public void Native64BitConstraintArgumentsRemainExact()
+    {
+        var cases = new (Schema schema, object valid, object invalid)[]
+        {
+            (V.Uint64().Max(ulong.MaxValue - 1), ulong.MaxValue - 1, ulong.MaxValue),
+            (V.Uint64().Min(ulong.MaxValue), ulong.MaxValue, ulong.MaxValue - 1),
+            (V.Uint64().ExclusiveMin(ulong.MaxValue - 1), ulong.MaxValue, ulong.MaxValue - 1),
+            (V.Uint64().ExclusiveMax(ulong.MaxValue), ulong.MaxValue - 1, ulong.MaxValue),
+            (V.Uint64().MultipleOf(ulong.MaxValue), ulong.MaxValue, ulong.MaxValue - 1),
+            (V.Int64().Max(long.MaxValue - 1), long.MaxValue - 1, long.MaxValue),
+            (V.Int64().Min(long.MinValue + 1), long.MinValue + 1, long.MinValue),
+            (V.Int64().ExclusiveMin(long.MinValue), long.MinValue + 1, long.MinValue),
+            (V.Int64().ExclusiveMax(long.MaxValue), long.MaxValue - 1, long.MaxValue),
+            (V.Int64().MultipleOf(long.MaxValue), long.MaxValue, long.MaxValue - 1),
+        };
+        foreach (var (native, valid, invalid) in cases)
+        foreach (var schema in new[] { native, native.Describe("clone"), Roundtrip(native) })
+        {
+            Assert.True(schema.SafeParse(valid).Success);
+            Assert.False(schema.SafeParse(invalid).Success);
+        }
+    }
+
+    [Fact]
+    public void InvalidNumericConstraintsFailAtConfiguration()
+    {
+        foreach (var bound in new[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity })
+        {
+            Assert.Throws<InvalidOperationException>(() => V.Int().Max(bound));
+            Assert.Throws<InvalidOperationException>(() => V.Number().Min(bound));
+        }
+        Assert.Throws<InvalidOperationException>(() => V.Int().MultipleOf(0));
+        Assert.Throws<InvalidOperationException>(() => V.Int().MultipleOf(-1));
+    }
+
+    [Theory]
+    [InlineData("min", "18446744073709551614", "18446744073709551613", "too_small")]
+    [InlineData("max", "18446744073709551614", "18446744073709551615", "too_large")]
+    [InlineData("exclusiveMin", "18446744073709551614", "18446744073709551614", "too_small")]
+    [InlineData("exclusiveMax", "18446744073709551614", "18446744073709551614", "too_large")]
+    [InlineData("multipleOf", "18446744073709551614", "18446744073709551615", "invalid_number")]
+    public void ImportedIntegerConstraintsRemainExact(string name, string bound, string input, string code)
+    {
+        var doc = AnyValiDocument.FromJson($$$"""
+            {"anyvaliVersion":"1.0","schemaVersion":"1.1",
+             "root":{"kind":"uint64","{{{name}}}":{{{bound}}}},"definitions":{},"extensions":{}}
+            """);
+        var native = V.Import(doc);
+        foreach (var schema in new[] { native, native.Default(0UL).Describe("clone"), Roundtrip(native) })
+        {
+            Assert.Equal(code, Assert.Single(schema.SafeParse(ulong.Parse(input)).Issues).Code);
+            Assert.Equal(ulong.Parse(bound), Assert.IsType<ulong>(V.Export(schema).Root[name]));
+        }
+    }
+
+    [Theory]
+    [InlineData("string", "minLength")]
+    [InlineData("string", "maxLength")]
+    [InlineData("array", "minItems")]
+    [InlineData("array", "maxItems")]
+    public void OversizedLengthConstraintsAreRejected(string kind, string constraint)
+    {
+        foreach (var size in new[] { "9223372036854775808", "18446744073709551615", "2147483648", "-1", "1.5" })
+        {
+            var doc = AnyValiDocument.FromJson($$$"""
+                {"anyvaliVersion":"1.0","schemaVersion":"1.1",
+                 "root":{"kind":"{{{kind}}}","{{{constraint}}}":{{{size}}}},"definitions":{},"extensions":{}}
+                """);
+            Assert.Throws<InvalidOperationException>(() => V.Import(doc));
+        }
+    }
+
+    [Fact]
     public void ImportedUnsignedConstraintsAreNotConvertedToZero()
     {
         var schema = V.Import(AnyValiDocument.FromJson("""

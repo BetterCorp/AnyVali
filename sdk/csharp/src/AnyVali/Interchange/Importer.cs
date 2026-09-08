@@ -279,18 +279,10 @@ public static class Importer
 
     private static NumberSchema ApplyNumericConstraints(NumberSchema schema, Dictionary<string, object?> node)
     {
-        var s = schema;
-        if (node.TryGetValue("min", out var min) && min is not null)
-            s = s.Min(ToDouble(min));
-        if (node.TryGetValue("max", out var max) && max is not null)
-            s = s.Max(ToDouble(max));
-        if (node.TryGetValue("exclusiveMin", out var emin) && emin is not null)
-            s = s.ExclusiveMin(ToDouble(emin));
-        if (node.TryGetValue("exclusiveMax", out var emax) && emax is not null)
-            s = s.ExclusiveMax(ToDouble(emax));
-        if (node.TryGetValue("multipleOf", out var mo) && mo is not null)
-            s = s.MultipleOf(ToDouble(mo));
-        return s;
+        foreach (var name in new[] { "min", "max", "exclusiveMin", "exclusiveMax", "multipleOf" })
+            if (node.TryGetValue(name, out var value) && value is not null)
+                schema = schema.WithConstraint(name, value);
+        return schema;
     }
 
     private static Dictionary<string, object?> ToDict(object? obj)
@@ -300,27 +292,9 @@ public static class Importer
 
     private static int ToInt(object? value)
     {
-        return value switch
-        {
-            int i => i,
-            long l => (int)l,
-            double d => (int)d,
-            string s => int.Parse(s),
-            _ => 0
-        };
-    }
-
-    private static double ToDouble(object? value)
-    {
-        return value switch
-        {
-            double d => d,
-            long l => l,
-            ulong u => u,
-            int i => i,
-            float f => f,
-            string s => double.Parse(s),
-            _ => 0
-        };
+        if (!Schema.IsFiniteNumber(value) || !Schema.IsInteger(value)
+            || Schema.ToDouble(value) < 0 || Schema.ToDouble(value) > int.MaxValue)
+            throw new InvalidOperationException("Size constraint must be an integer between 0 and Int32.MaxValue");
+        return checked(Convert.ToInt32(value));
     }
 }
