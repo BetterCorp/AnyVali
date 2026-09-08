@@ -249,9 +249,8 @@ public class SecurityTests
     public void IntOverflow_Uint64_BoundaryValues()
     {
         var s = V.Uint64();
-        Assert.Equal(0L, s.Parse(0L));
-        // uint64 is capped at long.MaxValue in the C# SDK
-        Assert.Equal(long.MaxValue, s.Parse(long.MaxValue));
+        Assert.Equal(0UL, Assert.IsType<ulong>(s.SafeParse(0L).Data));
+        Assert.Equal(ulong.MaxValue, Assert.IsType<ulong>(s.SafeParse(ulong.MaxValue).Data));
         Assert.False(s.SafeParse(-1L).Success);
     }
 

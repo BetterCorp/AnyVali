@@ -103,10 +103,14 @@ public static class Coercion
                     if (trimmed.Length == 0 || !IntPattern.IsMatch(trimmed))
                         return new CoercionResult(false, null, $"Cannot coerce \"{sv}\" to {targetType}");
 
-                    if (!long.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var num))
+                    if (long.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var num))
+                        value = num;
+                    else if (targetType == "uint64"
+                        && ulong.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unsigned))
+                        value = unsigned;
+                    else
                         return new CoercionResult(false, null, $"Cannot coerce \"{sv}\" to {targetType}");
 
-                    value = num;
                     break;
                 }
                 case "number":

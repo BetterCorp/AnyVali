@@ -3,11 +3,11 @@ namespace AnyVali.Schemas;
 public class NumberSchema : Schema<double>
 {
     protected string Kind;
-    protected double? _min;
-    protected double? _max;
-    protected double? _exclusiveMin;
-    protected double? _exclusiveMax;
-    protected double? _multipleOf;
+    protected object? _min;
+    protected object? _max;
+    protected object? _exclusiveMin;
+    protected object? _exclusiveMax;
+    protected object? _multipleOf;
 
     public NumberSchema(string kind = "number")
     {
@@ -16,11 +16,28 @@ public class NumberSchema : Schema<double>
 
     internal override string GetCoercionTarget() => Kind;
 
-    public NumberSchema Min(double n) { var c = (NumberSchema)Clone(); c._min = n; return c; }
-    public NumberSchema Max(double n) { var c = (NumberSchema)Clone(); c._max = n; return c; }
-    public NumberSchema ExclusiveMin(double n) { var c = (NumberSchema)Clone(); c._exclusiveMin = n; return c; }
-    public NumberSchema ExclusiveMax(double n) { var c = (NumberSchema)Clone(); c._exclusiveMax = n; return c; }
-    public NumberSchema MultipleOf(double n) { var c = (NumberSchema)Clone(); c._multipleOf = n; return c; }
+    public NumberSchema Min(double n) => WithConstraint("min", n);
+    public NumberSchema Max(double n) => WithConstraint("max", n);
+    public NumberSchema ExclusiveMin(double n) => WithConstraint("exclusiveMin", n);
+    public NumberSchema ExclusiveMax(double n) => WithConstraint("exclusiveMax", n);
+    public NumberSchema MultipleOf(double n) => WithConstraint("multipleOf", n);
+
+    internal NumberSchema WithConstraint(string name, object value)
+    {
+        if (!IsFiniteNumber(value) || name == "multipleOf" && ToDouble(value) <= 0)
+            throw new InvalidOperationException($"Invalid numeric constraint: {name}");
+        var clone = (NumberSchema)Clone();
+        switch (name)
+        {
+            case "min": clone._min = value; break;
+            case "max": clone._max = value; break;
+            case "exclusiveMin": clone._exclusiveMin = value; break;
+            case "exclusiveMax": clone._exclusiveMax = value; break;
+            case "multipleOf": clone._multipleOf = value; break;
+            default: throw new InvalidOperationException($"Unknown numeric constraint: {name}");
+        }
+        return clone;
+    }
 
     public new NumberSchema Default(object? value) => (NumberSchema)base.Default(value);
     public new NumberSchema Coerce(Parse.CoercionConfig? config = null) => (NumberSchema)base.Coerce(config);
@@ -66,65 +83,65 @@ public class NumberSchema : Schema<double>
 
     protected void ValidateConstraints(double val, ValidationContext ctx)
     {
-        if (_min.HasValue && val < _min.Value)
+        if (_min is not null && val < ToDouble(_min))
         {
             ctx.Issues.Add(new ValidationIssue
             {
                 Code = IssueCodes.TooSmall,
-                Message = $"Number must be >= {FormatNum(_min.Value)}",
+                Message = $"Number must be >= {FormatNum(ToDouble(_min))}",
                 Path = ctx.ClonePath(),
-                Expected = FormatNum(_min.Value),
+                Expected = FormatNum(ToDouble(_min)),
                 Received = FormatNum(val),
             });
         }
 
-        if (_max.HasValue && val > _max.Value)
+        if (_max is not null && val > ToDouble(_max))
         {
             ctx.Issues.Add(new ValidationIssue
             {
                 Code = IssueCodes.TooLarge,
-                Message = $"Number must be <= {FormatNum(_max.Value)}",
+                Message = $"Number must be <= {FormatNum(ToDouble(_max))}",
                 Path = ctx.ClonePath(),
-                Expected = FormatNum(_max.Value),
+                Expected = FormatNum(ToDouble(_max)),
                 Received = FormatNum(val),
             });
         }
 
-        if (_exclusiveMin.HasValue && val <= _exclusiveMin.Value)
+        if (_exclusiveMin is not null && val <= ToDouble(_exclusiveMin))
         {
             ctx.Issues.Add(new ValidationIssue
             {
                 Code = IssueCodes.TooSmall,
-                Message = $"Number must be > {FormatNum(_exclusiveMin.Value)}",
+                Message = $"Number must be > {FormatNum(ToDouble(_exclusiveMin))}",
                 Path = ctx.ClonePath(),
-                Expected = FormatNum(_exclusiveMin.Value),
+                Expected = FormatNum(ToDouble(_exclusiveMin)),
                 Received = FormatNum(val),
             });
         }
 
-        if (_exclusiveMax.HasValue && val >= _exclusiveMax.Value)
+        if (_exclusiveMax is not null && val >= ToDouble(_exclusiveMax))
         {
             ctx.Issues.Add(new ValidationIssue
             {
                 Code = IssueCodes.TooLarge,
-                Message = $"Number must be < {FormatNum(_exclusiveMax.Value)}",
+                Message = $"Number must be < {FormatNum(ToDouble(_exclusiveMax))}",
                 Path = ctx.ClonePath(),
-                Expected = FormatNum(_exclusiveMax.Value),
+                Expected = FormatNum(ToDouble(_exclusiveMax)),
                 Received = FormatNum(val),
             });
         }
 
-        if (_multipleOf.HasValue)
+        if (_multipleOf is not null)
         {
-            var remainder = val % _multipleOf.Value;
-            if (Math.Abs(remainder) > 1e-10 && Math.Abs(remainder - _multipleOf.Value) > 1e-10)
+            var remainder = val % ToDouble(_multipleOf);
+            if (Math.Abs(remainder) > 1e-10 && Math.Abs(remainder - ToDouble(_multipleOf)) > 1e-10)
             {
                 ctx.Issues.Add(new ValidationIssue
                 {
                     Code = IssueCodes.InvalidNumber,
-                    Message = $"Number must be a multiple of {FormatNum(_multipleOf.Value)}",
+                    Message = $"Number must be a multiple of {FormatNum(ToDouble(_multipleOf))}",
                     Path = ctx.ClonePath(),
-                    Expected = FormatNum(_multipleOf.Value),
+                    Expected = FormatNum(ToDouble(_multipleOf)),
                     Received = FormatNum(val),
                 });
             }
@@ -134,11 +151,11 @@ public class NumberSchema : Schema<double>
     internal override Dictionary<string, object?> ToNode()
     {
         var node = new Dictionary<string, object?> { ["kind"] = Kind };
-        if (_min.HasValue) node["min"] = _min.Value;
-        if (_max.HasValue) node["max"] = _max.Value;
-        if (_exclusiveMin.HasValue) node["exclusiveMin"] = _exclusiveMin.Value;
-        if (_exclusiveMax.HasValue) node["exclusiveMax"] = _exclusiveMax.Value;
-        if (_multipleOf.HasValue) node["multipleOf"] = _multipleOf.Value;
+        if (_min is not null) node["min"] = _min;
+        if (_max is not null) node["max"] = _max;
+        if (_exclusiveMin is not null) node["exclusiveMin"] = _exclusiveMin;
+        if (_exclusiveMax is not null) node["exclusiveMax"] = _exclusiveMax;
+        if (_multipleOf is not null) node["multipleOf"] = _multipleOf;
         AddDefaultAndCoercion(node);
         return node;
     }

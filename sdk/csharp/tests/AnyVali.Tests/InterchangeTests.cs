@@ -702,7 +702,7 @@ public class ImportTests
                 Extensions = new(),
             };
             var schema = V.Import(doc);
-            Assert.Equal(0L, schema.Parse(0L));
+            Assert.Equal(kind == "uint64" ? (object)0UL : 0L, schema.Parse(0L));
         }
     }
 
