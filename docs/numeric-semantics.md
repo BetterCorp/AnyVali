@@ -118,6 +118,11 @@ C# has `sbyte`/`byte`, `short`/`ushort`, `int`/`uint`, `long`/`ulong`, `float`, 
 
 **Implication**: C# maps directly to AnyVali's full numeric type set with no gaps.
 
+For exact C# integer outputs, use `schema.SafeParse(value).Data` or
+`V.Parse(schema, value)`: `uint64` returns `ulong`, and other integer kinds return
+`long`. The inherited numeric `Parse` and `SafeParseTyped` methods return `double`,
+which cannot represent every 64-bit integer exactly.
+
 ### Rust
 
 Rust has `i8`-`i128`, `u8`-`u128`, `f32`, `f64`. Complete coverage.

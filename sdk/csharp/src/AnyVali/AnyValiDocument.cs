@@ -53,7 +53,8 @@ internal static class JsonHelper
         return element.ValueKind switch
         {
             JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l : element.GetDouble(),
+            JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l
+                : element.TryGetUInt64(out var u) ? (object)u : element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null => null,
@@ -67,7 +68,7 @@ internal static class JsonHelper
 
 /// <summary>
 /// Custom converter that deserializes arbitrary JSON into plain .NET objects
-/// (Dictionary, List, string, long, double, bool, null).
+/// (Dictionary, List, string, long, ulong, double, bool, null).
 /// </summary>
 internal sealed class ObjectJsonConverter : JsonConverter<object?>
 {
@@ -76,7 +77,8 @@ internal sealed class ObjectJsonConverter : JsonConverter<object?>
         return reader.TokenType switch
         {
             JsonTokenType.String => reader.GetString(),
-            JsonTokenType.Number => reader.TryGetInt64(out var l) ? (object)l : reader.GetDouble(),
+            JsonTokenType.Number => reader.TryGetInt64(out var l) ? (object)l
+                : reader.TryGetUInt64(out var u) ? (object)u : reader.GetDouble(),
             JsonTokenType.True => true,
             JsonTokenType.False => false,
             JsonTokenType.Null => null,

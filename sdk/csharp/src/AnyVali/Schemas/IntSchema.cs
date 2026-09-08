@@ -1,11 +1,13 @@
+using System.Numerics;
+
 namespace AnyVali.Schemas;
 
 public class IntSchema : NumberSchema
 {
-    private readonly long _rangeMin;
-    private readonly long _rangeMax;
+    private readonly BigInteger _rangeMin;
+    private readonly BigInteger _rangeMax;
 
-    private static readonly Dictionary<string, (long min, long max)> IntRanges = new()
+    private static readonly Dictionary<string, (BigInteger min, BigInteger max)> IntRanges = new()
     {
         ["int8"] = (-128, 127),
         ["int16"] = (-32768, 32767),
@@ -14,7 +16,7 @@ public class IntSchema : NumberSchema
         ["uint8"] = (0, 255),
         ["uint16"] = (0, 65535),
         ["uint32"] = (0, 4294967295),
-        ["uint64"] = (0, long.MaxValue), // capped at int64 max for safety
+        ["uint64"] = (0, ulong.MaxValue),
         ["int"] = (long.MinValue, long.MaxValue),
     };
 
@@ -61,7 +63,16 @@ public class IntSchema : NumberSchema
             return null;
         }
 
-        var val = ToLong(input);
+        // Compare exact integer values before narrowing; double bounds would round
+        // Int64.MaxValue/UInt64.MaxValue up to the first out-of-range integer.
+        var val = input switch
+        {
+            ulong u => new BigInteger(u),
+            double d => new BigInteger(d),
+            float f => new BigInteger(f),
+            decimal m => new BigInteger(m),
+            _ => new BigInteger(Convert.ToInt64(input)),
+        };
 
         if (val > _rangeMax)
         {
@@ -89,9 +100,8 @@ public class IntSchema : NumberSchema
             return null;
         }
 
-        ValidateConstraints(val, ctx);
-        // Return as long for int types
-        return val;
+        ValidateConstraints((double)val, ctx);
+        return Kind == "uint64" ? (object)(ulong)val : (long)val;
     }
 
     internal override Schema Clone()

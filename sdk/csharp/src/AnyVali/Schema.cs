@@ -420,28 +420,6 @@ public abstract class Schema
         return false;
     }
 
-    /// <summary>
-    /// Convert a numeric value to long.
-    /// </summary>
-    internal static long ToLong(object? value)
-    {
-        return value switch
-        {
-            long l => l,
-            int i => i,
-            double d => (long)d,
-            float f => (long)f,
-            decimal m => (long)m,
-            short s => s,
-            byte b => b,
-            sbyte sb => sb,
-            ushort us => us,
-            uint ui => ui,
-            ulong ul => (long)ul,
-            _ => 0
-        };
-    }
-
     internal static object? DeepCopyDefault(object? value)
     {
         switch (value)

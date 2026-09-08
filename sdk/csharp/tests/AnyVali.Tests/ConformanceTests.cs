@@ -186,16 +186,23 @@ public class ConformanceTests
             case JsonValueKind.Number:
                 if (expected.TryGetInt64(out var l))
                 {
-                    // actual could be long or double
+                    // Integer schemas return long or ulong; number schemas return double.
                     if (actual is int ai)
                         Assert.Equal(l, (long)ai);
                     else if (actual is long al)
                         Assert.Equal(l, al);
+                    else if (actual is ulong au)
+                    {
+                        Assert.True(l >= 0);
+                        Assert.Equal((ulong)l, au);
+                    }
                     else if (actual is double ad)
                         Assert.Equal((double)l, ad);
                     else
                         Assert.Fail($"Expected number {l}, got {actual?.GetType().Name}: {actual}");
                 }
+                else if (actual is ulong au && expected.TryGetUInt64(out var u))
+                    Assert.Equal(u, au);
                 else
                 {
                     var d = expected.GetDouble();
