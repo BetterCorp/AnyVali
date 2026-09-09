@@ -41,6 +41,30 @@ final class RefSchema extends Schema
         return $this->resolvedSchema;
     }
 
+    private function defaultSource(): ?Schema
+    {
+        $current = $this;
+        $seen = new \SplObjectStorage();
+        while ($current instanceof self) {
+            if ($seen->contains($current)) return null;
+            $seen->attach($current);
+            if ($current->hasDefault) return $current;
+            $current = $current->resolvedSchema;
+        }
+        return $current !== null && $current->hasDefaultValue() ? $current : null;
+    }
+
+    public function hasDefaultValue(): bool
+    {
+        return $this->defaultSource() !== null;
+    }
+
+    public function getDefaultValue(): mixed
+    {
+        $source = $this->defaultSource();
+        return $source === $this ? parent::getDefaultValue() : $source?->getDefaultValue();
+    }
+
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
     {
         if ($this->resolvedSchema !== null) {

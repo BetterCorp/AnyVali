@@ -355,7 +355,7 @@ $normalized->parse("  Hello World  ");  // => "hello world"
 
 Defaults fill in missing (absent) values. They run after coercion and before validation. Call `->default($value)` on any schema.
 
-The default only applies when an object property is absent, including required properties restored by document import. Present null is validated normally and never selects a default; nullable properties retain null. Defaults must be static values (for portability across SDKs).
+The default only applies when an object property is absent, including required properties restored by document import. Present null is validated normally and never selects a default; nullable properties retain null. Defaults inherited through resolved references also materialize, and default validation skips coercion. Defaults must be static values (for portability across SDKs).
 
 ```php
 $role = AnyVali::string()->default('user');
@@ -770,6 +770,6 @@ Extends `\RuntimeException`. Thrown by `parse()` on validation failure.
 
 `AnyVali::import()` resolves document references using a graph owned by that import. Root references and nested recursive values work through the ordinary `parse()` and `safeParse()` APIs. Export retains reachable definitions, including when imported schemas are placed inside native parent schemas. Combining incompatible definitions with the same name fails export.
 
-Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference. Cycles that never consume a child value are rejected at import.
+Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference. Cycles that never consume a child value are rejected at import. Validation is limited to 64 nested schema calls per parse path; deeper or cyclic inputs return a validation failure instead of overflowing the runtime stack.
 
 Record interchange uses the canonical `valueSchema` key. The legacy PHP `values` key remains an input alias when `valueSchema` is absent; all exports use `valueSchema`.
