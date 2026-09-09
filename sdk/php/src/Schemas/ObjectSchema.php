@@ -108,6 +108,7 @@ final class ObjectSchema extends Schema
             sensitiveCache: $ctx->sensitiveCache,
             depth: $ctx->depth,
             skipCoercion: $ctx->skipCoercion,
+            budget: $ctx->budget,
         );
 
         // Check required fields
@@ -137,6 +138,7 @@ final class ObjectSchema extends Schema
                 $fieldValue = $value[$key];
 
                 $result = $schema->safeParse($fieldValue, $childCtx->child($key));
+                if ($ctx->budget->exhausted()) return $result;
                 if (!$result->success) {
                     $issues = array_merge($issues, $result->issues);
                 } else {
@@ -147,6 +149,7 @@ final class ObjectSchema extends Schema
                 $defaultVal = $schema->getDefaultValue();
                 // Validate the default value
                 $defResult = $schema->safeParseDefault($defaultVal, $childCtx->child($key));
+                if ($ctx->budget->exhausted()) return $defResult;
                 if (!$defResult->success) {
                     // Default is invalid
                     $issues[] = new ValidationIssue(

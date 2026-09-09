@@ -50,12 +50,11 @@ final class ImportRegressionTest extends TestCase
         AnyVali::object(['first' => $first, 'second' => $second])->export();
     }
 
-    public function testUnguardedReferenceCyclesAreRejected(): void
+    public function testUnguardedReferenceCyclesFailValidation(): void
     {
         $doc = $this->document();
         $doc['definitions']['JsonValue'] = $doc['root'];
-        $this->expectException(\RuntimeException::class);
-        AnyVali::import($doc);
+        $this->assertFalse(AnyVali::import($doc)->safeParse('leaf')->success);
     }
 
     public function testRequiredDefaultsAndNullRoundTrip(): void
@@ -179,6 +178,59 @@ final class ImportRegressionTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('custom validators');
         $ref->export();
+    }
+
+
+    public function testSameDepthCycleWithTerminatingVariant(): void
+    {
+        $ref = ['kind' => 'ref', 'ref' => '#/definitions/A'];
+        $schema = AnyVali::import(['root' => $ref, 'definitions' => ['A' => [
+            'kind' => 'union', 'variants' => [['kind' => 'string'], $ref],
+        ]]]);
+        $this->assertTrue($schema->safeParse('leaf')->success);
+        $this->assertFalse($schema->safeParse(true)->success);
+        $this->assertTrue(AnyVali::import($schema->export()->toJson())->safeParse('leaf')->success);
+    }
+
+    public function testRecursiveWorkBudgetAcrossFailingBranches(): void
+    {
+        $ref = ['kind' => 'ref', 'ref' => '#/definitions/A'];
+        $variant = ['kind' => 'array', 'items' => $ref];
+        $schema = AnyVali::import(['root' => $ref, 'definitions' => ['A' => [
+            'kind' => 'union', 'variants' => [$variant, $variant],
+        ]]]);
+        $value = true;
+        for ($i = 0; $i < 24; $i++) $value = [$value];
+        $start = microtime(true);
+        $ctx = new \AnyVali\ValidationContext();
+        $result = $schema->safeParse($value, $ctx);
+        $this->assertFalse($result->success);
+        $this->assertSame('Maximum validation work exceeded', $result->issues[0]->message);
+        $this->assertLessThan(5.0, microtime(true) - $start);
+        $this->assertTrue($schema->safeParse([], $ctx)->success);
+    }
+
+    public function testDefaultAndPresentValuesUseEqualDepth(): void
+    {
+        $schema = AnyVali::object(['value' => AnyVali::int()->default(12)], required: ['value']);
+        $present = ['value' => 12];
+        $missing = [];
+        for ($i = 0; $i < 62; $i++) {
+            $schema = AnyVali::object(['child' => $schema], required: ['child']);
+            $present = ['child' => $present];
+            $missing = ['child' => $missing];
+        }
+        $this->assertTrue($schema->safeParse($present)->success);
+        $this->assertTrue($schema->safeParse($missing)->success);
+    }
+
+    public function testChildrenOfDefaultObjectsStillCoerce(): void
+    {
+        $schema = AnyVali::object(['config' => AnyVali::object([
+            'count' => AnyVali::int()->coerce('string->int'),
+        ], required: ['count'])->default(['count' => '12'])], required: ['config']);
+        $this->assertSame(['config' => ['count' => 12]], $schema->parse([]));
+        $this->assertSame($schema->parse([]), $schema->parse(['config' => ['count' => '12']]));
     }
 
 }

@@ -63,14 +63,21 @@ abstract class Schema
     public function safeParse(mixed $input, ?ValidationContext $ctx = null): ParseResult
     {
         $ctx ??= new ValidationContext();
-        if ($ctx->depth >= ValidationContext::MAX_DEPTH) {
+        $ctx = $ctx->descend();
+        if (!$ctx->budget->consume()) {
+            return ParseResult::fail([new ValidationIssue(
+                code: IssueCodes::INVALID_TYPE,
+                message: 'Maximum validation work exceeded',
+                path: $ctx->path,
+            )]);
+        }
+        if ($ctx->depth > ValidationContext::MAX_DEPTH) {
             return ParseResult::fail([new ValidationIssue(
                 code: IssueCodes::INVALID_TYPE,
                 message: 'Maximum validation depth exceeded',
                 path: $ctx->path,
             )]);
         }
-        $ctx = $ctx->descend();
         $value = $input;
 
         if (($this->metadata['sensitive'] ?? false) === true && $input !== null && $ctx->sensitiveMode !== null) {
@@ -107,6 +114,7 @@ abstract class Schema
                     inheritedUnknownKeys: $ctx->inheritedUnknownKeys,
                     depth: $ctx->depth,
                     skipCoercion: $ctx->skipCoercion,
+                    budget: $ctx->budget,
                 ));
                 if (!$checked->success) return $checked;
                 $value = $checked->value;
@@ -174,7 +182,7 @@ abstract class Schema
     /** Validate a materialized default after the coercion stage. */
     public function safeParseDefault(mixed $value, ValidationContext $ctx): ParseResult
     {
-        return $this->safeParse($value, $ctx->descend(skipCoercion: true));
+        return $this->safeParse($value, $ctx->forDefault());
     }
 
     public function hasDefaultValue(): bool

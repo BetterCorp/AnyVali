@@ -7,6 +7,7 @@ namespace AnyVali;
 final class ValidationContext
 {
     public const MAX_DEPTH = 64;
+    public readonly ValidationBudget $budget;
     /** @var array<string, array<string, mixed>> */
     public readonly array $definitions;
 
@@ -23,8 +24,10 @@ final class ValidationContext
         public readonly ?\ArrayObject $sensitiveCache = null,
         public readonly int $depth = 0,
         public readonly bool $skipCoercion = false,
+        ?ValidationBudget $budget = null,
     ) {
         $this->definitions = $definitions;
+        $this->budget = $budget ?? new ValidationBudget();
     }
 
     /**
@@ -40,11 +43,12 @@ final class ValidationContext
             sensitiveTransform: $this->sensitiveTransform,
             sensitiveCache: $this->sensitiveCache,
             depth: $this->depth,
-            skipCoercion: $this->skipCoercion,
+            skipCoercion: false,
+            budget: $this->budget,
         );
     }
 
-    public function descend(bool $skipCoercion = false): self
+    public function descend(): self
     {
         return new self(
             path: $this->path,
@@ -54,7 +58,24 @@ final class ValidationContext
             sensitiveTransform: $this->sensitiveTransform,
             sensitiveCache: $this->sensitiveCache,
             depth: $this->depth + 1,
-            skipCoercion: $this->skipCoercion || $skipCoercion,
+            skipCoercion: $this->skipCoercion,
+            budget: $this->depth === 0 ? new ValidationBudget() : $this->budget,
+        );
+    }
+
+
+    public function forDefault(): self
+    {
+        return new self(
+            path: $this->path,
+            definitions: $this->definitions,
+            inheritedUnknownKeys: $this->inheritedUnknownKeys,
+            sensitiveMode: $this->sensitiveMode,
+            sensitiveTransform: $this->sensitiveTransform,
+            sensitiveCache: $this->sensitiveCache,
+            depth: $this->depth,
+            skipCoercion: true,
+            budget: $this->budget,
         );
     }
 
