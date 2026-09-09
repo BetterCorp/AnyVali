@@ -1,6 +1,11 @@
 package anyvali
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strings"
+)
 
 // Export converts a Schema to a Document.
 func Export(schema Schema, mode ExportMode) (*Document, error) {
@@ -15,7 +20,9 @@ func Export(schema Schema, mode ExportMode) (*Document, error) {
 	}
 
 	// Collect any ref definitions from the schema tree
-	collectDefinitions(node, doc.Definitions)
+	if err := collectSchemaDefinitions(schema, doc.Definitions, make(map[*RefSchema]bool)); err != nil {
+		return nil, err
+	}
 
 	return doc, nil
 }
@@ -48,4 +55,52 @@ func collectDefinitions(node map[string]any, defs map[string]map[string]any) {
 			}
 		}
 	}
+}
+
+// Walk the schema graph, stopping at previously visited nodes for recursion.
+func collectSchemaDefinitions(schema Schema, defs map[string]map[string]any, seen map[*RefSchema]bool) error {
+	var children []Schema
+	switch s := schema.(type) {
+	case *RefSchema:
+		if seen[s] {
+			return nil
+		}
+		seen[s] = true
+		if s.resolved == nil {
+			return nil
+		}
+		if strings.HasPrefix(s.ref, "#/definitions/") {
+			name := strings.TrimPrefix(s.ref, "#/definitions/")
+			node := s.resolved.ToNode()
+			if previous, ok := defs[name]; ok && !reflect.DeepEqual(previous, node) {
+				return fmt.Errorf("conflicting definition %q", name)
+			}
+			defs[name] = node
+		}
+		children = []Schema{s.resolved}
+	case *ObjectSchema:
+		for _, child := range s.properties {
+			children = append(children, child)
+		}
+	case *ArraySchema:
+		children = []Schema{s.item}
+	case *RecordSchema:
+		children = []Schema{s.valueSchema}
+	case *TupleSchema:
+		children = s.items
+	case *UnionSchema:
+		children = s.schemas
+	case *IntersectionSchema:
+		children = s.schemas
+	case *OptionalSchema:
+		children = []Schema{s.inner}
+	case *NullableSchema:
+		children = []Schema{s.inner}
+	}
+	for _, child := range children {
+		if err := collectSchemaDefinitions(child, defs, seen); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -208,7 +208,7 @@ func TestRunPipelineCoercionSuccess(t *testing.T) {
 func TestRunPipelineDefaultApplied(t *testing.T) {
 	b := &baseSchema{}
 	b.setDefault("fallback")
-	result := b.runPipeline(nil, func(v any) (any, []ValidationIssue) {
+	result := b.runPipeline(absentValue, func(v any) (any, []ValidationIssue) {
 		return v, nil
 	})
 	if !result.Success {

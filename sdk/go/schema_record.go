@@ -76,8 +76,8 @@ func (s *RecordSchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *RecordSchema) ToNode() map[string]any {
 	node := map[string]any{
-		"kind":  "record",
-		"value": s.valueSchema.ToNode(),
+		"kind":        "record",
+		"valueSchema": s.valueSchema.ToNode(),
 	}
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)

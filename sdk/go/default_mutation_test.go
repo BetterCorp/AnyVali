@@ -11,14 +11,14 @@ import "testing"
 func TestDefaultNotSharedArrayOfAny(t *testing.T) {
 	s := Array(Any()).Default([]any{map[string]any{"n": float64(0)}})
 
-	r1, err := s.Parse(nil)
+	r1, err := s.Parse(absentValue)
 	if err != nil {
 		t.Fatalf("first parse failed: %v", err)
 	}
 	m1 := r1.([]any)[0].(map[string]any)
 	m1["n"] = float64(99)
 
-	r2, err := s.Parse(nil)
+	r2, err := s.Parse(absentValue)
 	if err != nil {
 		t.Fatalf("second parse failed: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestDefaultNotSharedObjectAllowedKey(t *testing.T) {
 		UnknownKeys(Allow).
 		Default(map[string]any{"tags": []any{"orig"}})
 
-	r1, err := s.Parse(nil)
+	r1, err := s.Parse(absentValue)
 	if err != nil {
 		t.Fatalf("first parse failed: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestDefaultNotSharedObjectAllowedKey(t *testing.T) {
 	// default's backing array, this corrupts the default for later parses.
 	r1.(map[string]any)["tags"].([]any)[0] = "MUTATED"
 
-	r2, err := s.Parse(nil)
+	r2, err := s.Parse(absentValue)
 	if err != nil {
 		t.Fatalf("second parse failed: %v", err)
 	}

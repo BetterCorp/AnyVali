@@ -49,10 +49,10 @@ func TestDefaultInPipeline(t *testing.T) {
 	// Test that defaults work through the full pipeline
 	s := String().Default("default_val")
 
-	// nil triggers default
-	r := s.SafeParse(nil)
+	// Absence triggers default
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != "default_val" {
-		t.Fatalf("expected default_val for nil input, got %v (success=%v)", r.Data, r.Success)
+		t.Fatalf("expected default_val for absent input, got %v (success=%v)", r.Data, r.Success)
 	}
 
 	// Present value should not trigger default
@@ -64,7 +64,7 @@ func TestDefaultInPipeline(t *testing.T) {
 
 func TestDefaultNumberSchema(t *testing.T) {
 	s := Number().Default(42.0)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != 42.0 {
 		t.Fatalf("expected 42.0, got %v (success=%v)", r.Data, r.Success)
 	}
@@ -72,7 +72,7 @@ func TestDefaultNumberSchema(t *testing.T) {
 
 func TestDefaultBoolSchema(t *testing.T) {
 	s := Bool().Default(true)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != true {
 		t.Fatalf("expected true, got %v (success=%v)", r.Data, r.Success)
 	}
@@ -80,7 +80,7 @@ func TestDefaultBoolSchema(t *testing.T) {
 
 func TestDefaultIntSchema(t *testing.T) {
 	s := Int().Default(7)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success with default, got issues: %v", r.Issues)
 	}
@@ -88,7 +88,7 @@ func TestDefaultIntSchema(t *testing.T) {
 
 func TestDefaultArraySchema(t *testing.T) {
 	s := Array(String()).Default([]any{"a", "b"})
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success with default, got issues: %v", r.Issues)
 	}
@@ -98,7 +98,7 @@ func TestDefaultObjectSchema(t *testing.T) {
 	s := Object(map[string]Schema{
 		"name": String(),
 	}).Default(map[string]any{"name": "default"})
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success with default, got issues: %v", r.Issues)
 	}

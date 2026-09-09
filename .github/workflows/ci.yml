@@ -113,6 +113,8 @@ jobs:
           cache-dependency-path: sdk/go/go.sum
       - run: chmod +x runner.sh
       - run: ./runner.sh ci go
+      - name: Check Go races
+        run: cd sdk/go && go test -race ./...
       - run: ./runner.sh coverage go
       - uses: codecov/codecov-action@v7
         if: github.event_name == 'push' && matrix.go-version == '1.22'

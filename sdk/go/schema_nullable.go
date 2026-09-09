@@ -44,7 +44,11 @@ func (s *NullableSchema) Parse(input any) (any, error) {
 func (s *NullableSchema) SafeParse(input any) ParseResult {
 	if isAbsent(input) {
 		if s.hasDefault {
-			return s.inner.SafeParse(s.defaultValue)
+			value := deepCopyDefault(s.defaultValue)
+			if value == nil {
+				return ParseResult{Success: true, Data: nil}
+			}
+			return s.inner.SafeParse(value)
 		}
 		return ParseResult{Success: true, Data: nil}
 	}

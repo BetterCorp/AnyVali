@@ -75,7 +75,7 @@ func TestArraySchemaEmpty(t *testing.T) {
 
 func TestArraySchemaDefault(t *testing.T) {
 	s := Array(String()).Default([]any{"x"})
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success, got: %v", r.Issues)
 	}
@@ -286,7 +286,7 @@ func TestRecordSchemaToNode(t *testing.T) {
 	if node["kind"] != "record" {
 		t.Fatal("expected kind=record")
 	}
-	val, ok := node["value"].(map[string]any)
+	val, ok := node["valueSchema"].(map[string]any)
 	if !ok {
 		t.Fatal("expected value node")
 	}

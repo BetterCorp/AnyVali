@@ -235,7 +235,7 @@ func TestOptionalSchemaAbsent(t *testing.T) {
 
 func TestOptionalSchemaWithDefault(t *testing.T) {
 	s := Optional(String()).Default("fallback")
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success")
 	}

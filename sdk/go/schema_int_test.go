@@ -258,7 +258,7 @@ func TestIntSchemaReturnAsInt64WhenFits(t *testing.T) {
 
 func TestIntSchemaDefault(t *testing.T) {
 	s := Int().Default(42)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success, got: %v", r.Issues)
 	}

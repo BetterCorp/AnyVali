@@ -91,7 +91,7 @@ func TestImportStringSchemaWithCoercionsAndDefaults(t *testing.T) {
 		t.Fatalf("expected 'hello', got %v", r.Data)
 	}
 	// Test default
-	r = s.SafeParse(nil)
+	r = s.SafeParse(absentValue)
 	if !r.Success || r.Data != "fallback" {
 		t.Fatalf("expected 'fallback', got %v", r.Data)
 	}
@@ -424,7 +424,7 @@ func TestImportEnumSchemaWithDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != "a" {
 		t.Fatal("expected default=a")
 	}
@@ -826,7 +826,7 @@ func TestImportOptionalSchemaWithDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != "fallback" {
 		t.Fatalf("expected 'fallback', got %v", r.Data)
 	}
