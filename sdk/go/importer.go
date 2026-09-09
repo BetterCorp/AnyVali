@@ -6,18 +6,21 @@ import (
 	"math"
 )
 
-// refResolving tracks which definitions are currently being resolved
-// to prevent infinite recursion on circular $ref schemas.
-var refResolving map[string]bool
+// importContext owns reference resolution for one document. Placeholders are
+// registered before descending so recursive references share the completed graph.
+type importContext struct {
+	refs   map[string]*RefSchema
+	active map[string]int
+	depth  int
+}
 
 // Import converts a Document to a Schema.
 func Import(doc *Document) (Schema, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("document is nil")
 	}
-	refResolving = make(map[string]bool)
-	defer func() { refResolving = nil }()
-	return importNode(doc.Root, doc.Definitions)
+	ctx := &importContext{refs: make(map[string]*RefSchema), active: make(map[string]int)}
+	return ctx.importNode(doc.Root, doc.Definitions)
 }
 
 // ImportJSON parses JSON bytes into a Document and then converts to a Schema.
@@ -29,7 +32,7 @@ func ImportJSON(data []byte) (Schema, error) {
 	return Import(&doc)
 }
 
-func importNode(node map[string]any, defs map[string]map[string]any) (Schema, error) {
+func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (Schema, error) {
 	if node == nil {
 		return nil, fmt.Errorf("schema node is nil")
 	}
@@ -77,23 +80,23 @@ func importNode(node map[string]any, defs map[string]map[string]any) (Schema, er
 	case "enum":
 		return importEnumSchema(node)
 	case "array":
-		return importArraySchema(node, defs)
+		return ctx.importArraySchema(node, defs)
 	case "tuple":
-		return importTupleSchema(node, defs)
+		return ctx.importTupleSchema(node, defs)
 	case "object":
-		return importObjectSchema(node, defs)
+		return ctx.importObjectSchema(node, defs)
 	case "record":
-		return importRecordSchema(node, defs)
+		return ctx.importRecordSchema(node, defs)
 	case "union":
-		return importUnionSchema(node, defs)
+		return ctx.importUnionSchema(node, defs)
 	case "intersection":
-		return importIntersectionSchema(node, defs)
+		return ctx.importIntersectionSchema(node, defs)
 	case "optional":
-		return importOptionalSchema(node, defs)
+		return ctx.importOptionalSchema(node, defs)
 	case "nullable":
-		return importNullableSchema(node, defs)
+		return ctx.importNullableSchema(node, defs)
 	case "ref":
-		return importRefSchema(node, defs)
+		return ctx.importRefSchema(node, defs)
 	default:
 		return nil, fmt.Errorf("unsupported schema kind: %s", kind)
 	}
@@ -225,7 +228,9 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 	return s, nil
 }
 
-func importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
+func (ctx *importContext) importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
+	ctx.depth++
+	defer func() { ctx.depth-- }()
 	// Accept both "item" and "items" keys for compatibility
 	itemNode, ok := node["item"].(map[string]any)
 	if !ok {
@@ -234,7 +239,7 @@ func importArraySchema(node map[string]any, defs map[string]map[string]any) (*Ar
 	if !ok {
 		return nil, fmt.Errorf("array schema missing 'item' or 'items' field")
 	}
-	item, err := importNode(itemNode, defs)
+	item, err := ctx.importNode(itemNode, defs)
 	if err != nil {
 		return nil, fmt.Errorf("array item: %w", err)
 	}
@@ -249,7 +254,9 @@ func importArraySchema(node map[string]any, defs map[string]map[string]any) (*Ar
 	return s, nil
 }
 
-func importTupleSchema(node map[string]any, defs map[string]map[string]any) (*TupleSchema, error) {
+func (ctx *importContext) importTupleSchema(node map[string]any, defs map[string]map[string]any) (*TupleSchema, error) {
+	ctx.depth++
+	defer func() { ctx.depth-- }()
 	itemNodes, ok := node["items"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("tuple schema missing 'items' field")
@@ -260,7 +267,7 @@ func importTupleSchema(node map[string]any, defs map[string]map[string]any) (*Tu
 		if !ok {
 			return nil, fmt.Errorf("tuple item %d is not a valid schema node", i)
 		}
-		item, err := importNode(m, defs)
+		item, err := ctx.importNode(m, defs)
 		if err != nil {
 			return nil, fmt.Errorf("tuple item %d: %w", i, err)
 		}
@@ -269,7 +276,9 @@ func importTupleSchema(node map[string]any, defs map[string]map[string]any) (*Tu
 	return Tuple(items...), nil
 }
 
-func importObjectSchema(node map[string]any, defs map[string]map[string]any) (*ObjectSchema, error) {
+func (ctx *importContext) importObjectSchema(node map[string]any, defs map[string]map[string]any) (*ObjectSchema, error) {
+	ctx.depth++
+	defer func() { ctx.depth-- }()
 	propsNode, ok := node["properties"].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("object schema missing 'properties' field")
@@ -280,7 +289,7 @@ func importObjectSchema(node map[string]any, defs map[string]map[string]any) (*O
 		if !ok {
 			return nil, fmt.Errorf("property %q is not a valid schema node", key)
 		}
-		schema, err := importNode(m, defs)
+		schema, err := ctx.importNode(m, defs)
 		if err != nil {
 			return nil, fmt.Errorf("property %q: %w", key, err)
 		}
@@ -308,19 +317,25 @@ func importObjectSchema(node map[string]any, defs map[string]map[string]any) (*O
 	return s, nil
 }
 
-func importRecordSchema(node map[string]any, defs map[string]map[string]any) (*RecordSchema, error) {
-	valueNode, ok := node["value"].(map[string]any)
+func (ctx *importContext) importRecordSchema(node map[string]any, defs map[string]map[string]any) (*RecordSchema, error) {
+	ctx.depth++
+	defer func() { ctx.depth-- }()
+	raw, present := node["valueSchema"]
+	if !present {
+		raw = node["value"]
+	} // Legacy input alias; exports are canonical.
+	valueNode, ok := raw.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("record schema missing 'value' field")
+		return nil, fmt.Errorf("record schema missing or invalid 'valueSchema' field")
 	}
-	value, err := importNode(valueNode, defs)
+	value, err := ctx.importNode(valueNode, defs)
 	if err != nil {
 		return nil, fmt.Errorf("record value: %w", err)
 	}
 	return Record(value), nil
 }
 
-func importUnionSchema(node map[string]any, defs map[string]map[string]any) (*UnionSchema, error) {
+func (ctx *importContext) importUnionSchema(node map[string]any, defs map[string]map[string]any) (*UnionSchema, error) {
 	// Accept both "schemas" and "variants" keys for compatibility
 	schemasNode, ok := node["schemas"].([]any)
 	if !ok {
@@ -335,7 +350,7 @@ func importUnionSchema(node map[string]any, defs map[string]map[string]any) (*Un
 		if !ok {
 			return nil, fmt.Errorf("union schema %d is not a valid schema node", i)
 		}
-		schema, err := importNode(m, defs)
+		schema, err := ctx.importNode(m, defs)
 		if err != nil {
 			return nil, fmt.Errorf("union schema %d: %w", i, err)
 		}
@@ -344,7 +359,7 @@ func importUnionSchema(node map[string]any, defs map[string]map[string]any) (*Un
 	return Union(schemas...), nil
 }
 
-func importIntersectionSchema(node map[string]any, defs map[string]map[string]any) (*IntersectionSchema, error) {
+func (ctx *importContext) importIntersectionSchema(node map[string]any, defs map[string]map[string]any) (*IntersectionSchema, error) {
 	schemasNode, ok := node["schemas"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("intersection schema missing 'schemas' field")
@@ -355,7 +370,7 @@ func importIntersectionSchema(node map[string]any, defs map[string]map[string]an
 		if !ok {
 			return nil, fmt.Errorf("intersection schema %d is not a valid schema node", i)
 		}
-		schema, err := importNode(m, defs)
+		schema, err := ctx.importNode(m, defs)
 		if err != nil {
 			return nil, fmt.Errorf("intersection schema %d: %w", i, err)
 		}
@@ -364,12 +379,12 @@ func importIntersectionSchema(node map[string]any, defs map[string]map[string]an
 	return Intersection(schemas...), nil
 }
 
-func importOptionalSchema(node map[string]any, defs map[string]map[string]any) (*OptionalSchema, error) {
+func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[string]map[string]any) (*OptionalSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("optional schema missing 'schema' field")
 	}
-	inner, err := importNode(schemaNode, defs)
+	inner, err := ctx.importNode(schemaNode, defs)
 	if err != nil {
 		return nil, fmt.Errorf("optional inner: %w", err)
 	}
@@ -378,12 +393,12 @@ func importOptionalSchema(node map[string]any, defs map[string]map[string]any) (
 	return s, nil
 }
 
-func importNullableSchema(node map[string]any, defs map[string]map[string]any) (*NullableSchema, error) {
+func (ctx *importContext) importNullableSchema(node map[string]any, defs map[string]map[string]any) (*NullableSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("nullable schema missing 'schema' field")
 	}
-	inner, err := importNode(schemaNode, defs)
+	inner, err := ctx.importNode(schemaNode, defs)
 	if err != nil {
 		return nil, fmt.Errorf("nullable inner: %w", err)
 	}
@@ -392,31 +407,25 @@ func importNullableSchema(node map[string]any, defs map[string]map[string]any) (
 	return s, nil
 }
 
-func importRefSchema(node map[string]any, defs map[string]map[string]any) (*RefSchema, error) {
+func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]map[string]any) (*RefSchema, error) {
 	ref, ok := node["ref"].(string)
 	if !ok {
 		return nil, fmt.Errorf("ref schema missing 'ref' field")
 	}
+	if depth, active := ctx.active[ref]; active && depth == ctx.depth {
+		return nil, fmt.Errorf("reference cycle without a child value: %s", ref)
+	}
+	if cached, ok := ctx.refs[ref]; ok {
+		return cached, nil
+	}
 	s := newRefSchema(ref)
-
-	// Try to resolve from definitions
-	// ref format: #/definitions/Name
+	ctx.refs[ref] = s
+	ctx.active[ref] = ctx.depth
+	defer delete(ctx.active, ref)
 	const defPrefix = "#/definitions/"
 	if len(ref) > len(defPrefix) && ref[:len(defPrefix)] == defPrefix {
-		defName := ref[len(defPrefix):]
-		if defNode, ok := defs[defName]; ok {
-			// Cycle detection: skip resolution if this definition is already being resolved
-			if refResolving != nil && refResolving[defName] {
-				// Leave unresolved - lazy resolution will handle it at validation time
-				return s, nil
-			}
-			if refResolving != nil {
-				refResolving[defName] = true
-			}
-			resolved, err := importNode(defNode, defs)
-			if refResolving != nil {
-				delete(refResolving, defName)
-			}
+		if defNode, ok := defs[ref[len(defPrefix):]]; ok {
+			resolved, err := ctx.importNode(defNode, defs)
 			if err != nil {
 				return nil, fmt.Errorf("ref %q: %w", ref, err)
 			}

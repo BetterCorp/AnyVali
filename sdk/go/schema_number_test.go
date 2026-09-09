@@ -171,7 +171,7 @@ func TestFloat64Schema(t *testing.T) {
 
 func TestNumberSchemaDefault(t *testing.T) {
 	s := Number().Default(42.0)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != 42.0 {
 		t.Fatalf("expected 42.0, got %v", r.Data)
 	}

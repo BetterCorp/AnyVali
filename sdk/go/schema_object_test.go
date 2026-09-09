@@ -270,7 +270,7 @@ func TestObjectSchemaDefault(t *testing.T) {
 	s := Object(map[string]Schema{
 		"name": String(),
 	}).Default(map[string]any{"name": "default"})
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatalf("expected success with default, got: %v", r.Issues)
 	}

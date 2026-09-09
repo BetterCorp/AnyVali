@@ -258,7 +258,7 @@ func TestEnumSchemaNumeric(t *testing.T) {
 
 func TestEnumSchemaDefault(t *testing.T) {
 	s := Enum("a", "b").Default("a")
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success with default")
 	}
@@ -322,7 +322,7 @@ func TestBoolSchemaInvalid(t *testing.T) {
 
 func TestBoolSchemaDefault(t *testing.T) {
 	s := Bool().Default(false)
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success || r.Data != false {
 		t.Fatal("expected false default")
 	}

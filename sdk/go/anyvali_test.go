@@ -419,8 +419,8 @@ func TestNullableSchema(t *testing.T) {
 
 func TestDefaults(t *testing.T) {
 	s := String().Default("fallback")
-	// nil is treated as absent in the pipeline, so default applies
-	r := s.SafeParse(nil)
+	// Only absent input selects the default.
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success with default")
 	}
@@ -666,7 +666,7 @@ func TestIntMultipleOf(t *testing.T) {
 
 func TestOptionalWithDefault(t *testing.T) {
 	s := Optional(String()).Default("default_value")
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success")
 	}
@@ -719,7 +719,7 @@ func TestIntMaxValues(t *testing.T) {
 
 func TestEnumDefault(t *testing.T) {
 	s := Enum("a", "b", "c").Default("b")
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success with default")
 	}

@@ -152,7 +152,7 @@ func TestStringSchemaMultipleConstraintsFail(t *testing.T) {
 
 func TestStringSchemaDefault(t *testing.T) {
 	s := String().Default("fallback")
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
 		t.Fatal("expected success")
 	}

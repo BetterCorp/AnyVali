@@ -87,7 +87,7 @@ func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []Validat
 	usedDefault := false
 
 	// Step 1: presence detection
-	if value == nil || isAbsent(value) {
+	if isAbsent(value) {
 		// Step 3: apply default if absent
 		if b.hasDefault {
 			// Deep-copy so mutable defaults (maps/slices) are isolated per
@@ -96,9 +96,6 @@ func (b *baseSchema) runPipeline(input any, validateFn func(any) (any, []Validat
 			// one result would corrupt the default for the next parse.
 			value = deepCopyDefault(b.defaultValue)
 			usedDefault = true
-		} else if value == nil {
-			// nil is a present value (null), pass through to validation
-			value = nil
 		} else {
 			// truly absent
 			value = nil

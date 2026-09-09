@@ -369,7 +369,7 @@ Available coercion types:
 
 ### Defaults
 
-Defaults fill in missing (absent) values. The default value must pass validation. Defaults must be static values (for portability across SDKs); use the Common Patterns section below for computed defaults.
+Defaults fill in missing (absent) object properties. A present `nil` is null, including at the root, and never selects a default. Non-nullable schemas reject it; nullable schemas preserve it. The default value must pass validation. Defaults must be static values (for portability across SDKs); use the Common Patterns section below for computed defaults.
 
 Call `.Default(value)` on any schema:
 
@@ -727,3 +727,9 @@ type ExportMode string   // Portable, Extended
 type UnknownKeyMode string // Reject, Strip, Allow
 type CoercionType string  // CoerceToInt, CoerceToNumber, CoerceToBool, CoerceTrim, CoerceLower, CoerceUpper
 ```
+
+### Record and reference interchange
+
+Records export their child schema under the canonical `valueSchema` key. Imports also accept the legacy `value` key when `valueSchema` is absent. Recursive references retain their resolved definitions during export, including when embedded in native parent schemas. Conflicting definition names from different documents cause an export error.
+
+Independent `Import` and `ImportJSON` calls can run concurrently. Each import owns its reference graph; failing imports cannot affect another document. Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference.
