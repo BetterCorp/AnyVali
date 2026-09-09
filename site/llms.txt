@@ -32,9 +32,11 @@ pip install anyvali              # Python
 go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali                # Rust
 dotnet add package AnyVali       # C#
-composer require anyvali/anyvali # PHP
+# PHP: pinned Composer source installation (link below)
 gem install anyvali              # Ruby
 ```
+
+PHP is source-only; the public Packagist package is unavailable. Use a pinned checkout and a Composer path repository as described at https://docs.anyvali.com/docs/sdk-php#installation.
 
 ## Type Inference
 

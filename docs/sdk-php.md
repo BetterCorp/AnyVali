@@ -30,7 +30,7 @@ Merge these entries into your application's `composer.json`:
 }
 ```
 
-Then run `composer update anyvali/anyvali` and require `vendor/autoload.php` as usual. Composer copies the package into `vendor`, reads its PHP requirement and PSR-4 mapping from `sdk/php/composer.json`, and records the installation in `composer.lock`. Commit the lockfile and recreate the same pinned source checkout before `composer install` in CI or deployment.
+For a new application without `composer.lock`, run `composer install` to create the lockfile and install dependencies. For an existing application with a lockfile, run `composer update anyvali/anyvali` to add or update this dependency. Require `vendor/autoload.php` as usual. Composer copies the package into `vendor`, reads its PHP requirement and PSR-4 mapping from `sdk/php/composer.json`, and records the installation in `composer.lock`. Commit the lockfile and recreate the same pinned source checkout before `composer install` in CI or deployment.
 
 The explicit version maps the PHP source to the unified repository tag (`v1.1.5` means `1.1.5`). It does not assert a Packagist release exists. Update both the source pin and Composer version together when upgrading. Historical `php-v*` tags, the old `0.0.1` manifest field, and the legacy `VERSION` file do not identify current public Composer releases. A root VCS repository URL alone cannot discover the manifest nested under `sdk/php`.
 
