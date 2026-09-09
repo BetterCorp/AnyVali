@@ -37,15 +37,19 @@ func (s *IntersectionSchema) Parse(input any) (any, error) {
 }
 
 func (s *IntersectionSchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *IntersectionSchema) validate(value any) (any, []ValidationIssue) {
+func (s *IntersectionSchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+}
+
+func (s *IntersectionSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
 	var issues []ValidationIssue
 	var lastData any = value
 
 	for _, schema := range s.schemas {
-		result := schema.SafeParse(value)
+		result := parseAtDepth(schema, value, depth+1)
 		if !result.Success {
 			issues = append(issues, result.Issues...)
 		} else {
@@ -89,4 +93,3 @@ func (s *IntersectionSchema) ToNode() map[string]any {
 	s.addMetadataNode(node)
 	return node
 }
-

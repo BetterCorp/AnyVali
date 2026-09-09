@@ -73,8 +73,8 @@ func TestCanonicalRecordRoundTrip(t *testing.T) {
 			}
 			root := doc["root"].(map[string]any)
 			if root["kind"] == "record" {
-				if _, ok := root["valueSchema"]; !ok {
-					t.Fatal("missing canonical valueSchema")
+				if _, ok := root["values"]; !ok {
+					t.Fatal("missing canonical values")
 				}
 				if _, ok := root["value"]; ok {
 					t.Fatal("exported legacy key")
@@ -177,8 +177,8 @@ func TestRecursiveExportUsesCanonicalChildKeys(t *testing.T) {
 	if variants[1].(map[string]any)["items"] == nil {
 		t.Fatal("array must export canonical items")
 	}
-	if variants[2].(map[string]any)["valueSchema"] == nil {
-		t.Fatal("record must export canonical valueSchema")
+	if variants[2].(map[string]any)["values"] == nil {
+		t.Fatal("record must export canonical values")
 	}
 }
 
@@ -194,6 +194,64 @@ func TestExportIncludesEmptyDocumentMaps(t *testing.T) {
 	for _, key := range []string{"definitions", "extensions"} {
 		if value, ok := doc[key].(map[string]any); !ok || len(value) != 0 {
 			t.Fatalf("%s must be an empty object: %s", key, data)
+		}
+	}
+}
+
+func TestSpecRecordInputAndAliasPrecedence(t *testing.T) {
+	s, err := ImportJSON([]byte(`{"root":{"kind":"record","values":{"kind":"string"},"valueSchema":{"kind":"bool"}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.SafeParse(map[string]any{"key": "leaf"}).Success || s.SafeParse(map[string]any{"key": true}).Success {
+		t.Fatal("spec values must take precedence")
+	}
+}
+
+func TestRecursiveValidationDepth(t *testing.T) {
+	s, err := ImportJSON([]byte(`{"root":{"kind":"ref","ref":"#/definitions/Node"},"definitions":{"Node":{"kind":"object","required":[],"properties":{"child":{"kind":"ref","ref":"#/definitions/Node"}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var deep any = map[string]any{}
+	for i := 0; i < 1000; i++ {
+		deep = map[string]any{"child": deep}
+	}
+	result := s.SafeParse(deep)
+	if result.Success || result.Issues[0].Message != "maximum validation depth exceeded" {
+		t.Fatalf("unexpected deep result: %+v", result)
+	}
+	cycle := map[string]any{}
+	cycle["child"] = cycle
+	if s.SafeParse(cycle).Success {
+		t.Fatal("cyclic input accepted")
+	}
+	if !s.SafeParse(map[string]any{"child": map[string]any{}}).Success {
+		t.Fatal("valid input rejected after failure")
+	}
+	ref := newRefSchema("#/definitions/Tuple")
+	ref.Resolve(Tuple(ref))
+	array := make([]any, 1)
+	array[0] = array
+	if ref.SafeParse(array).Success {
+		t.Fatal("cyclic tuple accepted")
+	}
+}
+
+func TestEquivalentObjectDefinitionsExportDeterministically(t *testing.T) {
+	data := []byte(`{"root":{"kind":"ref","ref":"#/definitions/Value"},"definitions":{"Value":{"kind":"object","properties":{"a":{"kind":"string"},"b":{"kind":"bool"},"c":{"kind":"number"}}}}}`)
+	first, err := ImportJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := ImportJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent := Object(map[string]Schema{"first": first, "second": second})
+	for i := 0; i < 20; i++ {
+		if _, err := Export(parent, Portable); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

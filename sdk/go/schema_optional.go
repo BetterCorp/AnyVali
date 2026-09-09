@@ -42,14 +42,18 @@ func (s *OptionalSchema) Parse(input any) (any, error) {
 }
 
 func (s *OptionalSchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *OptionalSchema) validate(value any) (any, []ValidationIssue) {
+func (s *OptionalSchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+}
+
+func (s *OptionalSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
 	if value == nil {
 		return nil, nil
 	}
-	result := s.inner.SafeParse(value)
+	result := parseAtDepth(s.inner, value, depth+1)
 	if result.Success {
 		return result.Data, nil
 	}

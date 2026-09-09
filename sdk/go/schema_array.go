@@ -56,10 +56,14 @@ func (s *ArraySchema) Parse(input any) (any, error) {
 }
 
 func (s *ArraySchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *ArraySchema) validate(value any) (any, []ValidationIssue) {
+func (s *ArraySchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+}
+
+func (s *ArraySchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
 	arr, ok := value.([]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -92,7 +96,7 @@ func (s *ArraySchema) validate(value any) (any, []ValidationIssue) {
 
 	parsed := make([]any, len(arr))
 	for i, item := range arr {
-		result := s.item.SafeParse(item)
+		result := parseAtDepth(s.item, item, depth+1)
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{i}, issue.Path...)

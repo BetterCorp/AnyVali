@@ -39,14 +39,18 @@ func (s *UnionSchema) Parse(input any) (any, error) {
 }
 
 func (s *UnionSchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *UnionSchema) validate(value any) (any, []ValidationIssue) {
+func (s *UnionSchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+}
+
+func (s *UnionSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
 	var allIssues []ValidationIssue
 
 	for _, schema := range s.schemas {
-		result := schema.SafeParse(value)
+		result := parseAtDepth(schema, value, depth+1)
 		if result.Success {
 			return result.Data, nil
 		}
