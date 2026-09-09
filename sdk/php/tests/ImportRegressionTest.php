@@ -245,4 +245,34 @@ final class ImportRegressionTest extends TestCase
         AnyVali::object(['a' => $make(9007199254740993), 'b' => $make(9007199254740992.0)])->export();
     }
 
+    public function testImportDepthBoundsLongReferencesAndInlineSchemas(): void
+    {
+        $definitions = ['A1000' => ['kind' => 'string']];
+        for ($i = 999; $i >= 0; $i--) {
+            $definitions['A' . $i] = ['kind' => 'ref', 'ref' => '#/definitions/A' . ($i + 1)];
+        }
+        $documents = [['root' => ['kind' => 'ref', 'ref' => '#/definitions/A0'], 'definitions' => $definitions]];
+        foreach (['items', 'elements', 'variants', 'allOf'] as $key) {
+            $kind = ['items' => 'array', 'elements' => 'tuple', 'variants' => 'union', 'allOf' => 'intersection'][$key];
+            $node = ['kind' => 'string'];
+            for ($i = 0; $i < 63; $i++) {
+                $node = ['kind' => $kind, $key => $key === 'items' ? $node : [$node]];
+            }
+            $this->assertInstanceOf(\AnyVali\Schema::class, Importer::importNode($node));
+            for ($i = 0; $i < 1000; $i++) {
+                $node = ['kind' => $kind, $key => $key === 'items' ? $node : [$node]];
+            }
+            $documents[] = ['root' => $node];
+        }
+        foreach ($documents as $document) {
+            try {
+                AnyVali::import($document);
+                $this->fail('Expected excessive import depth to be rejected');
+            } catch (\RuntimeException $error) {
+                $this->assertSame('Maximum schema import depth exceeded', $error->getMessage());
+            }
+            $this->assertSame('leaf', AnyVali::import(['root' => ['kind' => 'string']])->parse('leaf'));
+        }
+    }
+
 }
