@@ -71,7 +71,7 @@ final class TupleSchema extends Schema
 
         foreach ($this->elements as $i => $schema) {
             $result = $schema->safeParse($value[$i], $ctx->child($i));
-                if ($ctx->budget->exhausted()) return $result;
+            if ($ctx->budget->exhausted()) return $result;
             if (!$result->success) {
                 $issues = array_merge($issues, $result->issues);
             } else {
