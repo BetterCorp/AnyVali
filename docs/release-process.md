@@ -22,7 +22,7 @@ Choose the version based on the public changes: `fix:` normally means a patch, `
 |-----|------------------------------------|
 | JavaScript | npm: `anyvali` |
 | Python | PyPI: `anyvali` |
-| Go | Repository module source; use a commit or matching module version |
+| Go | Commit-pinned repository source (Go pseudo-version) |
 | Rust | crates.io: `anyvali` |
 | Java | Maven Central: `com.anyvali:anyvali` |
 | Kotlin | Maven Central: `com.anyvali:anyvali-kotlin` |
@@ -31,6 +31,8 @@ Choose the version based on the public changes: `fix:` normally means a patch, `
 | PHP | [Pinned Composer path installation](sdk-php.md#installation) from source |
 | C++ | Repository source |
 | CLI | GitHub release binaries for Linux, macOS, and Windows, with SHA-256 checksums |
+
+The Go SDK is a nested module under `sdk/go`. The current release job verifies the module but does not create `sdk/go/v<version>` tags. A unified root tag therefore does not publish the same semantic Go module version. Pin the release commit with `go get github.com/BetterCorp/AnyVali/sdk/go@<commit>`; Go records its pseudo-version in `go.mod`. A future semantic module release would require the directory-prefixed tag described in [Go's module version mapping](https://go.dev/ref/mod#vcs-version).
 
 The public PHP package `anyvali/anyvali` is unavailable on Packagist. There is no active Packagist publishing job or webhook configuration in this repository. Historical `php-v*` tags do not prove a Composer package was published. Use the unified source tag and an explicit Composer path version mapping; the old manifest `0.0.1` field and legacy `sdk/php/VERSION` file are not release identifiers.
 

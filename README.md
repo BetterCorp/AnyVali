@@ -298,7 +298,7 @@ The portable JSON format:
 | Java | `com.anyvali:anyvali` | v0.0.1 |
 | C# | [`AnyVali`](https://www.nuget.org/packages/AnyVali) | v0.0.1 |
 | Rust | [`anyvali`](https://crates.io/crates/anyvali) | v0.0.1 |
-| PHP | `anyvali/anyvali` | v0.0.1 |
+| PHP | [`anyvali/anyvali` from source](docs/sdk-php.md#installation) | Pinned repository release |
 | Ruby | [`anyvali`](https://rubygems.org/gems/anyvali) | v0.0.1 |
 | Kotlin | `com.anyvali:anyvali` | v0.0.1 |
 | C++ | `anyvali` (CMake) | v0.0.1 |
