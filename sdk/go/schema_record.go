@@ -39,10 +39,14 @@ func (s *RecordSchema) Parse(input any) (any, error) {
 }
 
 func (s *RecordSchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *RecordSchema) validate(value any) (any, []ValidationIssue) {
+func (s *RecordSchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+}
+
+func (s *RecordSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -57,7 +61,7 @@ func (s *RecordSchema) validate(value any) (any, []ValidationIssue) {
 	parsed := make(map[string]any)
 
 	for key, val := range obj {
-		result := s.valueSchema.SafeParse(val)
+		result := parseAtDepth(s.valueSchema, val, depth+1)
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{key}, issue.Path...)
@@ -76,8 +80,8 @@ func (s *RecordSchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *RecordSchema) ToNode() map[string]any {
 	node := map[string]any{
-		"kind":        "record",
-		"valueSchema": s.valueSchema.ToNode(),
+		"kind":   "record",
+		"values": s.valueSchema.ToNode(),
 	}
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)

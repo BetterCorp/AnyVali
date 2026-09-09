@@ -320,13 +320,16 @@ func (ctx *importContext) importObjectSchema(node map[string]any, defs map[strin
 func (ctx *importContext) importRecordSchema(node map[string]any, defs map[string]map[string]any) (*RecordSchema, error) {
 	ctx.depth++
 	defer func() { ctx.depth-- }()
-	raw, present := node["valueSchema"]
+	raw, present := node["values"]
 	if !present {
-		raw = node["value"]
-	} // Legacy input alias; exports are canonical.
+		raw, present = node["valueSchema"]
+		if !present {
+			raw = node["value"]
+		}
+	} // Compatibility aliases; exports follow the specification.
 	valueNode, ok := raw.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("record schema missing or invalid 'valueSchema' field")
+		return nil, fmt.Errorf("record schema missing or invalid 'values' field")
 	}
 	value, err := ctx.importNode(valueNode, defs)
 	if err != nil {

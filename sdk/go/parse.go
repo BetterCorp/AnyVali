@@ -412,3 +412,19 @@ func typeName(v any) string {
 		return fmt.Sprintf("%T", v)
 	}
 }
+
+const maxValidationDepth = 256
+
+func validationDepthExceeded() ParseResult {
+	return ParseResult{Success: false, Issues: []ValidationIssue{{Code: IssueInvalidType, Message: "maximum validation depth exceeded"}}}
+}
+
+func parseAtDepth(schema Schema, input any, depth int) ParseResult {
+	if depth >= maxValidationDepth {
+		return validationDepthExceeded()
+	}
+	if contextual, ok := schema.(interface{ safeParseAtDepth(any, int) ParseResult }); ok {
+		return contextual.safeParseAtDepth(input, depth)
+	}
+	return schema.SafeParse(input)
+}

@@ -46,6 +46,10 @@ func (s *RefSchema) Parse(input any) (any, error) {
 }
 
 func (s *RefSchema) SafeParse(input any) ParseResult {
+	return parseAtDepth(s, input, 0)
+}
+
+func (s *RefSchema) safeParseAtDepth(input any, depth int) ParseResult {
 	if s.resolved == nil {
 		return ParseResult{
 			Success: false,
@@ -55,7 +59,7 @@ func (s *RefSchema) SafeParse(input any) ParseResult {
 			}},
 		}
 	}
-	return s.resolved.SafeParse(input)
+	return parseAtDepth(s.resolved, input, depth+1)
 }
 
 func (s *RefSchema) ToNode() map[string]any {

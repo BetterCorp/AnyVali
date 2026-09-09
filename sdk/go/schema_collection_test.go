@@ -286,7 +286,7 @@ func TestRecordSchemaToNode(t *testing.T) {
 	if node["kind"] != "record" {
 		t.Fatal("expected kind=record")
 	}
-	val, ok := node["valueSchema"].(map[string]any)
+	val, ok := node["values"].(map[string]any)
 	if !ok {
 		t.Fatal("expected value node")
 	}

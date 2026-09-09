@@ -1,6 +1,9 @@
 package anyvali
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // ObjectSchema validates objects (maps) with defined properties.
 type ObjectSchema struct {
@@ -86,20 +89,20 @@ func (s *ObjectSchema) Parse(input any) (any, error) {
 }
 
 func (s *ObjectSchema) SafeParse(input any) ParseResult {
-	return s.runPipeline(input, s.validate)
+	return parseAtDepth(s, input, 0)
 }
 
-func (s *ObjectSchema) validate(value any) (any, []ValidationIssue) {
-	return s.validateWithInherited(value, "", false)
+func (s *ObjectSchema) safeParseAtDepth(input any, depth int) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateWithInherited(value, "", false, depth) })
 }
 
-func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMode) ParseResult {
+func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMode, depth int) ParseResult {
 	return s.runPipeline(input, func(value any) (any, []ValidationIssue) {
-		return s.validateWithInherited(value, inherited, true)
+		return s.validateWithInherited(value, inherited, true, depth)
 	})
 }
 
-func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool) (any, []ValidationIssue) {
+func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool, depth int) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -128,7 +131,7 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 				_, hasDefault = defaultInfo.defaultInfo()
 			}
 			if canHaveDefault && hasDefault {
-				result := safeParseChild(schema, absentValue, mode, propagate)
+				result := safeParseChild(schema, absentValue, mode, propagate, depth+1)
 				if !result.Success {
 					for _, issue := range result.Issues {
 						issue.Path = append([]any{key}, issue.Path...)
@@ -151,7 +154,7 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 			continue
 		}
 
-		result := safeParseChild(schema, val, mode, propagate)
+		result := safeParseChild(schema, val, mode, propagate, depth+1)
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{key}, issue.Path...)
@@ -187,13 +190,16 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 	return parsed, nil
 }
 
-func safeParseChild(schema Schema, val any, mode UnknownKeyMode, propagate bool) ParseResult {
+func safeParseChild(schema Schema, val any, mode UnknownKeyMode, propagate bool, depth int) ParseResult {
+	if depth >= maxValidationDepth {
+		return validationDepthExceeded()
+	}
 	if propagate {
 		if obj, ok := schema.(*ObjectSchema); ok {
-			return obj.safeParseWithInherited(val, mode)
+			return obj.safeParseWithInherited(val, mode, depth)
 		}
 	}
-	return schema.SafeParse(val)
+	return parseAtDepth(schema, val, depth)
 }
 
 func (s *ObjectSchema) ToNode() map[string]any {
@@ -209,6 +215,7 @@ func (s *ObjectSchema) ToNode() map[string]any {
 		}
 	}
 
+	sort.Slice(requiredList, func(i, j int) bool { return requiredList[i].(string) < requiredList[j].(string) })
 	node := map[string]any{
 		"kind":        "object",
 		"properties":  props,
