@@ -103,7 +103,7 @@ func TestArraySchemaToNode(t *testing.T) {
 	if node["kind"] != "array" {
 		t.Fatal("expected kind=array")
 	}
-	item, ok := node["item"].(map[string]any)
+	item, ok := node["items"].(map[string]any)
 	if !ok {
 		t.Fatal("expected item node")
 	}

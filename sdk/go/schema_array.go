@@ -111,8 +111,8 @@ func (s *ArraySchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *ArraySchema) ToNode() map[string]any {
 	node := map[string]any{
-		"kind": "array",
-		"item": s.item.ToNode(),
+		"kind":  "array",
+		"items": s.item.ToNode(),
 	}
 	if s.minItems != nil {
 		node["minItems"] = *s.minItems
