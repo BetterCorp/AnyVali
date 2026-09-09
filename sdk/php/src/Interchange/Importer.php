@@ -31,6 +31,8 @@ use AnyVali\Schemas\{
 
 final class Importer
 {
+    private const MAX_DEPTH = 64;
+    private int $depth = 0;
     /** @var array<string, Schema> */
     private array $resolved = [];
     /** @var array<string, bool> */
@@ -79,50 +81,58 @@ final class Importer
 
     private function node(array $node, array $definitions): Schema
     {
-        $kind = $node['kind'] ?? null;
-
-        if ($kind === null) {
-            throw new \RuntimeException('Schema node missing "kind" field');
+        if ($this->depth >= self::MAX_DEPTH) {
+            throw new \RuntimeException('Maximum schema import depth exceeded');
         }
+        $this->depth++;
+        try {
+            $kind = $node['kind'] ?? null;
 
-        $schema = match ($kind) {
-            'string' => $this->importString($node),
-            'number', 'float64', 'float32' => $this->importNumber($node, $kind),
-            'int', 'int8', 'int16', 'int32', 'int64',
-            'uint8', 'uint16', 'uint32', 'uint64' => $this->importInt($node, $kind),
-            'bool' => $this->importBool($node),
-            'null' => new NullSchema(),
-            'any' => new AnySchema(),
-            'unknown' => new UnknownSchema(),
-            'never' => new NeverSchema(),
-            'literal' => new LiteralSchema($node['value'] ?? null),
-            'enum' => new EnumSchema($node['values'] ?? []),
-            'array' => $this->importArray2($node, $definitions),
-            'tuple' => $this->importTuple($node, $definitions),
-            'object' => $this->importObject($node, $definitions),
-            'record' => $this->importRecord($node, $definitions),
-            'union' => $this->importUnion($node, $definitions),
-            'intersection' => $this->importIntersection($node, $definitions),
-            'optional' => $this->importOptional($node, $definitions),
-            'nullable' => $this->importNullable($node, $definitions),
-            'ref' => new RefSchema($node['ref'] ?? ''),
-            default => throw new \RuntimeException("Unsupported schema kind: {$kind}"),
-        };
+            if ($kind === null) {
+                throw new \RuntimeException('Schema node missing "kind" field');
+            }
 
-        // Apply coerce
-        if (isset($node['coerce'])) {
-            $schema = $schema->coerce($node['coerce']);
+            $schema = match ($kind) {
+                'string' => $this->importString($node),
+                'number', 'float64', 'float32' => $this->importNumber($node, $kind),
+                'int', 'int8', 'int16', 'int32', 'int64',
+                'uint8', 'uint16', 'uint32', 'uint64' => $this->importInt($node, $kind),
+                'bool' => $this->importBool($node),
+                'null' => new NullSchema(),
+                'any' => new AnySchema(),
+                'unknown' => new UnknownSchema(),
+                'never' => new NeverSchema(),
+                'literal' => new LiteralSchema($node['value'] ?? null),
+                'enum' => new EnumSchema($node['values'] ?? []),
+                'array' => $this->importArray2($node, $definitions),
+                'tuple' => $this->importTuple($node, $definitions),
+                'object' => $this->importObject($node, $definitions),
+                'record' => $this->importRecord($node, $definitions),
+                'union' => $this->importUnion($node, $definitions),
+                'intersection' => $this->importIntersection($node, $definitions),
+                'optional' => $this->importOptional($node, $definitions),
+                'nullable' => $this->importNullable($node, $definitions),
+                'ref' => new RefSchema($node['ref'] ?? ''),
+                default => throw new \RuntimeException("Unsupported schema kind: {$kind}"),
+            };
+
+            // Apply coerce
+            if (isset($node['coerce'])) {
+                $schema = $schema->coerce($node['coerce']);
+            }
+
+            // Apply default
+            if (array_key_exists('default', $node)) {
+                $schema = $schema->default($node['default']);
+            }
+
+            if ($schema instanceof RefSchema) {
+                $this->resolveRef($schema, $definitions);
+            }
+            return $schema;
+        } finally {
+            $this->depth--;
         }
-
-        // Apply default
-        if (array_key_exists('default', $node)) {
-            $schema = $schema->default($node['default']);
-        }
-
-        if ($schema instanceof RefSchema) {
-            $this->resolveRef($schema, $definitions);
-        }
-        return $schema;
     }
 
     /**
@@ -198,10 +208,10 @@ final class Importer
      */
     private function importTuple(array $node, array $definitions): TupleSchema
     {
-        $elements = array_map(
-            fn(array $el) => $this->node($el, $definitions),
-            $node['elements'] ?? [],
-        );
+        $elements = [];
+        foreach ($node['elements'] ?? [] as $element) {
+            $elements[] = $this->node($element, $definitions);
+        }
         return new TupleSchema($elements);
     }
 
@@ -243,10 +253,10 @@ final class Importer
     {
         // Accept "variants", "schemas", and "union.variants" keys for compatibility
         $variantsData = $node['variants'] ?? $node['schemas'] ?? $node['union.variants'] ?? [];
-        $variants = array_map(
-            fn(array $v) => $this->node($v, $definitions),
-            $variantsData,
-        );
+        $variants = [];
+        foreach ($variantsData as $variant) {
+            $variants[] = $this->node($variant, $definitions);
+        }
         return new UnionSchema($variants);
     }
 
@@ -256,10 +266,10 @@ final class Importer
      */
     private function importIntersection(array $node, array $definitions): IntersectionSchema
     {
-        $allOf = array_map(
-            fn(array $s) => $this->node($s, $definitions),
-            $node['allOf'] ?? [],
-        );
+        $allOf = [];
+        foreach ($node['allOf'] ?? [] as $member) {
+            $allOf[] = $this->node($member, $definitions);
+        }
         return new IntersectionSchema($allOf);
     }
 
