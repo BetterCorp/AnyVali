@@ -47,8 +47,8 @@ type Document struct {
 	AnyvaliVersion string                    `json:"anyvaliVersion"`
 	SchemaVersion  string                    `json:"schemaVersion"`
 	Root           map[string]any            `json:"root"`
-	Definitions    map[string]map[string]any `json:"definitions,omitempty"`
-	Extensions     map[string]any            `json:"extensions,omitempty"`
+	Definitions    map[string]map[string]any `json:"definitions"`
+	Extensions     map[string]any            `json:"extensions"`
 }
 
 // ExportMode controls what is included in exported documents.
