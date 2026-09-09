@@ -1,9 +1,10 @@
 package anyvali
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
+	"math/big"
 	"strings"
 )
 
@@ -72,8 +73,14 @@ func collectSchemaDefinitions(schema Schema, defs map[string]map[string]any, see
 		if strings.HasPrefix(s.ref, "#/definitions/") {
 			name := strings.TrimPrefix(s.ref, "#/definitions/")
 			node := s.resolved.ToNode()
-			if previous, ok := defs[name]; ok && !reflect.DeepEqual(previous, node) {
-				return fmt.Errorf("conflicting definition %q", name)
+			if previous, ok := defs[name]; ok {
+				equal, err := equivalentDefinition(previous, node)
+				if err != nil {
+					return err
+				}
+				if !equal {
+					return fmt.Errorf("conflicting definition %q", name)
+				}
 			}
 			defs[name] = node
 		}
@@ -103,4 +110,66 @@ func collectSchemaDefinitions(schema Schema, defs map[string]map[string]any, see
 		}
 	}
 	return nil
+}
+
+// Compare JSON numbers exactly, independently of native Go numeric types.
+func equivalentDefinition(left, right map[string]any) (bool, error) {
+	normalize := func(value any) (any, error) {
+		data, err := json.Marshal(value)
+		if err != nil {
+			return nil, err
+		}
+		decoder := json.NewDecoder(bytes.NewReader(data))
+		decoder.UseNumber()
+		var normalized any
+		err = decoder.Decode(&normalized)
+		return normalized, err
+	}
+	a, err := normalize(left)
+	if err != nil {
+		return false, err
+	}
+	b, err := normalize(right)
+	if err != nil {
+		return false, err
+	}
+	return jsonValuesEqual(a, b), nil
+}
+
+func jsonValuesEqual(left, right any) bool {
+	switch a := left.(type) {
+	case json.Number:
+		b, ok := right.(json.Number)
+		if !ok {
+			return false
+		}
+		ar, aok := new(big.Rat).SetString(string(a))
+		br, bok := new(big.Rat).SetString(string(b))
+		return aok && bok && ar.Cmp(br) == 0
+	case map[string]any:
+		b, ok := right.(map[string]any)
+		if !ok || len(a) != len(b) {
+			return false
+		}
+		for key, value := range a {
+			other, present := b[key]
+			if !present || !jsonValuesEqual(value, other) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		b, ok := right.([]any)
+		if !ok || len(a) != len(b) {
+			return false
+		}
+		for i, value := range a {
+			if !jsonValuesEqual(value, b[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return left == right
+	}
 }

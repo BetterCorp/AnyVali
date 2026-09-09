@@ -189,7 +189,7 @@ func TestIntersectionSchemaToNode(t *testing.T) {
 	if node["kind"] != "intersection" {
 		t.Fatal("expected kind=intersection")
 	}
-	schemas, ok := node["schemas"].([]any)
+	schemas, ok := node["allOf"].([]any)
 	if !ok {
 		t.Fatal("expected schemas to be []any")
 	}
@@ -213,9 +213,9 @@ func TestOptionalSchemaPresent(t *testing.T) {
 
 func TestOptionalSchemaNil(t *testing.T) {
 	s := Optional(String())
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
-		t.Fatal("expected success for nil")
+		t.Fatal("expected success for absent input")
 	}
 	if r.Data != nil {
 		t.Fatalf("expected nil, got %v", r.Data)
@@ -272,7 +272,7 @@ func TestOptionalSchemaParse(t *testing.T) {
 	if v != "hello" {
 		t.Fatalf("expected 'hello', got %v", v)
 	}
-	v, err = s.Parse(nil)
+	v, err = s.Parse(absentValue)
 	if err != nil {
 		t.Fatal(err)
 	}

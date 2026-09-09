@@ -804,9 +804,9 @@ func TestImportOptionalSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := s.SafeParse(nil)
+	r := s.SafeParse(absentValue)
 	if !r.Success {
-		t.Fatal("expected success for nil")
+		t.Fatal("expected success for absent input")
 	}
 	r = s.SafeParse("hello")
 	if !r.Success {

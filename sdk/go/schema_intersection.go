@@ -37,19 +37,22 @@ func (s *IntersectionSchema) Parse(input any) (any, error) {
 }
 
 func (s *IntersectionSchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *IntersectionSchema) safeParseAtDepth(input any, depth int) ParseResult {
-	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+func (s *IntersectionSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, ctx) })
 }
 
-func (s *IntersectionSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
+func (s *IntersectionSchema) validateAtDepth(value any, ctx parseContext) (any, []ValidationIssue) {
 	var issues []ValidationIssue
 	var lastData any = value
 
 	for _, schema := range s.schemas {
-		result := parseAtDepth(schema, value, depth+1)
+		result := parseAtDepth(schema, value, ctx.child())
+		if ctx.budget.calls > maxValidationCalls {
+			return nil, result.Issues
+		}
 		if !result.Success {
 			issues = append(issues, result.Issues...)
 		} else {
@@ -86,8 +89,8 @@ func (s *IntersectionSchema) ToNode() map[string]any {
 		schemas[i] = schema.ToNode()
 	}
 	node := map[string]any{
-		"kind":    "intersection",
-		"schemas": schemas,
+		"kind":  "intersection",
+		"allOf": schemas,
 	}
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)

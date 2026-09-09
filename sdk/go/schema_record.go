@@ -39,14 +39,14 @@ func (s *RecordSchema) Parse(input any) (any, error) {
 }
 
 func (s *RecordSchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *RecordSchema) safeParseAtDepth(input any, depth int) ParseResult {
-	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+func (s *RecordSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, ctx) })
 }
 
-func (s *RecordSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
+func (s *RecordSchema) validateAtDepth(value any, ctx parseContext) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -61,7 +61,10 @@ func (s *RecordSchema) validateAtDepth(value any, depth int) (any, []ValidationI
 	parsed := make(map[string]any)
 
 	for key, val := range obj {
-		result := parseAtDepth(s.valueSchema, val, depth+1)
+		result := parseAtDepth(s.valueSchema, val, ctx.child())
+		if ctx.budget.calls > maxValidationCalls {
+			return nil, result.Issues
+		}
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{key}, issue.Path...)

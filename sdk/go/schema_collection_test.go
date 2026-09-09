@@ -208,7 +208,7 @@ func TestTupleSchemaToNode(t *testing.T) {
 	if node["kind"] != "tuple" {
 		t.Fatal("expected kind=tuple")
 	}
-	items, ok := node["items"].([]any)
+	items, ok := node["elements"].([]any)
 	if !ok {
 		t.Fatal("expected items to be []any")
 	}

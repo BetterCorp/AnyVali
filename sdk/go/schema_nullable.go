@@ -42,24 +42,24 @@ func (s *NullableSchema) Parse(input any) (any, error) {
 }
 
 func (s *NullableSchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *NullableSchema) safeParseAtDepth(input any, depth int) ParseResult {
+func (s *NullableSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
 	if isAbsent(input) {
 		if s.hasDefault {
 			value := deepCopyDefault(s.defaultValue)
 			if value == nil {
 				return ParseResult{Success: true, Data: nil}
 			}
-			return parseAtDepth(s.inner, value, depth+1)
+			return parseAtDepth(s.inner, value, ctx.child())
 		}
 		return ParseResult{Success: true, Data: nil}
 	}
 	if input == nil {
 		return ParseResult{Success: true, Data: nil}
 	}
-	return parseAtDepth(s.inner, input, depth+1)
+	return parseAtDepth(s.inner, input, ctx.child())
 }
 
 func (s *NullableSchema) ToNode() map[string]any {

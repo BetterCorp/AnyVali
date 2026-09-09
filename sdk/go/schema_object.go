@@ -89,20 +89,20 @@ func (s *ObjectSchema) Parse(input any) (any, error) {
 }
 
 func (s *ObjectSchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *ObjectSchema) safeParseAtDepth(input any, depth int) ParseResult {
-	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateWithInherited(value, "", false, depth) })
+func (s *ObjectSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateWithInherited(value, "", false, ctx) })
 }
 
-func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMode, depth int) ParseResult {
+func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMode, ctx parseContext) ParseResult {
 	return s.runPipeline(input, func(value any) (any, []ValidationIssue) {
-		return s.validateWithInherited(value, inherited, true, depth)
+		return s.validateWithInherited(value, inherited, true, ctx)
 	})
 }
 
-func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool, depth int) (any, []ValidationIssue) {
+func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool, ctx parseContext) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -131,7 +131,10 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 				_, hasDefault = defaultInfo.defaultInfo()
 			}
 			if canHaveDefault && hasDefault {
-				result := safeParseChild(schema, absentValue, mode, propagate, depth+1)
+				result := safeParseChild(schema, absentValue, mode, propagate, ctx.child())
+				if ctx.budget.calls > maxValidationCalls {
+					return nil, result.Issues
+				}
 				if !result.Success {
 					for _, issue := range result.Issues {
 						issue.Path = append([]any{key}, issue.Path...)
@@ -154,7 +157,10 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 			continue
 		}
 
-		result := safeParseChild(schema, val, mode, propagate, depth+1)
+		result := safeParseChild(schema, val, mode, propagate, ctx.child())
+		if ctx.budget.calls > maxValidationCalls {
+			return nil, result.Issues
+		}
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{key}, issue.Path...)
@@ -190,16 +196,16 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 	return parsed, nil
 }
 
-func safeParseChild(schema Schema, val any, mode UnknownKeyMode, propagate bool, depth int) ParseResult {
-	if depth >= maxValidationDepth {
-		return validationDepthExceeded()
-	}
+func safeParseChild(schema Schema, val any, mode UnknownKeyMode, propagate bool, ctx parseContext) ParseResult {
 	if propagate {
 		if obj, ok := schema.(*ObjectSchema); ok {
-			return obj.safeParseWithInherited(val, mode, depth)
+			if failure := ctx.checkLimits(); failure != nil {
+				return *failure
+			}
+			return obj.safeParseWithInherited(val, mode, ctx)
 		}
 	}
-	return parseAtDepth(schema, val, depth)
+	return parseAtDepth(schema, val, ctx)
 }
 
 func (s *ObjectSchema) ToNode() map[string]any {

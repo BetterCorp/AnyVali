@@ -419,12 +419,38 @@ func validationDepthExceeded() ParseResult {
 	return ParseResult{Success: false, Issues: []ValidationIssue{{Code: IssueInvalidType, Message: "maximum validation depth exceeded"}}}
 }
 
-func parseAtDepth(schema Schema, input any, depth int) ParseResult {
-	if depth >= maxValidationDepth {
-		return validationDepthExceeded()
+func parseAtDepth(schema Schema, input any, ctx parseContext) ParseResult {
+	if failure := ctx.checkLimits(); failure != nil {
+		return *failure
 	}
-	if contextual, ok := schema.(interface{ safeParseAtDepth(any, int) ParseResult }); ok {
-		return contextual.safeParseAtDepth(input, depth)
+	if contextual, ok := schema.(interface {
+		safeParseAtDepth(any, parseContext) ParseResult
+	}); ok {
+		return contextual.safeParseAtDepth(input, ctx)
 	}
 	return schema.SafeParse(input)
+}
+
+const maxValidationCalls = 100000
+
+type parseBudget struct{ calls int }
+type parseContext struct {
+	depth  int
+	budget *parseBudget
+}
+
+func newParseContext() parseContext { return parseContext{budget: &parseBudget{}} }
+func (ctx parseContext) child() parseContext {
+	return parseContext{depth: ctx.depth + 1, budget: ctx.budget}
+}
+func (ctx parseContext) checkLimits() *ParseResult {
+	ctx.budget.calls++
+	if ctx.budget.calls > maxValidationCalls {
+		return &ParseResult{Success: false, Issues: []ValidationIssue{{Code: IssueInvalidType, Message: "maximum validation work exceeded"}}}
+	}
+	if ctx.depth >= maxValidationDepth {
+		result := validationDepthExceeded()
+		return &result
+	}
+	return nil
 }

@@ -399,8 +399,8 @@ func TestOptionalSchema(t *testing.T) {
 	if r := s.SafeParse("hello"); !r.Success {
 		t.Fatal("expected success for string")
 	}
-	if r := s.SafeParse(nil); !r.Success {
-		t.Fatal("expected success for nil (optional)")
+	if r := s.SafeParse(absentValue); !r.Success {
+		t.Fatal("expected success for absent input (optional)")
 	}
 }
 
