@@ -106,6 +106,8 @@ final class ObjectSchema extends Schema
             sensitiveMode: $ctx->sensitiveMode,
             sensitiveTransform: $ctx->sensitiveTransform,
             sensitiveCache: $ctx->sensitiveCache,
+            depth: $ctx->depth,
+            skipCoercion: $ctx->skipCoercion,
         );
 
         // Check required fields
@@ -144,7 +146,7 @@ final class ObjectSchema extends Schema
                 // Apply default
                 $defaultVal = $schema->getDefaultValue();
                 // Validate the default value
-                $defResult = $schema->safeParse($defaultVal, $childCtx->child($key));
+                $defResult = $schema->safeParseDefault($defaultVal, $childCtx->child($key));
                 if (!$defResult->success) {
                     // Default is invalid
                     $issues[] = new ValidationIssue(

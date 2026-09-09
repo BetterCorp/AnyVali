@@ -25,17 +25,20 @@ final class Exporter
         }
 
         $definitions = [];
-        self::collectDefinitions($schema, $definitions, new \SplObjectStorage());
+        self::collectDefinitions($schema, $definitions, new \SplObjectStorage(), $mode);
         return new AnyValiDocument(
             root: $schema->exportNode(),
             definitions: $definitions,
         );
     }
 
-    private static function collectDefinitions(Schema $schema, array &$definitions, \SplObjectStorage $seen): void
+    private static function collectDefinitions(Schema $schema, array &$definitions, \SplObjectStorage $seen, ExportMode $mode): void
     {
         if ($seen->contains($schema)) return;
         $seen->attach($schema);
+        if ($mode === ExportMode::Portable && $schema->hasCustomValidators()) {
+            throw new \RuntimeException('Cannot export schema with custom validators in portable mode');
+        }
         $children = match (true) {
             $schema instanceof ObjectSchema => array_values($schema->getProperties()),
             $schema instanceof ArraySchema => [$schema->getItems()],
@@ -52,14 +55,32 @@ final class Exporter
             if (str_starts_with($schema->getRef(), $prefix)) {
                 $name = substr($schema->getRef(), strlen($prefix));
                 $node = $target->exportNode();
-                if (isset($definitions[$name]) && $definitions[$name] !== $node) {
+                if (isset($definitions[$name]) && self::definitionKey($definitions[$name]) !== self::definitionKey($node)) {
                     throw new \RuntimeException("Conflicting definition: {$name}");
                 }
                 $definitions[$name] = $node;
             }
             $children[] = $target;
         }
-        foreach ($children as $child) self::collectDefinitions($child, $definitions, $seen);
+        foreach ($children as $child) self::collectDefinitions($child, $definitions, $seen, $mode);
+    }
+
+
+    private static function definitionKey(array $node): string
+    {
+        return json_encode(self::canonicalize($node), JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    private static function canonicalize(mixed $value): mixed
+    {
+        if ($value instanceof \stdClass) {
+            $fields = get_object_vars($value);
+            ksort($fields);
+            return (object)array_map(self::canonicalize(...), $fields);
+        }
+        if (!is_array($value)) return $value;
+        if (!array_is_list($value)) ksort($value);
+        return array_map(self::canonicalize(...), $value);
     }
 
 }
