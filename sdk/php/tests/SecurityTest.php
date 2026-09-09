@@ -134,54 +134,27 @@ final class SecurityTest extends TestCase
 
     public function testDirectSelfRefDoesNotHang(): void
     {
-        // Schema that directly references itself
         $doc = new AnyValiDocument(
             root: ['kind' => 'ref', 'ref' => '#/definitions/self'],
-            definitions: [
-                'self' => ['kind' => 'ref', 'ref' => '#/definitions/self'],
-            ],
+            definitions: ['self' => ['kind' => 'ref', 'ref' => '#/definitions/self']],
         );
-
-        $schema = AnyVali::import($doc);
-        $this->assertNotNull($schema);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Reference cycle without a child value');
+        AnyVali::import($doc);
     }
 
-    /**
-     * CVE-2003-1564 parse-time: importing a pure self-cycle succeeds, but
-     * actually parsing through it must not hang the runtime. PHP raises a
-     * fatal "Maximum function nesting level" / stack-overflow on unbounded
-     * recursion — Throwable catches it on PHP >= 7. Test asserts the call
-     * terminates in bounded time, regardless of success/failure.
-     */
-    public function testDirectSelfRefParseDoesNotHangRuntime(): void
+    public function testMutualReferenceCycleWithoutChildValueIsRejected(): void
     {
         $doc = new AnyValiDocument(
-            root: ['kind' => 'ref', 'ref' => '#/definitions/self'],
+            root: ['kind' => 'ref', 'ref' => '#/definitions/A'],
             definitions: [
-                'self' => ['kind' => 'ref', 'ref' => '#/definitions/self'],
+                'A' => ['kind' => 'ref', 'ref' => '#/definitions/B'],
+                'B' => ['kind' => 'ref', 'ref' => '#/definitions/A'],
             ],
         );
-
-        $schema = AnyVali::import($doc);
-
-        $start = microtime(true);
-        $threw = false;
-        try {
-            $schema->safeParse('anything');
-        } catch (\Throwable $e) {
-            // Stack overflow / nesting-limit exceeded surfaces as Throwable
-            // on modern PHP — acceptable defense.
-            $threw = true;
-        }
-        $elapsed = microtime(true) - $start;
-
-        $this->assertLessThan(
-            5.0,
-            $elapsed,
-            'Self-cycle parse hung > 5s — runtime DoS (CVE-2003-1564)',
-        );
-        // Either threw or returned — both are non-hangs.
-        $this->assertTrue(true, "threw=" . ($threw ? 'true' : 'false'));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Reference cycle without a child value');
+        AnyVali::import($doc);
     }
 
     // ── CWE-190: Integer Overflow (Int Width Boundaries) ───────────

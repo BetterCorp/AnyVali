@@ -67,7 +67,7 @@ final class RecordSchema extends Schema
 
     public function exportNode(): array
     {
-        $node = ['kind' => 'record', 'values' => $this->valueSchema->exportNode()];
+        $node = ['kind' => 'record', 'valueSchema' => $this->valueSchema->exportNode()];
         $this->addMetadataToNode($node);
         return $node;
     }
