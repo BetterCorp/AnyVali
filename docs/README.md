@@ -8,7 +8,7 @@ This guide gets you from zero to validating in minutes. For deeper topics, see t
 
 ## Install
 
-Pick your language:
+Pick your language. PHP uses a [pinned Composer source installation](sdk-php.md#installation).
 
 ```bash
 # JavaScript / TypeScript
@@ -33,8 +33,7 @@ dotnet add package AnyVali
 # Rust
 cargo add anyvali
 
-# PHP
-composer require anyvali/anyvali
+# PHP: pinned Composer source installation (see installation link above)
 
 # Ruby
 gem install anyvali

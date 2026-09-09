@@ -20,4 +20,5 @@ What it produces:
 
 Notes:
 - Java and Kotlin artifacts are local build outputs only; Maven Central publishing still needs signing and Central-specific metadata.
-- Go and Packagist publish from a tagged repository rather than from a package upload.
+- Go consumes tagged repository source. PHP is source-only via the [documented Composer path installation](../../docs/sdk-php.md#installation); the `packagist/` archive is for review, not evidence of a public Packagist release.
+- Validate the PHP consumer route with `bash tools/release/smoke_php_install.sh sdk/php <version>`.
