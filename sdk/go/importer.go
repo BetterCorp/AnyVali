@@ -9,9 +9,7 @@ import (
 // importContext owns reference resolution for one document. Placeholders are
 // registered before descending so recursive references share the completed graph.
 type importContext struct {
-	refs   map[string]*RefSchema
-	active map[string]int
-	depth  int
+	refs map[string]*RefSchema
 }
 
 // Import converts a Document to a Schema.
@@ -19,7 +17,7 @@ func Import(doc *Document) (Schema, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("document is nil")
 	}
-	ctx := &importContext{refs: make(map[string]*RefSchema), active: make(map[string]int)}
+	ctx := &importContext{refs: make(map[string]*RefSchema)}
 	return ctx.importNode(doc.Root, doc.Definitions)
 }
 
@@ -229,8 +227,6 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 }
 
 func (ctx *importContext) importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
-	ctx.depth++
-	defer func() { ctx.depth-- }()
 	// Accept both "item" and "items" keys for compatibility
 	itemNode, ok := node["item"].(map[string]any)
 	if !ok {
@@ -255,11 +251,13 @@ func (ctx *importContext) importArraySchema(node map[string]any, defs map[string
 }
 
 func (ctx *importContext) importTupleSchema(node map[string]any, defs map[string]map[string]any) (*TupleSchema, error) {
-	ctx.depth++
-	defer func() { ctx.depth-- }()
-	itemNodes, ok := node["items"].([]any)
+	raw, present := node["elements"]
+	if !present {
+		raw = node["items"]
+	}
+	itemNodes, ok := raw.([]any)
 	if !ok {
-		return nil, fmt.Errorf("tuple schema missing 'items' field")
+		return nil, fmt.Errorf("tuple schema missing or invalid 'elements' field")
 	}
 	items := make([]Schema, len(itemNodes))
 	for i, itemNode := range itemNodes {
@@ -277,8 +275,6 @@ func (ctx *importContext) importTupleSchema(node map[string]any, defs map[string
 }
 
 func (ctx *importContext) importObjectSchema(node map[string]any, defs map[string]map[string]any) (*ObjectSchema, error) {
-	ctx.depth++
-	defer func() { ctx.depth-- }()
 	propsNode, ok := node["properties"].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("object schema missing 'properties' field")
@@ -318,8 +314,6 @@ func (ctx *importContext) importObjectSchema(node map[string]any, defs map[strin
 }
 
 func (ctx *importContext) importRecordSchema(node map[string]any, defs map[string]map[string]any) (*RecordSchema, error) {
-	ctx.depth++
-	defer func() { ctx.depth-- }()
 	raw, present := node["values"]
 	if !present {
 		raw, present = node["valueSchema"]
@@ -363,9 +357,13 @@ func (ctx *importContext) importUnionSchema(node map[string]any, defs map[string
 }
 
 func (ctx *importContext) importIntersectionSchema(node map[string]any, defs map[string]map[string]any) (*IntersectionSchema, error) {
-	schemasNode, ok := node["schemas"].([]any)
+	raw, present := node["allOf"]
+	if !present {
+		raw = node["schemas"]
+	}
+	schemasNode, ok := raw.([]any)
 	if !ok {
-		return nil, fmt.Errorf("intersection schema missing 'schemas' field")
+		return nil, fmt.Errorf("intersection schema missing or invalid 'allOf' field")
 	}
 	schemas := make([]Schema, len(schemasNode))
 	for i, sn := range schemasNode {
@@ -415,16 +413,11 @@ func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]m
 	if !ok {
 		return nil, fmt.Errorf("ref schema missing 'ref' field")
 	}
-	if depth, active := ctx.active[ref]; active && depth == ctx.depth {
-		return nil, fmt.Errorf("reference cycle without a child value: %s", ref)
-	}
 	if cached, ok := ctx.refs[ref]; ok {
 		return cached, nil
 	}
 	s := newRefSchema(ref)
 	ctx.refs[ref] = s
-	ctx.active[ref] = ctx.depth
-	defer delete(ctx.active, ref)
 	const defPrefix = "#/definitions/"
 	if len(ref) > len(defPrefix) && ref[:len(defPrefix)] == defPrefix {
 		if defNode, ok := defs[ref[len(defPrefix):]]; ok {

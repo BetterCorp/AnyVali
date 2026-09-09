@@ -732,6 +732,6 @@ type CoercionType string  // CoerceToInt, CoerceToNumber, CoerceToBool, CoerceTr
 
 Records export their child schema under the spec-defined `values` key. Arrays use `items` and unions use `variants`, so recursive JSON schemas can be read by other SDKs. Imports also accept the `valueSchema` key emitted by JS/C# and the legacy Go `value` key when `values` is absent. Recursive references retain their resolved definitions during export, including when embedded in native parent schemas. Conflicting definition names from different documents cause an export error.
 
-Independent `Import` and `ImportJSON` calls can run concurrently. Each import owns its reference graph; failing imports cannot affect another document. Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference.
+Independent `Import` and `ImportJSON` calls can run concurrently. Each import owns its reference graph; failing imports cannot affect another document. Circular references remain lazy until parsing, including unions with a terminating branch.
 
-Recursive validation allows up to 256 nested schema calls on a parse path. Deeper and cyclic inputs return a validation failure; the limit is local to each parse and introduces no shared mutable state.
+Recursive validation allows up to 256 nested schema calls on a parse path and 100,000 schema calls across all branches of one parse. Deeper and cyclic inputs return a validation failure; the limit is local to each parse and introduces no shared mutable state.

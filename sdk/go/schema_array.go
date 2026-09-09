@@ -56,14 +56,14 @@ func (s *ArraySchema) Parse(input any) (any, error) {
 }
 
 func (s *ArraySchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *ArraySchema) safeParseAtDepth(input any, depth int) ParseResult {
-	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+func (s *ArraySchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, ctx) })
 }
 
-func (s *ArraySchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
+func (s *ArraySchema) validateAtDepth(value any, ctx parseContext) (any, []ValidationIssue) {
 	arr, ok := value.([]any)
 	if !ok {
 		return nil, []ValidationIssue{{
@@ -96,7 +96,10 @@ func (s *ArraySchema) validateAtDepth(value any, depth int) (any, []ValidationIs
 
 	parsed := make([]any, len(arr))
 	for i, item := range arr {
-		result := parseAtDepth(s.item, item, depth+1)
+		result := parseAtDepth(s.item, item, ctx.child())
+		if ctx.budget.calls > maxValidationCalls {
+			return nil, result.Issues
+		}
 		if !result.Success {
 			for _, issue := range result.Issues {
 				issue.Path = append([]any{i}, issue.Path...)

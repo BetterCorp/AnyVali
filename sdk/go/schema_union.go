@@ -39,18 +39,21 @@ func (s *UnionSchema) Parse(input any) (any, error) {
 }
 
 func (s *UnionSchema) SafeParse(input any) ParseResult {
-	return parseAtDepth(s, input, 0)
+	return parseAtDepth(s, input, newParseContext())
 }
 
-func (s *UnionSchema) safeParseAtDepth(input any, depth int) ParseResult {
-	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, depth) })
+func (s *UnionSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) { return s.validateAtDepth(value, ctx) })
 }
 
-func (s *UnionSchema) validateAtDepth(value any, depth int) (any, []ValidationIssue) {
+func (s *UnionSchema) validateAtDepth(value any, ctx parseContext) (any, []ValidationIssue) {
 	var allIssues []ValidationIssue
 
 	for _, schema := range s.schemas {
-		result := parseAtDepth(schema, value, depth+1)
+		result := parseAtDepth(schema, value, ctx.child())
+		if ctx.budget.calls > maxValidationCalls {
+			return nil, result.Issues
+		}
 		if result.Success {
 			return result.Data, nil
 		}

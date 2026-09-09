@@ -255,3 +255,105 @@ func TestEquivalentObjectDefinitionsExportDeterministically(t *testing.T) {
 		}
 	}
 }
+
+func TestCanonicalTupleAndIntersection(t *testing.T) {
+	for _, source := range []string{
+		`{"kind":"tuple","elements":[{"kind":"string"}]}`,
+		`{"kind":"tuple","items":[{"kind":"string"}]}`,
+		`{"kind":"intersection","allOf":[{"kind":"string"},{"kind":"string","minLength":2}]}`,
+		`{"kind":"intersection","schemas":[{"kind":"string"},{"kind":"string","minLength":2}]}`,
+	} {
+		s, err := ImportJSON([]byte(`{"root":` + source + `}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var valid, invalid any = "ok", "x"
+		key := "allOf"
+		if s.ToNode()["kind"] == "tuple" {
+			valid, invalid, key = []any{"ok"}, []any{true}, "elements"
+		}
+		if !s.SafeParse(valid).Success || s.SafeParse(invalid).Success {
+			t.Fatal(source)
+		}
+		if s.ToNode()[key] == nil {
+			t.Fatal("missing canonical child key")
+		}
+	}
+}
+
+func TestOptionalNullAndAbsent(t *testing.T) {
+	s := Optional(String())
+	if !s.SafeParse(absentValue).Success || s.SafeParse(nil).Success {
+		t.Fatal("optional presence mismatch")
+	}
+	if _, err := s.Parse(nil); err == nil {
+		t.Fatal("explicit null accepted")
+	}
+	if Optional(String()).Default(nil).SafeParse(absentValue).Issues[0].Code != IssueDefaultInvalid {
+		t.Fatal("null default must validate")
+	}
+	if !Optional(Nullable(String())).SafeParse(nil).Success {
+		t.Fatal("nullable inner must allow null")
+	}
+	object := Object(map[string]Schema{"value": s})
+	if object.SafeParse(map[string]any{"value": nil}).Success {
+		t.Fatal("present optional field accepted null")
+	}
+}
+
+func TestDefinitionsUseExactJSONNumberEquality(t *testing.T) {
+	for _, tc := range []struct {
+		left, right any
+		equal       bool
+	}{
+		{int64(1), float64(1), true}, {json.Number("1e0"), int(1), true},
+		{int64(9007199254740992), int64(9007199254740993), false}, {true, int(1), false},
+	} {
+		equal, err := equivalentDefinition(map[string]any{"default": tc.left}, map[string]any{"default": tc.right})
+		if err != nil || equal != tc.equal {
+			t.Fatalf("%v: %v, %v", tc, equal, err)
+		}
+	}
+	doc := &Document{Root: map[string]any{"kind": "ref", "ref": "#/definitions/X"}, Definitions: map[string]map[string]any{"X": {"kind": "number", "default": int64(1)}}}
+	first, err := Import(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := ImportJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Export(Object(map[string]Schema{"a": first, "b": second}), Portable); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRecursiveValidationWorkAndTerminatingCycles(t *testing.T) {
+	s, err := ImportJSON([]byte(`{"root":{"kind":"ref","ref":"#/definitions/A"},"definitions":{"A":{"kind":"union","variants":[{"kind":"string"},{"kind":"ref","ref":"#/definitions/A"}]}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.SafeParse("leaf").Success || s.SafeParse(true).Success {
+		t.Fatal("same-depth cycle validation")
+	}
+	s, err = ImportJSON([]byte(`{"root":{"kind":"ref","ref":"#/definitions/A"},"definitions":{"A":{"kind":"union","variants":[{"kind":"array","items":{"kind":"ref","ref":"#/definitions/A"}},{"kind":"array","items":{"kind":"ref","ref":"#/definitions/A"}}]}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var input any = true
+	for i := 0; i < 24; i++ {
+		input = []any{input}
+	}
+	ctx := newParseContext()
+	result := parseAtDepth(s, input, ctx)
+	if result.Success || ctx.budget.calls > maxValidationCalls+1 {
+		t.Fatalf("unbounded work: %d", ctx.budget.calls)
+	}
+	if !s.SafeParse([]any{}).Success {
+		t.Fatal("work budget leaked into next parse")
+	}
+}
