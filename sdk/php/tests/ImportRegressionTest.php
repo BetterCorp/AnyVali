@@ -103,8 +103,8 @@ final class ImportRegressionTest extends TestCase
             $schema = Importer::importNode(['kind' => 'record', $key => ['kind' => 'string']]);
             $this->assertTrue($schema->safeParse(['key' => 'leaf'])->success);
             $this->assertFalse($schema->safeParse(['key' => true])->success);
-            $this->assertArrayHasKey('valueSchema', $schema->exportNode());
-            $this->assertArrayNotHasKey('values', $schema->exportNode());
+            $this->assertArrayHasKey('values', $schema->exportNode());
+            $this->assertArrayNotHasKey('valueSchema', $schema->exportNode());
         }
     }
 

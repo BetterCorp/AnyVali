@@ -247,8 +247,8 @@ final class Importer
     {
         $this->depth++;
         try {
-            $valueNode = array_key_exists('valueSchema', $node) ? $node['valueSchema'] : ($node['values'] ?? null);
-            if (!is_array($valueNode)) throw new \RuntimeException('Record schema missing or invalid "valueSchema"');
+            $valueNode = array_key_exists('values', $node) ? $node['values'] : ($node['valueSchema'] ?? null);
+            if (!is_array($valueNode)) throw new \RuntimeException('Record schema missing or invalid "values"');
             $values = $this->node($valueNode, $definitions);
             return new RecordSchema($values);
         } finally {
