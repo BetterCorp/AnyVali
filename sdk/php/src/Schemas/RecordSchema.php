@@ -46,6 +46,7 @@ final class RecordSchema extends Schema
 
         foreach ($value as $key => $v) {
             $result = $this->valueSchema->safeParse($v, $ctx->child($key));
+                if ($ctx->budget->exhausted()) return $result;
             if (!$result->success) {
                 $issues = array_merge($issues, $result->issues);
             } else {

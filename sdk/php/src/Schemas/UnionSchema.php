@@ -35,6 +35,7 @@ final class UnionSchema extends Schema
     {
         foreach ($this->variants as $variant) {
             $result = $variant->safeParse($value, $ctx);
+                if ($ctx->budget->exhausted()) return $result;
             if ($result->success) {
                 return $result;
             }

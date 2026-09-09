@@ -33,11 +33,10 @@ final class Importer
 {
     /** @var array<string, Schema> */
     private array $resolved = [];
-    /** @var array<string, int> */
+    /** @var array<string, bool> */
     private array $active = [];
     /** @var array<string, list<RefSchema>> */
     private array $pending = [];
-    private int $depth = 0;
 
     private function __construct()
     {
@@ -184,18 +183,13 @@ final class Importer
      */
     private function importArray2(array $node, array $definitions): ArraySchema
     {
-        $this->depth++;
-        try {
-            // Accept "items", "item", and "array.items" keys for compatibility
-            $itemsNode = $node['items'] ?? $node['item'] ?? $node['array.items'] ?? ['kind' => 'any'];
-            $items = $this->node($itemsNode, $definitions);
-            $schema = new ArraySchema($items);
-            if (isset($node['minItems'])) $schema = $schema->minItems((int)$node['minItems']);
-            if (isset($node['maxItems'])) $schema = $schema->maxItems((int)$node['maxItems']);
-            return $schema;
-        } finally {
-            $this->depth--;
-        }
+        // Accept "items", "item", and "array.items" keys for compatibility
+        $itemsNode = $node['items'] ?? $node['item'] ?? $node['array.items'] ?? ['kind' => 'any'];
+        $items = $this->node($itemsNode, $definitions);
+        $schema = new ArraySchema($items);
+        if (isset($node['minItems'])) $schema = $schema->minItems((int)$node['minItems']);
+        if (isset($node['maxItems'])) $schema = $schema->maxItems((int)$node['maxItems']);
+        return $schema;
     }
 
     /**
@@ -204,16 +198,11 @@ final class Importer
      */
     private function importTuple(array $node, array $definitions): TupleSchema
     {
-        $this->depth++;
-        try {
-            $elements = array_map(
-                fn(array $el) => $this->node($el, $definitions),
-                $node['elements'] ?? [],
-            );
-            return new TupleSchema($elements);
-        } finally {
-            $this->depth--;
-        }
+        $elements = array_map(
+            fn(array $el) => $this->node($el, $definitions),
+            $node['elements'] ?? [],
+        );
+        return new TupleSchema($elements);
     }
 
     /**
@@ -222,21 +211,16 @@ final class Importer
      */
     private function importObject(array $node, array $definitions): ObjectSchema
     {
-        $this->depth++;
-        try {
-            $properties = [];
-            foreach (($node['properties'] ?? []) as $key => $propNode) {
-                $properties[$key] = $this->node($propNode, $definitions);
-            }
-
-            $required = $node['required'] ?? [];
-            $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'strip')
-                ?? UnknownKeyMode::Strip;
-
-            return new ObjectSchema($properties, $required, $unknownKeys, true);
-        } finally {
-            $this->depth--;
+        $properties = [];
+        foreach (($node['properties'] ?? []) as $key => $propNode) {
+            $properties[$key] = $this->node($propNode, $definitions);
         }
+
+        $required = $node['required'] ?? [];
+        $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'strip')
+            ?? UnknownKeyMode::Strip;
+
+        return new ObjectSchema($properties, $required, $unknownKeys, true);
     }
 
     /**
@@ -245,15 +229,10 @@ final class Importer
      */
     private function importRecord(array $node, array $definitions): RecordSchema
     {
-        $this->depth++;
-        try {
-            $valueNode = array_key_exists('values', $node) ? $node['values'] : ($node['valueSchema'] ?? null);
-            if (!is_array($valueNode)) throw new \RuntimeException('Record schema missing or invalid "values"');
-            $values = $this->node($valueNode, $definitions);
-            return new RecordSchema($values);
-        } finally {
-            $this->depth--;
-        }
+        $valueNode = array_key_exists('values', $node) ? $node['values'] : ($node['valueSchema'] ?? null);
+        if (!is_array($valueNode)) throw new \RuntimeException('Record schema missing or invalid "values"');
+        $values = $this->node($valueNode, $definitions);
+        return new RecordSchema($values);
     }
 
     /**
@@ -321,13 +300,10 @@ final class Importer
             return;
         }
         if (isset($this->active[$name])) {
-            if ($this->active[$name] === $this->depth) {
-                throw new \RuntimeException("Reference cycle without a child value: {$ref}");
-            }
             $this->pending[$name][] = $schema;
             return;
         }
-        $this->active[$name] = $this->depth;
+        $this->active[$name] = true;
         $this->pending[$name] = [$schema];
         try {
             $target = $this->node($definitions[$name], $definitions);

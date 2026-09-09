@@ -138,12 +138,10 @@ final class SecurityTest extends TestCase
             root: ['kind' => 'ref', 'ref' => '#/definitions/self'],
             definitions: ['self' => ['kind' => 'ref', 'ref' => '#/definitions/self']],
         );
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Reference cycle without a child value');
-        AnyVali::import($doc);
+        $this->assertFalse(AnyVali::import($doc)->safeParse('anything')->success);
     }
 
-    public function testMutualReferenceCycleWithoutChildValueIsRejected(): void
+    public function testMutualReferenceCycleValidationIsBounded(): void
     {
         $doc = new AnyValiDocument(
             root: ['kind' => 'ref', 'ref' => '#/definitions/A'],
@@ -152,9 +150,7 @@ final class SecurityTest extends TestCase
                 'B' => ['kind' => 'ref', 'ref' => '#/definitions/A'],
             ],
         );
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Reference cycle without a child value');
-        AnyVali::import($doc);
+        $this->assertFalse(AnyVali::import($doc)->safeParse('anything')->success);
     }
 
     // ── CWE-190: Integer Overflow (Int Width Boundaries) ───────────

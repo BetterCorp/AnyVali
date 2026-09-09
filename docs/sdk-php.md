@@ -770,6 +770,6 @@ Extends `\RuntimeException`. Thrown by `parse()` on validation failure.
 
 `AnyVali::import()` resolves document references using a graph owned by that import. Root references and nested recursive values work through the ordinary `parse()` and `safeParse()` APIs. Export retains reachable definitions, including when imported schemas are placed inside native parent schemas. Combining incompatible definitions with the same name fails export.
 
-Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference. Cycles that never consume a child value are rejected at import. Validation is limited to 64 nested schema calls per parse path; deeper or cyclic inputs return a validation failure instead of overflowing the runtime stack.
+Circular references are supported, including unions with terminating branches at the same input depth. Validation is limited to 64 nested schema calls per parse path and 100,000 schema calls across all branches of one parse; inputs exceeding either bound return a validation failure. Budgets reset for every parse.
 
 Record exports use the spec-defined `values` key. Imports also accept `valueSchema`, which is emitted by JS/C#, when `values` is absent.
