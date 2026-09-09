@@ -122,7 +122,7 @@ final class InterchangeTest extends TestCase
     {
         $doc = AnyVali::record(AnyVali::int())->export();
         $this->assertSame('record', $doc->root['kind']);
-        $this->assertSame('int', $doc->root['values']['kind']);
+        $this->assertSame('int', $doc->root['valueSchema']['kind']);
     }
 
     public function testExportUnionSchema(): void

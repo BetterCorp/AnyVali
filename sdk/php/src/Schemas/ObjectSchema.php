@@ -110,7 +110,7 @@ final class ObjectSchema extends Schema
 
         // Check required fields
         foreach ($this->required as $key) {
-            if (!array_key_exists($key, $value)) {
+            if (!array_key_exists($key, $value) && !($this->properties[$key] ?? null)?->hasDefaultValue()) {
                 $expectedKind = isset($this->properties[$key])
                     ? $this->properties[$key]->getKind()
                     : 'unknown';

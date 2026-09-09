@@ -31,6 +31,14 @@ use AnyVali\Schemas\{
 
 final class Importer
 {
+    /** @var array<string, Schema> */
+    private array $resolved = [];
+    /** @var array<string, int> */
+    private array $active = [];
+    /** @var array<string, list<RefSchema>> */
+    private array $pending = [];
+    private int $depth = 0;
+
     private function __construct()
     {
     }
@@ -67,6 +75,11 @@ final class Importer
      */
     public static function importNode(array $node, array $definitions = []): Schema
     {
+        return (new self())->node($node, $definitions);
+    }
+
+    private function node(array $node, array $definitions): Schema
+    {
         $kind = $node['kind'] ?? null;
 
         if ($kind === null) {
@@ -74,26 +87,26 @@ final class Importer
         }
 
         $schema = match ($kind) {
-            'string' => self::importString($node),
-            'number', 'float64', 'float32' => self::importNumber($node, $kind),
+            'string' => $this->importString($node),
+            'number', 'float64', 'float32' => $this->importNumber($node, $kind),
             'int', 'int8', 'int16', 'int32', 'int64',
-            'uint8', 'uint16', 'uint32', 'uint64' => self::importInt($node, $kind),
-            'bool' => self::importBool($node),
+            'uint8', 'uint16', 'uint32', 'uint64' => $this->importInt($node, $kind),
+            'bool' => $this->importBool($node),
             'null' => new NullSchema(),
             'any' => new AnySchema(),
             'unknown' => new UnknownSchema(),
             'never' => new NeverSchema(),
             'literal' => new LiteralSchema($node['value'] ?? null),
             'enum' => new EnumSchema($node['values'] ?? []),
-            'array' => self::importArray2($node, $definitions),
-            'tuple' => self::importTuple($node, $definitions),
-            'object' => self::importObject($node, $definitions),
-            'record' => self::importRecord($node, $definitions),
-            'union' => self::importUnion($node, $definitions),
-            'intersection' => self::importIntersection($node, $definitions),
-            'optional' => self::importOptional($node, $definitions),
-            'nullable' => self::importNullable($node, $definitions),
-            'ref' => self::importRef($node, $definitions),
+            'array' => $this->importArray2($node, $definitions),
+            'tuple' => $this->importTuple($node, $definitions),
+            'object' => $this->importObject($node, $definitions),
+            'record' => $this->importRecord($node, $definitions),
+            'union' => $this->importUnion($node, $definitions),
+            'intersection' => $this->importIntersection($node, $definitions),
+            'optional' => $this->importOptional($node, $definitions),
+            'nullable' => $this->importNullable($node, $definitions),
+            'ref' => new RefSchema($node['ref'] ?? ''),
             default => throw new \RuntimeException("Unsupported schema kind: {$kind}"),
         };
 
@@ -107,13 +120,16 @@ final class Importer
             $schema = $schema->default($node['default']);
         }
 
+        if ($schema instanceof RefSchema) {
+            $this->resolveRef($schema, $definitions);
+        }
         return $schema;
     }
 
     /**
      * @param array<string, mixed> $node
      */
-    private static function importString(array $node): StringSchema
+    private function importString(array $node): StringSchema
     {
         $schema = new StringSchema();
         if (isset($node['minLength'])) $schema = $schema->minLength((int)$node['minLength']);
@@ -129,7 +145,7 @@ final class Importer
     /**
      * @param array<string, mixed> $node
      */
-    private static function importNumber(array $node, string $kind): NumberSchema
+    private function importNumber(array $node, string $kind): NumberSchema
     {
         $schema = new NumberSchema($kind);
         if (isset($node['min'])) $schema = $schema->min($node['min']);
@@ -143,7 +159,7 @@ final class Importer
     /**
      * @param array<string, mixed> $node
      */
-    private static function importInt(array $node, string $kind): IntSchema
+    private function importInt(array $node, string $kind): IntSchema
     {
         $schema = new IntSchema($kind);
         if (isset($node['min'])) $schema = $schema->min($node['min']);
@@ -157,7 +173,7 @@ final class Importer
     /**
      * @param array<string, mixed> $node
      */
-    private static function importBool(array $node): BoolSchema
+    private function importBool(array $node): BoolSchema
     {
         return new BoolSchema();
     }
@@ -166,68 +182,90 @@ final class Importer
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importArray2(array $node, array $definitions): ArraySchema
+    private function importArray2(array $node, array $definitions): ArraySchema
     {
-        // Accept "items", "item", and "array.items" keys for compatibility
-        $itemsNode = $node['items'] ?? $node['item'] ?? $node['array.items'] ?? ['kind' => 'any'];
-        $items = self::importNode($itemsNode, $definitions);
-        $schema = new ArraySchema($items);
-        if (isset($node['minItems'])) $schema = $schema->minItems((int)$node['minItems']);
-        if (isset($node['maxItems'])) $schema = $schema->maxItems((int)$node['maxItems']);
-        return $schema;
-    }
-
-    /**
-     * @param array<string, mixed> $node
-     * @param array<string, array<string, mixed>> $definitions
-     */
-    private static function importTuple(array $node, array $definitions): TupleSchema
-    {
-        $elements = array_map(
-            fn(array $el) => self::importNode($el, $definitions),
-            $node['elements'] ?? [],
-        );
-        return new TupleSchema($elements);
-    }
-
-    /**
-     * @param array<string, mixed> $node
-     * @param array<string, array<string, mixed>> $definitions
-     */
-    private static function importObject(array $node, array $definitions): ObjectSchema
-    {
-        $properties = [];
-        foreach (($node['properties'] ?? []) as $key => $propNode) {
-            $properties[$key] = self::importNode($propNode, $definitions);
+        $this->depth++;
+        try {
+            // Accept "items", "item", and "array.items" keys for compatibility
+            $itemsNode = $node['items'] ?? $node['item'] ?? $node['array.items'] ?? ['kind' => 'any'];
+            $items = $this->node($itemsNode, $definitions);
+            $schema = new ArraySchema($items);
+            if (isset($node['minItems'])) $schema = $schema->minItems((int)$node['minItems']);
+            if (isset($node['maxItems'])) $schema = $schema->maxItems((int)$node['maxItems']);
+            return $schema;
+        } finally {
+            $this->depth--;
         }
-
-        $required = $node['required'] ?? [];
-        $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'strip')
-            ?? UnknownKeyMode::Strip;
-
-        return new ObjectSchema($properties, $required, $unknownKeys, true);
     }
 
     /**
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importRecord(array $node, array $definitions): RecordSchema
+    private function importTuple(array $node, array $definitions): TupleSchema
     {
-        $values = self::importNode($node['values'] ?? ['kind' => 'any'], $definitions);
-        return new RecordSchema($values);
+        $this->depth++;
+        try {
+            $elements = array_map(
+                fn(array $el) => $this->node($el, $definitions),
+                $node['elements'] ?? [],
+            );
+            return new TupleSchema($elements);
+        } finally {
+            $this->depth--;
+        }
     }
 
     /**
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importUnion(array $node, array $definitions): UnionSchema
+    private function importObject(array $node, array $definitions): ObjectSchema
+    {
+        $this->depth++;
+        try {
+            $properties = [];
+            foreach (($node['properties'] ?? []) as $key => $propNode) {
+                $properties[$key] = $this->node($propNode, $definitions);
+            }
+
+            $required = $node['required'] ?? [];
+            $unknownKeys = UnknownKeyMode::tryFrom($node['unknownKeys'] ?? 'strip')
+                ?? UnknownKeyMode::Strip;
+
+            return new ObjectSchema($properties, $required, $unknownKeys, true);
+        } finally {
+            $this->depth--;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     * @param array<string, array<string, mixed>> $definitions
+     */
+    private function importRecord(array $node, array $definitions): RecordSchema
+    {
+        $this->depth++;
+        try {
+            $valueNode = array_key_exists('valueSchema', $node) ? $node['valueSchema'] : ($node['values'] ?? null);
+            if (!is_array($valueNode)) throw new \RuntimeException('Record schema missing or invalid "valueSchema"');
+            $values = $this->node($valueNode, $definitions);
+            return new RecordSchema($values);
+        } finally {
+            $this->depth--;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     * @param array<string, array<string, mixed>> $definitions
+     */
+    private function importUnion(array $node, array $definitions): UnionSchema
     {
         // Accept "variants", "schemas", and "union.variants" keys for compatibility
         $variantsData = $node['variants'] ?? $node['schemas'] ?? $node['union.variants'] ?? [];
         $variants = array_map(
-            fn(array $v) => self::importNode($v, $definitions),
+            fn(array $v) => $this->node($v, $definitions),
             $variantsData,
         );
         return new UnionSchema($variants);
@@ -237,10 +275,10 @@ final class Importer
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importIntersection(array $node, array $definitions): IntersectionSchema
+    private function importIntersection(array $node, array $definitions): IntersectionSchema
     {
         $allOf = array_map(
-            fn(array $s) => self::importNode($s, $definitions),
+            fn(array $s) => $this->node($s, $definitions),
             $node['allOf'] ?? [],
         );
         return new IntersectionSchema($allOf);
@@ -250,9 +288,9 @@ final class Importer
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importOptional(array $node, array $definitions): OptionalSchema
+    private function importOptional(array $node, array $definitions): OptionalSchema
     {
-        $inner = self::importNode($node['schema'] ?? ['kind' => 'any'], $definitions);
+        $inner = $this->node($node['schema'] ?? ['kind' => 'any'], $definitions);
         $schema = new OptionalSchema($inner);
         return $schema;
     }
@@ -261,23 +299,44 @@ final class Importer
      * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importNullable(array $node, array $definitions): NullableSchema
+    private function importNullable(array $node, array $definitions): NullableSchema
     {
-        $inner = self::importNode($node['schema'] ?? ['kind' => 'any'], $definitions);
+        $inner = $this->node($node['schema'] ?? ['kind' => 'any'], $definitions);
         $schema = new NullableSchema($inner);
         return $schema;
     }
 
     /**
-     * @param array<string, mixed> $node
      * @param array<string, array<string, mixed>> $definitions
      */
-    private static function importRef(array $node, array $definitions): RefSchema
+    private function resolveRef(RefSchema $schema, array $definitions): void
     {
-        $ref = $node['ref'] ?? '';
-        $schema = new RefSchema($ref);
-
-        // Try to resolve from definitions (but keep as ref for recursion support)
-        return $schema;
+        $ref = $schema->getRef();
+        $prefix = '#/definitions/';
+        if (!str_starts_with($ref, $prefix)) return;
+        $name = substr($ref, strlen($prefix));
+        if (!isset($definitions[$name])) return;
+        if (isset($this->resolved[$name])) {
+            $schema->resolve($this->resolved[$name]);
+            return;
+        }
+        if (isset($this->active[$name])) {
+            if ($this->active[$name] === $this->depth) {
+                throw new \RuntimeException("Reference cycle without a child value: {$ref}");
+            }
+            $this->pending[$name][] = $schema;
+            return;
+        }
+        $this->active[$name] = $this->depth;
+        $this->pending[$name] = [$schema];
+        try {
+            $target = $this->node($definitions[$name], $definitions);
+            $this->resolved[$name] = $target;
+            foreach ($this->pending[$name] as $pending) {
+                $pending->resolve($target);
+            }
+        } finally {
+            unset($this->active[$name], $this->pending[$name]);
+        }
     }
 }
