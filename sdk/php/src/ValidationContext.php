@@ -63,7 +63,6 @@ final class ValidationContext
         );
     }
 
-
     public function forDefault(): self
     {
         return new self(
