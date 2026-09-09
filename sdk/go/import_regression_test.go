@@ -181,3 +181,19 @@ func TestRecursiveExportUsesCanonicalChildKeys(t *testing.T) {
 		t.Fatal("record must export canonical valueSchema")
 	}
 }
+
+func TestExportIncludesEmptyDocumentMaps(t *testing.T) {
+	data, err := ExportJSON(String(), Portable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"definitions", "extensions"} {
+		if value, ok := doc[key].(map[string]any); !ok || len(value) != 0 {
+			t.Fatalf("%s must be an empty object: %s", key, data)
+		}
+	}
+}
