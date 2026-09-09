@@ -746,4 +746,4 @@ Extends `\RuntimeException`. Thrown by `parse()` on validation failure.
 
 Recursive cycles must descend into an object property, array/tuple item, or record value before repeating a reference. Cycles that never consume a child value are rejected at import. Validation is limited to 64 nested schema calls per parse path; deeper or cyclic inputs return a validation failure instead of overflowing the runtime stack.
 
-Record interchange uses the canonical `valueSchema` key. The legacy PHP `values` key remains an input alias when `valueSchema` is absent; all exports use `valueSchema`.
+Record exports use the spec-defined `values` key. Imports also accept `valueSchema`, which is emitted by JS/C#, when `values` is absent.
