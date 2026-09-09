@@ -75,7 +75,7 @@ func TestUnionSchemaToNode(t *testing.T) {
 	if node["kind"] != "union" {
 		t.Fatal("expected kind=union")
 	}
-	schemas, ok := node["schemas"].([]any)
+	schemas, ok := node["variants"].([]any)
 	if !ok {
 		t.Fatal("expected schemas to be []any")
 	}

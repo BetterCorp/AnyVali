@@ -70,8 +70,8 @@ func (s *UnionSchema) ToNode() map[string]any {
 		schemas[i] = schema.ToNode()
 	}
 	node := map[string]any{
-		"kind":    "union",
-		"schemas": schemas,
+		"kind":     "union",
+		"variants": schemas,
 	}
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)

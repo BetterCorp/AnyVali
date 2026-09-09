@@ -160,3 +160,24 @@ func TestImportedDefinitionsInNativeParents(t *testing.T) {
 		t.Fatal("conflicting definitions silently merged")
 	}
 }
+
+func TestRecursiveExportUsesCanonicalChildKeys(t *testing.T) {
+	s, err := ImportJSON(recursiveDocument("string"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err := Export(s, Portable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	variants, ok := doc.Definitions["JsonValue"]["variants"].([]any)
+	if !ok || len(variants) != 3 {
+		t.Fatal("union must export canonical variants")
+	}
+	if variants[1].(map[string]any)["items"] == nil {
+		t.Fatal("array must export canonical items")
+	}
+	if variants[2].(map[string]any)["valueSchema"] == nil {
+		t.Fatal("record must export canonical valueSchema")
+	}
+}
