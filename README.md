@@ -41,13 +41,15 @@ AnyVali lets you write validation schemas in your language, then share them acro
 
 ## Install
 
+PHP uses a [pinned Composer source installation](docs/sdk-php.md#installation).
+
 ```bash
 npm install anyvali          # JavaScript / TypeScript
 pip install anyvali           # Python
 go get github.com/BetterCorp/AnyVali/sdk/go  # Go
 cargo add anyvali             # Rust
 dotnet add package AnyVali    # C#
-composer require anyvali/anyvali  # PHP
+# PHP: pinned Composer source installation (see installation link above)
 gem install anyvali           # Ruby
 ```
 
