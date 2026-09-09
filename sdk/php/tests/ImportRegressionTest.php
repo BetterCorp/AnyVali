@@ -233,4 +233,16 @@ final class ImportRegressionTest extends TestCase
         $this->assertSame($schema->parse([]), $schema->parse(['config' => ['count' => '12']]));
     }
 
+
+    public function testEquivalentNumericDefaultsPreserveIntegerPrecision(): void
+    {
+        $make = fn($default) => AnyVali::import([
+            'root' => ['kind' => 'ref', 'ref' => '#/definitions/Number'],
+            'definitions' => ['Number' => ['kind' => 'number', 'default' => $default]],
+        ]);
+        $this->assertCount(1, AnyVali::object(['a' => $make(1), 'b' => $make(1.0)])->export()->definitions);
+        $this->expectException(\RuntimeException::class);
+        AnyVali::object(['a' => $make(9007199254740993), 'b' => $make(9007199254740992.0)])->export();
+    }
+
 }

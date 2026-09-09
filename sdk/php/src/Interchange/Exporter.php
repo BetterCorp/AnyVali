@@ -73,6 +73,12 @@ final class Exporter
 
     private static function canonicalize(mixed $value): mixed
     {
+        // Normalize integral floats only where an exact native integer exists.
+        // Avoid PHP's loose int/float comparison, which rounds large integers.
+        if (is_float($value) && is_finite($value) && floor($value) === $value
+            && $value >= PHP_INT_MIN && $value < -(float)PHP_INT_MIN) {
+            return (int)$value;
+        }
         if ($value instanceof \stdClass) {
             $fields = get_object_vars($value);
             ksort($fields);
