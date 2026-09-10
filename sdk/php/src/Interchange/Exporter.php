@@ -71,11 +71,11 @@ final class Exporter
         return json_encode(self::canonicalize($node), JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
     }
 
-    private static function canonicalize(mixed $value): mixed
+    private static function canonicalize(mixed $value, bool $normalizeNumber = false): mixed
     {
         // Normalize integral floats only where an exact native integer exists.
         // Avoid PHP's loose int/float comparison, which rounds large integers.
-        if (is_float($value) && is_finite($value) && floor($value) === $value
+        if ($normalizeNumber && is_float($value) && is_finite($value) && floor($value) === $value
             && $value >= PHP_INT_MIN && $value < -(float)PHP_INT_MIN) {
             return (int)$value;
         }
@@ -86,7 +86,20 @@ final class Exporter
         }
         if (!is_array($value)) return $value;
         if (!array_is_list($value)) ksort($value);
-        return array_map(self::canonicalize(...), $value);
+        $kind = $value['kind'] ?? null;
+        $numeric = in_array($kind, ['number', 'float32', 'float64', 'int', 'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64'], true);
+        foreach ($value as $key => $child) {
+            // Literal/enum payloads and arbitrary defaults use strict PHP types.
+            // Do not interpret schema-looking data inside them as schema nodes.
+            if (($key === 'value' && $kind === 'literal') || ($key === 'values' && $kind === 'enum') || ($key === 'default' && is_string($kind))) {
+                if ($key === 'default' && $numeric && is_scalar($child)) {
+                    $value[$key] = self::canonicalize($child, true);
+                }
+                continue;
+            }
+            $value[$key] = self::canonicalize($child, $numeric && in_array($key, ['min', 'max', 'exclusiveMin', 'exclusiveMax', 'multipleOf'], true));
+        }
+        return $value;
     }
 
 }
