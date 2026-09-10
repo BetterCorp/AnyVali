@@ -355,7 +355,7 @@ $normalized->parse("  Hello World  ");  // => "hello world"
 
 Defaults fill in missing (absent) values. They run after coercion and before validation. Call `->default($value)` on any schema.
 
-The default only applies when an object property is absent, including required properties restored by document import. Present null is validated normally and never selects a default; nullable properties retain null. Defaults inherited through resolved references also materialize, and default validation skips coercion. Defaults must be static values (for portability across SDKs).
+The default only applies when an object property is absent, including required properties restored by document import. Present null is validated normally and never selects a default; nullable properties retain null. Defaults inherited through resolved references also materialize, and default validation skips the defaulted schema’s own coercion. Child schemas, including union variants and intersection members, run their normal coercion pipelines. Defaults must be static values (for portability across SDKs).
 
 ```php
 $role = AnyVali::string()->default('user');

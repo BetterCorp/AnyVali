@@ -425,4 +425,35 @@ final class ImportRegressionTest extends TestCase
         }
     }
 
+    /** Composite children run their own pipelines after the parent's default is materialized. */
+    public function testDefaultedCompositeChildrenRunTheirCoercions(): void
+    {
+        foreach (['union', 'intersection'] as $kind) {
+            $coercedInt = AnyVali::int()->coerce('string->int');
+            $nested = AnyVali::union([AnyVali::int()])->coerce('string->int');
+            $ref = new \AnyVali\Schemas\RefSchema('#/definitions/Integer');
+            $ref->resolve($coercedInt);
+            foreach ([$coercedInt, $nested, $ref] as $child) {
+                $composite = AnyVali::$kind([$child])->default('12');
+                $schema = AnyVali::object(['value' => $composite], required: ['value']);
+                for ($round = 0; $round < 3; $round++) {
+                    $this->assertSame(['value' => 12], $schema->parse([]));
+                    $this->assertSame(['value' => 12], $schema->parse(['value' => '12']));
+                    $invalid = $schema->safeParse(['value' => 'invalid']);
+                    $this->assertFalse($invalid->success);
+                    $this->assertSame(['value'], $invalid->issues[0]->path);
+                    $schema = AnyVali::import($schema->export()->toJson());
+                }
+            }
+            // The parent's own coercion still skips the default; only children restart it.
+            $composite = AnyVali::$kind([AnyVali::string()])->coerce('string->int')->default('12');
+            $schema = AnyVali::object(['value' => $composite], required: ['value']);
+            for ($round = 0; $round < 3; $round++) {
+                $this->assertSame(['value' => '12'], $schema->parse([]));
+                $this->assertFalse($schema->safeParse(['value' => '12'])->success);
+                $schema = AnyVali::import($schema->export()->toJson());
+            }
+        }
+    }
+
 }

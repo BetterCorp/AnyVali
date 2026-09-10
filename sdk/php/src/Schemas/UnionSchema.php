@@ -33,8 +33,9 @@ final class UnionSchema extends Schema
 
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
     {
+        $childContext = $ctx->child();
         foreach ($this->variants as $variant) {
-            $result = $variant->safeParse($value, $ctx);
+            $result = $variant->safeParse($value, $childContext);
             if ($ctx->budget->exhausted()) return $result;
             if ($result->success) {
                 return $result;
