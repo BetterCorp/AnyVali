@@ -456,4 +456,38 @@ final class ImportRegressionTest extends TestCase
         }
     }
 
+    /** Optional and nullable defaults skip wrapper coercion but execute the inner pipeline. */
+    public function testDefaultedWrappersRunChildCoercions(): void
+    {
+        foreach (['optional', 'nullable'] as $kind) {
+            $schema = AnyVali::object(['value' => AnyVali::$kind(AnyVali::int()->coerce('string->int'))->default('12')], required: ['value']);
+            for ($round = 0; $round < 3; $round++) {
+                $this->assertSame(['value' => 12], $schema->parse([]));
+                $this->assertSame(['value' => 12], $schema->parse(['value' => '12']));
+                $this->assertFalse($schema->safeParse(['value' => 'bad'])->success);
+                $schema = AnyVali::import($schema->export()->toJson());
+            }
+        }
+    }
+
+    /** Equivalent object defaults ignore insertion order, including nested objects. */
+    public function testObjectDefaultKeysAreCanonicalButLiteralPayloadsStayStrict(): void
+    {
+        $make = fn($default, $node) => AnyVali::import([
+            'root' => ['kind' => 'ref', 'ref' => '#/definitions/Value'],
+            'definitions' => ['Value' => $node + ['default' => $default]],
+        ]);
+        $node = ['kind' => 'object', 'properties' => ['a' => ['kind' => 'int'], 'b' => ['kind' => 'record', 'values' => ['kind' => 'number']]], 'required' => ['a', 'b']];
+        $a = $make(['a' => 1, 'b' => ['x' => 2.0, 'y' => 3.0]], $node);
+        $b = $make(['b' => ['y' => 3.0, 'x' => 2.0], 'a' => 1], $node);
+        $schema = AnyVali::object(['first' => $a, 'second' => $b], required: ['first', 'second']);
+        $this->assertCount(1, $schema->export()->definitions);
+        $this->assertEquals($schema->parse([]), AnyVali::import($schema->export()->toJson())->parse([]));
+        $literal = ['kind' => 'object', 'properties' => ['value' => ['kind' => 'literal', 'value' => ['a' => 1, 'b' => 2]]], 'required' => ['value']];
+        $a = $make(['value' => ['a' => 1, 'b' => 2]], $literal);
+        $b = $make(['value' => ['b' => 2, 'a' => 1]], $literal);
+        $this->expectException(\RuntimeException::class);
+        AnyVali::object(['first' => $a, 'second' => $b])->export();
+    }
+
 }

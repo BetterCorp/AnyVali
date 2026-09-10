@@ -94,12 +94,41 @@ final class Exporter
             if (($key === 'value' && $kind === 'literal') || ($key === 'values' && $kind === 'enum') || ($key === 'default' && is_string($kind))) {
                 if ($key === 'default' && $numeric && is_scalar($child)) {
                     $value[$key] = self::canonicalize($child, true);
+                } elseif ($key === 'default') {
+                    $value[$key] = self::canonicalizeDefault($child, $value);
                 }
                 continue;
             }
             $value[$key] = self::canonicalize($child, $numeric && in_array($key, ['min', 'max', 'exclusiveMin', 'exclusiveMax', 'multipleOf'], true));
         }
         return $value;
+    }
+
+    /** Sort unordered object defaults without changing type-sensitive child payloads. */
+    private static function canonicalizeDefault(mixed $value, array $node): mixed
+    {
+        $kind = $node['kind'] ?? null;
+        if ($kind === 'optional' || $kind === 'nullable') {
+            return self::canonicalizeDefault($value, $node['schema']);
+        }
+        if (!is_array($value) && !$value instanceof \stdClass) return $value;
+        $object = $value instanceof \stdClass;
+        $fields = $object ? get_object_vars($value) : $value;
+        // Literal/enum matching is strict; preserve their key order and scalar types.
+        // References and alternatives need their resolved runtime type to compare safely.
+        if (!in_array($kind, ['object', 'record', 'array', 'tuple', 'any', 'unknown'], true)) return $value;
+        if (!array_is_list($fields)) ksort($fields);
+        foreach ($fields as $key => $child) {
+            $childNode = match ($kind) {
+                'object' => $node['properties'][$key] ?? ['kind' => 'any'],
+                'record' => $node['values'],
+                'array' => $node['items'],
+                'tuple' => $node['elements'][$key] ?? ['kind' => 'any'],
+                default => ['kind' => 'any'],
+            };
+            $fields[$key] = self::canonicalizeDefault($child, $childNode);
+        }
+        return $object ? (object)$fields : $fields;
     }
 
 }
