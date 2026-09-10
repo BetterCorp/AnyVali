@@ -346,10 +346,13 @@ abstract class Schema
     }
 
     /**
-     * Merge metadata into an export node array.
+     * Merge common schema fields and metadata into an export node array.
      */
     protected function addMetadataToNode(array &$node): void
     {
+        // Read local fields so reference nodes do not copy inherited defaults.
+        if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        if ($this->coerce !== null) $node['coerce'] = $this->coerce;
         if (!empty($this->metadata)) {
             $node['metadata'] = $this->metadata;
         }
