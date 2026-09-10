@@ -239,6 +239,8 @@ jobs:
           restore-keys: composer-${{ matrix.php-version }}-
       - run: chmod +x runner.sh
       - run: ./runner.sh ci php
+      - name: Validate PHP consumer installation
+        run: bash tools/release/smoke_php_install.sh
       - run: ./runner.sh coverage php
         if: matrix.php-version == '8.3'
       - uses: codecov/codecov-action@v7

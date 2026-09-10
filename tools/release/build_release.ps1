@@ -123,7 +123,7 @@ Registries with uploadable package artifacts:
 
 Registries without a manual package upload artifact in this repo:
 - Go: publish via git tag/module source; `go/` contains a source archive for review
-- Packagist: publishes from the tagged repository; `packagist/` contains a source archive for review
+- PHP: source-only Composer path installation; `packagist/` contains a source archive for review
 - C++: no package registry is configured; `cpp/` contains a source archive for a GitHub release or manual distribution
 
 Notes:
@@ -235,8 +235,8 @@ cp build.gradle.kts /workspace/dist-release/maven/kotlin/
 cp build/libs/*.jar /workspace/dist-release/maven/kotlin/
 '@
 
-Invoke-PackageBuild -Id "php" -Registry "Packagist" -PublishMode "tagged repository sync" -ArtifactSubdir "packagist" -Name "PHP source archive" -Image "composer:2" -WorkDir "/workspace/sdk/php" -Notes @(
-    "Packagist does not use manual artifact uploads. This archive is for review only."
+Invoke-PackageBuild -Id "php" -Registry "Source" -PublishMode "Composer path installation" -ArtifactSubdir "packagist" -Name "PHP source archive" -Image "composer:2" -WorkDir "/workspace/sdk/php" -Notes @(
+    "The public Packagist package is unavailable. Use the documented pinned Composer path installation. This archive is for review only."
 ) -Script @'
 set -eu
 composer archive --format=zip --dir /workspace/dist-release/packagist --file anyvali-php
