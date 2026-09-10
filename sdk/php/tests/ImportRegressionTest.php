@@ -275,4 +275,36 @@ final class ImportRegressionTest extends TestCase
         }
     }
 
+    public function testTypeSensitiveDefinitionsKeepNumericPayloadTypes(): void
+    {
+        foreach (['literal', 'enum'] as $kind) {
+            foreach ([[1, 1.0], [['kind' => 'number', 'default' => 1], ['kind' => 'number', 'default' => 1.0]]] as [$integer, $floating]) {
+                $schemas = [];
+                foreach ([$integer, $floating] as $value) {
+                    $payload = match ($kind) {
+                        'literal' => ['value' => $value],
+                        'enum' => ['values' => [$value]],
+                        default => ['default' => $value],
+                    };
+                    $schemas[] = AnyVali::import([
+                        'root' => ['kind' => 'ref', 'ref' => '#/definitions/Value'],
+                        'definitions' => ['Value' => ['kind' => $kind] + $payload],
+                    ]);
+                }
+                if ($kind !== 'any') {
+                    $this->assertTrue($schemas[0]->safeParse($integer)->success);
+                    $this->assertFalse($schemas[0]->safeParse($floating)->success);
+                    $this->assertTrue($schemas[1]->safeParse($floating)->success);
+                    $this->assertFalse($schemas[1]->safeParse($integer)->success);
+                }
+                try {
+                    AnyVali::object(['a' => $schemas[0], 'b' => $schemas[1]])->export();
+                    $this->fail('Expected type-sensitive definitions to conflict');
+                } catch (\RuntimeException $error) {
+                    $this->assertSame('Conflicting definition: Value', $error->getMessage());
+                }
+            }
+        }
+    }
+
 }
