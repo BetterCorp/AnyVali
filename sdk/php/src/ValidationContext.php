@@ -31,12 +31,14 @@ final class ValidationContext
     }
 
     /**
-     * @param int|string $segment
+     * Start a child schema pipeline, optionally appending a property or index to the path.
+     * A composite member keeps the path while re-enabling its own coercion stage.
+     * @param int|string|null $segment
      */
-    public function child(int|string $segment): self
+    public function child(int|string|null $segment = null): self
     {
         return new self(
-            path: array_merge($this->path, [$segment]),
+            path: $segment === null ? $this->path : array_merge($this->path, [$segment]),
             definitions: $this->definitions,
             inheritedUnknownKeys: $this->inheritedUnknownKeys,
             sensitiveMode: $this->sensitiveMode,
