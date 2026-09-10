@@ -36,7 +36,7 @@ final class AnyValiDocument
 
     public function toJson(): string
     {
-        return json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        return json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
     }
 
     /**

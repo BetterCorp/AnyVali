@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AnyVali;
 
 /**
- * @template T
+ * @template-covariant T
  */
 final class ParseResult
 {
@@ -31,11 +31,15 @@ final class ParseResult
     }
 
     /**
+     * Failure contains no successful value and is valid for every output type.
      * @param ValidationIssue[] $issues
-     * @return self<null>
+     * @return self<never>
      */
     public static function fail(array $issues): self
     {
-        return new self(success: false, issues: $issues);
+        // The failure value is always null; there is no successful T to infer.
+        /** @var self<never> $failure */
+        $failure = new self(success: false, issues: $issues);
+        return $failure;
     }
 }

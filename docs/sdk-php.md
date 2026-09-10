@@ -359,8 +359,10 @@ The default only applies when an object property is absent, including required p
 
 ```php
 $role = AnyVali::string()->default('user');
-$role->parse(null);     // => "user" (absent value filled)
-$role->parse('admin');  // => "admin"
+$account = AnyVali::object(['role' => $role], required: ['role']);
+$account->parse([]);                  // => ['role' => 'user']
+$account->parse(['role' => 'admin']); // => ['role' => 'admin']
+$account->safeParse(['role' => null])->success; // => false (null is present)
 
 $tags = AnyVali::array(AnyVali::string())->default([]);
 ```

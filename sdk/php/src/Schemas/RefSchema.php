@@ -73,7 +73,7 @@ final class RefSchema extends Schema
 
         // Try to resolve from context definitions
         $refName = $this->extractRefName();
-        if ($refName !== null && isset($ctx->definitions[$refName])) {
+        if ($refName !== null && array_key_exists($refName, $ctx->definitions)) {
             // Import the definition and validate
             $defSchema = \AnyVali\Interchange\Importer::importNode(
                 $ctx->definitions[$refName],
