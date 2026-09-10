@@ -33,7 +33,7 @@ final class NullableSchema extends Schema
         if ($value === null) {
             return ParseResult::ok(null);
         }
-        return $this->innerSchema->safeParse($value, $ctx);
+        return $this->innerSchema->safeParse($value, $ctx->child());
     }
 
     public function exportNode(): array

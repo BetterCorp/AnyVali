@@ -31,7 +31,7 @@ final class OptionalSchema extends Schema
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
     {
         // When value is present, delegate to inner schema
-        return $this->innerSchema->safeParse($value, $ctx);
+        return $this->innerSchema->safeParse($value, $ctx->child());
     }
 
     public function exportNode(): array
