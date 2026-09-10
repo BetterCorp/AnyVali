@@ -12,6 +12,7 @@ use AnyVali\Schemas\{ArraySchema, ObjectSchema, RecordSchema, TupleSchema, Union
 
 final class Exporter
 {
+    private const NUMERIC_KINDS = ['number', 'float32', 'float64', 'int', 'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64'];
     private function __construct()
     {
     }
@@ -87,7 +88,7 @@ final class Exporter
         if (!is_array($value)) return $value;
         if (!array_is_list($value)) ksort($value);
         $kind = $value['kind'] ?? null;
-        $numeric = in_array($kind, ['number', 'float32', 'float64', 'int', 'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64'], true);
+        $numeric = in_array($kind, self::NUMERIC_KINDS, true);
         foreach ($value as $key => $child) {
             // Literal/enum payloads and arbitrary defaults use strict PHP types.
             // Do not interpret schema-looking data inside them as schema nodes.
@@ -110,6 +111,9 @@ final class Exporter
         $kind = $node['kind'] ?? null;
         if ($kind === 'optional' || $kind === 'nullable') {
             return self::canonicalizeDefault($value, $node['schema']);
+        }
+        if (is_scalar($value) && in_array($kind, self::NUMERIC_KINDS, true)) {
+            return self::canonicalize($value, true);
         }
         if (!is_array($value) && !$value instanceof \stdClass) return $value;
         $object = $value instanceof \stdClass;

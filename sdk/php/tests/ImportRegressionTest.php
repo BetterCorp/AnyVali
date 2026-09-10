@@ -490,4 +490,29 @@ final class ImportRegressionTest extends TestCase
         AnyVali::object(['first' => $a, 'second' => $b])->export();
     }
 
+    /** Nested numeric defaults use the same exact normalization as numeric roots. */
+    public function testNestedNumericDefaultsCompareByTheirChildSchema(): void
+    {
+        $number = ['kind' => 'number'];
+        foreach ([
+            [['kind' => 'object', 'properties' => ['n' => $number]], ['n' => 1], ['n' => 1.0]],
+            [['kind' => 'record', 'values' => $number], ['n' => 1], ['n' => 1.0]],
+            [['kind' => 'array', 'items' => $number], [1], [1.0]],
+            [['kind' => 'tuple', 'elements' => [$number]], [1], [1.0]],
+            [['kind' => 'optional', 'schema' => $number], 1, 1.0],
+            [['kind' => 'nullable', 'schema' => $number], 1, 1.0],
+            [['kind' => 'optional', 'schema' => ['kind' => 'array', 'items' => $number]], [1], [1.0]],
+            [['kind' => 'nullable', 'schema' => ['kind' => 'record', 'values' => $number]], ['n' => 1], ['n' => 1.0]],
+        ] as [$node, $integer, $floating]) {
+            $schemas = [];
+            foreach ([$integer, $floating] as $default) {
+                $schemas[] = AnyVali::import([
+                    'root' => ['kind' => 'ref', 'ref' => '#/definitions/Value'],
+                    'definitions' => ['Value' => $node + ['default' => $default]],
+                ]);
+            }
+            $this->assertCount(1, AnyVali::object(['a' => $schemas[0], 'b' => $schemas[1]])->export()->definitions);
+        }
+    }
+
 }
