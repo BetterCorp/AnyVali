@@ -307,4 +307,82 @@ final class ImportRegressionTest extends TestCase
         }
     }
 
+    public function testDefaultsSurviveExportForAllReferencedKinds(): void
+    {
+        $string = ['kind' => 'string'];
+        $cases = [
+            [$string, 'fallback'],
+            [['kind' => 'number'], 12],
+            [['kind' => 'int'], 12],
+            [['kind' => 'bool'], false],
+            [['kind' => 'null'], null],
+            [['kind' => 'any'], ['value' => null]],
+            [['kind' => 'unknown'], null],
+            [['kind' => 'literal', 'value' => 'fallback'], 'fallback'],
+            [['kind' => 'enum', 'values' => ['fallback']], 'fallback'],
+            [['kind' => 'array', 'items' => $string], ['fallback']],
+            [['kind' => 'tuple', 'elements' => [$string]], ['fallback']],
+            [['kind' => 'object', 'properties' => ['value' => $string], 'required' => ['value']], ['value' => 'fallback']],
+            [['kind' => 'record', 'values' => $string], ['value' => 'fallback']],
+            [['kind' => 'union', 'variants' => [$string, ['kind' => 'bool']]], 'fallback'],
+            [['kind' => 'intersection', 'allOf' => [$string, ['kind' => 'string', 'minLength' => 2]]], 'fallback'],
+            [['kind' => 'optional', 'schema' => $string], 'fallback'],
+            [['kind' => 'nullable', 'schema' => $string], null],
+            [['kind' => 'ref', 'ref' => '#/definitions/Leaf'], 'fallback'],
+        ];
+        foreach ($cases as [$target, $default]) {
+            foreach ([true, false] as $referenced) {
+                $target['default'] = $default;
+                $schema = AnyVali::import([
+                    'root' => ['kind' => 'object', 'required' => ['value'], 'properties' => [
+                        'value' => $referenced ? ['kind' => 'ref', 'ref' => '#/definitions/Value'] : $target,
+                    ]],
+                    'definitions' => ['Value' => $target, 'Leaf' => $string],
+                ]);
+                for ($round = 0; $round < 3; $round++) {
+                    $result = $schema->safeParse([]);
+                    $this->assertTrue($result->success, $target['kind'] . ' round ' . $round);
+                    $this->assertEquals(['value' => $default], $result->value);
+                    $schema = AnyVali::import($schema->export()->toJson());
+                }
+            }
+        }
+        $schema = AnyVali::import([
+            'root' => ['kind' => 'object', 'required' => ['value'], 'properties' => [
+                'value' => ['kind' => 'ref', 'ref' => '#/definitions/Never'],
+            ]],
+            'definitions' => ['Never' => ['kind' => 'never', 'default' => null]],
+        ]);
+        for ($round = 0; $round < 3; $round++) {
+            $this->assertSame('default_invalid', $schema->safeParse([])->issues[0]->code);
+            $schema = AnyVali::import($schema->export()->toJson());
+        }
+    }
+
+    public function testCompositeCoercionsSurviveReferencedDefinitionExport(): void
+    {
+        $int = ['kind' => 'int'];
+        foreach ([
+            ['kind' => 'union', 'variants' => [$int]],
+            ['kind' => 'intersection', 'allOf' => [$int]],
+            ['kind' => 'optional', 'schema' => $int],
+            ['kind' => 'nullable', 'schema' => $int],
+            ['kind' => 'literal', 'value' => 12],
+            ['kind' => 'enum', 'values' => [12]],
+            ['kind' => 'any'],
+            ['kind' => 'unknown'],
+        ] as $target) {
+            $target['coerce'] = ['trim', 'string->int'];
+            $schema = AnyVali::import([
+                'root' => ['kind' => 'ref', 'ref' => '#/definitions/Value'],
+                'definitions' => ['Value' => $target],
+            ]);
+            for ($round = 0; $round < 3; $round++) {
+                $this->assertSame(12, $schema->parse(' 12 '));
+                $this->assertFalse($schema->safeParse('invalid')->success);
+                $schema = AnyVali::import($schema->export()->toJson());
+            }
+        }
+    }
+
 }
