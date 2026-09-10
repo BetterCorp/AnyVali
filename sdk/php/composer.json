@@ -1,6 +1,5 @@
 {
     "name": "anyvali/anyvali",
-    "version": "0.0.1",
     "description": "Native validation with portable schema interchange",
     "homepage": "https://anyvali.com",
     "type": "library",

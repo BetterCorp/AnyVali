@@ -34,8 +34,10 @@ final class IntersectionSchema extends Schema
         $allIssues = [];
         $mergedResult = $value;
 
+        $childContext = $ctx->child();
         foreach ($this->allOf as $schema) {
-            $result = $schema->safeParse($value, $ctx);
+            $result = $schema->safeParse($value, $childContext);
+            if ($ctx->budget->exhausted()) return $result;
             if (!$result->success) {
                 $allIssues = array_merge($allIssues, $result->issues);
             } else {

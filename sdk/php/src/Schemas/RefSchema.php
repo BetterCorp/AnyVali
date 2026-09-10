@@ -41,6 +41,30 @@ final class RefSchema extends Schema
         return $this->resolvedSchema;
     }
 
+    private function defaultSource(): ?Schema
+    {
+        $current = $this;
+        $seen = new \SplObjectStorage();
+        while ($current instanceof self) {
+            if ($seen->contains($current)) return null;
+            $seen->attach($current);
+            if ($current->hasDefault) return $current;
+            $current = $current->resolvedSchema;
+        }
+        return $current !== null && $current->hasDefaultValue() ? $current : null;
+    }
+
+    public function hasDefaultValue(): bool
+    {
+        return $this->defaultSource() !== null;
+    }
+
+    public function getDefaultValue(): mixed
+    {
+        $source = $this->defaultSource();
+        return $source === $this ? parent::getDefaultValue() : $source?->getDefaultValue();
+    }
+
     protected function validateValue(mixed $value, ValidationContext $ctx): ParseResult
     {
         if ($this->resolvedSchema !== null) {
@@ -49,7 +73,7 @@ final class RefSchema extends Schema
 
         // Try to resolve from context definitions
         $refName = $this->extractRefName();
-        if ($refName !== null && isset($ctx->definitions[$refName])) {
+        if ($refName !== null && array_key_exists($refName, $ctx->definitions)) {
             // Import the definition and validate
             $defSchema = \AnyVali\Interchange\Importer::importNode(
                 $ctx->definitions[$refName],
@@ -78,6 +102,8 @@ final class RefSchema extends Schema
     public function exportNode(): array
     {
         $node = ['kind' => 'ref', 'ref' => $this->ref];
+        if ($this->hasDefault) $node['default'] = $this->defaultValue;
+        if ($this->coerce !== null) $node['coerce'] = $this->coerce;
         $this->addMetadataToNode($node);
         return $node;
     }

@@ -106,11 +106,14 @@ final class ObjectSchema extends Schema
             sensitiveMode: $ctx->sensitiveMode,
             sensitiveTransform: $ctx->sensitiveTransform,
             sensitiveCache: $ctx->sensitiveCache,
+            depth: $ctx->depth,
+            skipCoercion: $ctx->skipCoercion,
+            budget: $ctx->budget,
         );
 
         // Check required fields
         foreach ($this->required as $key) {
-            if (!array_key_exists($key, $value)) {
+            if (!array_key_exists($key, $value) && !($this->properties[$key] ?? null)?->hasDefaultValue()) {
                 $expectedKind = isset($this->properties[$key])
                     ? $this->properties[$key]->getKind()
                     : 'unknown';
@@ -135,6 +138,7 @@ final class ObjectSchema extends Schema
                 $fieldValue = $value[$key];
 
                 $result = $schema->safeParse($fieldValue, $childCtx->child($key));
+                if ($ctx->budget->exhausted()) return $result;
                 if (!$result->success) {
                     $issues = array_merge($issues, $result->issues);
                 } else {
@@ -144,7 +148,8 @@ final class ObjectSchema extends Schema
                 // Apply default
                 $defaultVal = $schema->getDefaultValue();
                 // Validate the default value
-                $defResult = $schema->safeParse($defaultVal, $childCtx->child($key));
+                $defResult = $schema->safeParseDefault($defaultVal, $childCtx->child($key));
+                if ($ctx->budget->exhausted()) return $defResult;
                 if (!$defResult->success) {
                     // Default is invalid
                     $issues[] = new ValidationIssue(

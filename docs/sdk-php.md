@@ -2,13 +2,39 @@
 
 ## Installation
 
-Install via Composer:
+The PHP SDK is currently distributed from this repository's source releases. The public `anyvali/anyvali` Packagist package is unavailable; a bare `composer require anyvali/anyvali` will not install it. PHP 8.1+ and Composer 2 are required.
+
+Use a pinned checkout with a [Composer path repository](https://getcomposer.org/doc/05-repositories.md#path). For example, from your application's directory:
 
 ```bash
-composer require anyvali/anyvali
+git clone --branch v1.1.5 --depth 1 https://github.com/BetterCorp/AnyVali.git .deps/anyvali
+git -C .deps/anyvali rev-parse HEAD
+# v1.1.5: 58b58e7e617aa13020b6e700790ac710b658b140
 ```
 
-Requires PHP 8.1 or later.
+Merge these entries into your application's `composer.json`:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "path",
+      "url": ".deps/anyvali/sdk/php",
+      "options": {
+        "symlink": false,
+        "versions": { "anyvali/anyvali": "1.1.5" }
+      }
+    }
+  ],
+  "require": { "anyvali/anyvali": "1.1.5" }
+}
+```
+
+For a new application without `composer.lock`, run `composer install` to create the lockfile and install dependencies. For an existing application with a lockfile, run `composer update anyvali/anyvali` to add or update this dependency. Require `vendor/autoload.php` as usual. Composer copies the package into `vendor`, reads its PHP requirement and PSR-4 mapping from `sdk/php/composer.json`, and records the installation in `composer.lock`. Commit the lockfile and recreate the same pinned source checkout before `composer install` in CI or deployment.
+
+The explicit version maps the PHP source to the unified repository tag (`v1.1.5` means `1.1.5`). It does not assert a Packagist release exists. Update both the source pin and Composer version together when upgrading. Historical `php-v*` tags, the old `0.0.1` manifest field, and the legacy `VERSION` file do not identify current public Composer releases. A root VCS repository URL alone cannot discover the manifest nested under `sdk/php`.
+
+Release validation runs `bash tools/release/smoke_php_install.sh sdk/php <version>` to install the SDK into an empty consumer with Packagist disabled, verify its version/platform requirements and autoloading, and exercise parsing and interchange. The default smoke-test version `0.0.0` is only an alias for an unreleased checkout.
 
 ## Quick Start
 
@@ -329,12 +355,14 @@ $normalized->parse("  Hello World  ");  // => "hello world"
 
 Defaults fill in missing (absent) values. They run after coercion and before validation. Call `->default($value)` on any schema.
 
-The default only applies when the value is absent -- if a value is present, it is validated normally. Defaults must be static values (for portability across SDKs).
+The default only applies when an object property is absent, including required properties restored by document import. Present null is validated normally and never selects a default; nullable properties retain null. Defaults inherited through resolved references also materialize, and default validation skips the defaulted schema’s own coercion. Child schemas, including union variants and intersection members, run their normal coercion pipelines. Defaults must be static values (for portability across SDKs).
 
 ```php
 $role = AnyVali::string()->default('user');
-$role->parse(null);     // => "user" (absent value filled)
-$role->parse('admin');  // => "admin"
+$account = AnyVali::object(['role' => $role], required: ['role']);
+$account->parse([]);                  // => ['role' => 'user']
+$account->parse(['role' => 'admin']); // => ['role' => 'admin']
+$account->safeParse(['role' => null])->success; // => false (null is present)
 
 $tags = AnyVali::array(AnyVali::string())->default([]);
 ```
@@ -739,3 +767,11 @@ Extends `\RuntimeException`. Thrown by `parse()` on validation failure.
 |---|---|---|
 | `$e->issues` | `array` | List of validation issues |
 | `$e->getMessage()` | `string` | Summary error message |
+
+### Imported reference graphs
+
+`AnyVali::import()` resolves document references using a graph owned by that import. Root references and nested recursive values work through the ordinary `parse()` and `safeParse()` APIs. Export retains reachable definitions, including when imported schemas are placed inside native parent schemas. Combining incompatible definitions with the same name fails export.
+
+Circular references are supported, including unions with terminating branches at the same input depth. Validation is limited to 64 nested schema calls per parse path and 100,000 schema calls across all branches of one parse; inputs exceeding either bound return a validation failure. Budgets reset for every parse. Import traversal is limited to 64 nested schema nodes, including reference targets; deeper documents throw a `RuntimeException` with `Maximum schema import depth exceeded`.
+
+Record exports use the spec-defined `values` key. Imports also accept `valueSchema`, which is emitted by JS/C#, when `values` is absent.

@@ -84,6 +84,7 @@ final class ArraySchema extends Schema
         $parsedItems = [];
         foreach ($value as $i => $item) {
             $result = $this->items->safeParse($item, $ctx->child($i));
+            if ($ctx->budget->exhausted()) return $result;
             if (!$result->success) {
                 $issues = array_merge($issues, $result->issues);
             } else {

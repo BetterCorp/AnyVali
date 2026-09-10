@@ -282,6 +282,20 @@ jobs:
           gem push anyvali-*.gem
           rm -f ~/.gem/credentials
 
+  php-source:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+      - name: Validate PHP source installation
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        run: bash tools/release/smoke_php_install.sh sdk/php "$RELEASE_VERSION"
+
   cli:
     needs: version
     strategy:
@@ -329,7 +343,7 @@ jobs:
           path: ${{ matrix.name }}
 
   cli-upload:
-    needs: [cli, version]
+    needs: [cli, version, php-source]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/download-artifact@v8
