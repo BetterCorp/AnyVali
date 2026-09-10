@@ -67,7 +67,7 @@ final class ImportRegressionTest extends TestCase
             for ($round = 0; $round < 2; $round++) {
                 $result = $schema->safeParse(new \stdClass());
                 $this->assertTrue($result->success);
-                $this->assertEquals(['value' => $default], $result->value);
+                $this->assertSame(['value' => $default], $result->value);
                 $this->assertFalse($schema->safeParse(['value' => null])->success);
                 $schema = AnyVali::import($schema->export()->toJson());
             }
@@ -342,7 +342,7 @@ final class ImportRegressionTest extends TestCase
                 for ($round = 0; $round < 3; $round++) {
                     $result = $schema->safeParse([]);
                     $this->assertTrue($result->success, $target['kind'] . ' round ' . $round);
-                    $this->assertEquals(['value' => $default], $result->value);
+                    $this->assertSame(['value' => $default], $result->value);
                     $schema = AnyVali::import($schema->export()->toJson());
                 }
             }
@@ -380,6 +380,46 @@ final class ImportRegressionTest extends TestCase
             for ($round = 0; $round < 3; $round++) {
                 $this->assertSame(12, $schema->parse(' 12 '));
                 $this->assertFalse($schema->safeParse('invalid')->success);
+                $schema = AnyVali::import($schema->export()->toJson());
+            }
+        }
+    }
+
+    /** Reject malformed definition nodes through document and lazy context imports. */
+    public function testMalformedDefinitionsUseControlledImportErrors(): void
+    {
+        $ref = ['kind' => 'ref', 'ref' => '#/definitions/Invalid'];
+        foreach ([null, false, 12, 12.0, 'not a schema'] as $invalid) {
+            $document = ['root' => $ref, 'definitions' => ['Invalid' => $invalid]];
+            foreach ([
+                fn() => AnyVali::import($document),
+                fn() => AnyVali::import(json_encode($document, JSON_THROW_ON_ERROR)),
+                fn() => Importer::importNode($invalid),
+                fn() => (new \AnyVali\Schemas\RefSchema('#/definitions/Invalid'))->safeParse('input', new \AnyVali\ValidationContext(definitions: $document['definitions'])),
+            ] as $import) {
+                $error = null;
+                try {
+                    $import();
+                } catch (\RuntimeException $caught) {
+                    $error = $caught;
+                }
+                $this->assertNotNull($error);
+                $this->assertSame('Invalid schema node: expected an array', $error->getMessage());
+            }
+        }
+        $valid = ['kind' => 'string'];
+        $this->assertSame('leaf', AnyVali::import(['root' => $ref, 'definitions' => ['Invalid' => $valid]])->parse('leaf'));
+        $this->assertTrue((new \AnyVali\Schemas\RefSchema('#/definitions/Invalid'))->safeParse('leaf', new \AnyVali\ValidationContext(definitions: ['Invalid' => $valid]))->success);
+    }
+
+    /** Preserve strict literal and enum matching for integral floats in JSON. */
+    public function testIntegralFloatsKeepTheirTypesAcrossJsonRoundTrips(): void
+    {
+        foreach ([['kind' => 'literal', 'value' => 1.0], ['kind' => 'enum', 'values' => [1.0]]] as $node) {
+            $schema = AnyVali::import(['root' => $node]);
+            for ($round = 0; $round < 3; $round++) {
+                $this->assertSame(1.0, $schema->parse(1.0));
+                $this->assertFalse($schema->safeParse(1)->success);
                 $schema = AnyVali::import($schema->export()->toJson());
             }
         }

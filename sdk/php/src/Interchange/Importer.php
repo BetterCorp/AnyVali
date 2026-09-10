@@ -70,17 +70,21 @@ final class Importer
     }
 
     /**
-     * Import a single schema node.
-     * @param array<string, mixed> $node
+     * Import a single schema node, rejecting malformed nodes with a controlled exception.
+     * @param mixed $node
      * @param array<string, array<string, mixed>> $definitions
+     * @throws \RuntimeException
      */
-    public static function importNode(array $node, array $definitions = []): Schema
+    public static function importNode(mixed $node, array $definitions = []): Schema
     {
         return (new self())->node($node, $definitions);
     }
 
-    private function node(array $node, array $definitions): Schema
+    private function node(mixed $node, array $definitions): Schema
     {
+        if (!is_array($node)) {
+            throw new \RuntimeException('Invalid schema node: expected an array');
+        }
         if ($this->depth >= self::MAX_DEPTH) {
             throw new \RuntimeException('Maximum schema import depth exceeded');
         }
@@ -304,7 +308,7 @@ final class Importer
         $prefix = '#/definitions/';
         if (!str_starts_with($ref, $prefix)) return;
         $name = substr($ref, strlen($prefix));
-        if (!isset($definitions[$name])) return;
+        if (!array_key_exists($name, $definitions)) return;
         if (isset($this->resolved[$name])) {
             $schema->resolve($this->resolved[$name]);
             return;
