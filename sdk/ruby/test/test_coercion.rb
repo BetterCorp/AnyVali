@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "timeout"
+
 require_relative "test_helper"
 
 class TestCoercion < Minitest::Test
@@ -185,6 +187,13 @@ class TestCoercion < Minitest::Test
 
   NUMBER_ACCEPT = { "3.14" => 3.14, "-1.5e3" => -1500.0, "  2  " => 2.0, "0" => 0.0 }.freeze
   NUMBER_REJECT = ["0x10", "Infinity", "NaN", "", "1_000", "abc"].freeze
+
+  def test_long_invalid_decimal_is_rejected_promptly
+    result = Timeout.timeout(2) do
+      AnyVali::Coercion.coerce_string_to_number("9" * 100_000 + "x")
+    end
+    refute result[:success]
+  end
 
   def test_matrix_string_to_number_accept
     s = AnyVali.number.coerce
