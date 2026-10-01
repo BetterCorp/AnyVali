@@ -215,17 +215,17 @@ func TestPathTraversal(t *testing.T) {
 	handler := srv.Handler()
 
 	tests := []struct {
-		name       string
-		path       string
-		wantStatus int
+		name               string
+		path               string
+		wantStatus         int
+		allowSafeTraversal bool
 	}{
 		{
 			name: "parent directory traversal",
 			path: "/validate/..%2Fsecret",
-			// Go's default mux cleans the path and issues a 301 redirect,
-			// which prevents the request from reaching the handler. This is
-			// a safe outcome.
-			wantStatus: http.StatusMovedPermanently,
+			// Go versions differ on whether encoded traversal is redirected
+			// or rejected; neither may reach a schema handler.
+			allowSafeTraversal: true,
 		},
 		{
 			name:       "slash in schema name",
@@ -233,10 +233,9 @@ func TestPathTraversal(t *testing.T) {
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			name: "double dot without encoding",
-			path: "/validate/../secret",
-			// Go's default mux cleans ".." path segments and redirects.
-			wantStatus: http.StatusMovedPermanently,
+			name:               "double dot without encoding",
+			path:               "/validate/../secret",
+			allowSafeTraversal: true,
 		},
 		{
 			name:       "double dot with double encoding",
@@ -274,6 +273,9 @@ func TestPathTraversal(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			if tt.allowSafeTraversal && (rr.Code == http.StatusNotFound || rr.Code >= 300 && rr.Code < 400) {
+				return
+			}
 			if rr.Code != tt.wantStatus {
 				t.Errorf("path %q: expected status %d, got %d (body: %s)",
 					tt.path, tt.wantStatus, rr.Code, rr.Body.String())

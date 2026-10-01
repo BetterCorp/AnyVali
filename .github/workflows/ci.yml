@@ -101,7 +101,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
-        go-version: ["1.21", "1.22"]
+        go-version: ["1.21", "1.26.8"]
     defaults:
       run:
         shell: bash
@@ -117,7 +117,7 @@ jobs:
         run: cd sdk/go && go test -race ./...
       - run: ./runner.sh coverage go
       - uses: codecov/codecov-action@v7
-        if: github.event_name == 'push' && matrix.go-version == '1.22'
+        if: github.event_name == 'push' && matrix.go-version == '1.26.8'
         with:
           files: sdk/go/coverage.out
           flags: go
@@ -343,7 +343,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
-        go-version: ["1.21", "1.22"]
+        go-version: ["1.26.8"]
     defaults:
       run:
         shell: bash
@@ -357,6 +357,8 @@ jobs:
         run: cd cli && go build -o anyvali .
       - name: Test CLI
         run: cd cli && go test -v ./... 2>&1
+      - name: Check Go vulnerabilities
+        run: cd cli && go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 -mode=source ./...
       - name: Verify binary
         run: ./cli/anyvali version
 
@@ -379,7 +381,7 @@ jobs:
           python-version: "3.12"
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.22"
+          go-version: "1.26.8"
           cache-dependency-path: sdk/go/go.sum
       - run: chmod +x runner.sh
       - run: ./runner.sh conformance

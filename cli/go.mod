@@ -1,6 +1,6 @@
 module github.com/BetterCorp/AnyVali/cli
 
-go 1.21
+go 1.26.8
 
 require github.com/BetterCorp/AnyVali/sdk/go v0.0.0
 
