@@ -3,7 +3,7 @@ import type { CoercionConfig } from "../types.js";
 // Decimal floating-point grammar: optional sign, digits with optional
 // fraction (or bare fraction), optional decimal exponent. Excludes hex/octal/
 // binary literals, Infinity and NaN that JS `Number()` would otherwise accept.
-const DECIMAL_FLOAT_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+const DECIMAL_FLOAT_RE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
 
 export type CoercionResult =
   | { success: true; value: unknown }
