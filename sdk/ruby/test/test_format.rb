@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "timeout"
+
 require_relative "test_helper"
 
 class TestFormat < Minitest::Test
@@ -20,6 +22,18 @@ class TestFormat < Minitest::Test
     s = AnyVali.string.format("email")
     result = s.safe_parse("user@localhost")
     assert result.failure?
+  end
+
+  def test_email_with_repeated_dots_and_second_at_is_rejected_promptly
+    value = "a@a." + ("!." * 100_000) + "@"
+    result = Timeout.timeout(2) { AnyVali::Format::Validators.valid_email?(value) }
+    refute result
+  end
+
+  def test_email_domain_dot_rules_preserved
+    assert AnyVali::Format::Validators.valid_email?("a@a..")
+    refute AnyVali::Format::Validators.valid_email?("a@.a")
+    refute AnyVali::Format::Validators.valid_email?("a@a.")
   end
 
   def test_url_valid_https
