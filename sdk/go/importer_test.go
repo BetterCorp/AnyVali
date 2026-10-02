@@ -1087,20 +1087,20 @@ func TestGetFloat(t *testing.T) {
 
 func TestGetInt(t *testing.T) {
 	node := map[string]any{"x": float64(42)}
-	i, ok := getInt(node, "x")
-	if !ok || i != 42 {
+	i, ok, err := getCountConstraint(node, "x")
+	if err != nil || !ok || i != 42 {
 		t.Fatal("expected 42")
 	}
-	_, ok = getInt(node, "missing")
-	if ok {
+	_, ok, err = getCountConstraint(node, "missing")
+	if err != nil || ok {
 		t.Fatal("expected not ok for missing key")
 	}
 }
 
 func TestGetIntNonNumeric(t *testing.T) {
 	node := map[string]any{"x": "not-a-number"}
-	_, ok := getInt(node, "x")
-	if ok {
+	_, ok, err := getCountConstraint(node, "x")
+	if err == nil || ok {
 		t.Fatal("expected not ok for non-numeric value")
 	}
 }

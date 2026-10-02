@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -123,8 +124,15 @@ func RunValidate(args []string) int {
 
 	// Parse input JSON
 	var input any
-	if err := json.Unmarshal(inputData, &input); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(inputData))
+	decoder.UseNumber()
+	if err := decoder.Decode(&input); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: invalid JSON input: %s\n", err)
+		return 2
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		fmt.Fprintln(os.Stderr, "Error: invalid JSON input: trailing value or invalid content")
 		return 2
 	}
 
