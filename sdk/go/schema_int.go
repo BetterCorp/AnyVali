@@ -3,27 +3,29 @@ package anyvali
 import (
 	"fmt"
 	"math"
+	"math/big"
 )
+
+type exactConstraint struct {
+	value any
+	rat   *big.Rat
+}
 
 // IntSchema validates integer values with optional constraints and range checks.
 type IntSchema struct {
 	baseSchema
-	kind          string
-	min           *int64
-	max           *int64
-	exclusiveMin  *int64
-	exclusiveMax  *int64
-	multipleOf    *int64
-	rangeLow      int64
-	rangeHigh     int64
-	unsigned      bool
-	uRangeLow     uint64
-	uRangeHigh    uint64
-	uMin          *uint64
-	uMax          *uint64
-	uExclusiveMin *uint64
-	uExclusiveMax *uint64
-	uMultipleOf   *uint64
+	kind             string
+	min              *int64
+	max              *int64
+	exclusiveMin     *int64
+	exclusiveMax     *int64
+	multipleOf       *int64
+	rangeLow         int64
+	rangeHigh        int64
+	unsigned         bool
+	uRangeLow        uint64
+	uRangeHigh       uint64
+	exactConstraints map[string]exactConstraint
 }
 
 func newIntSchema(kind string, low, high int64) *IntSchema {
@@ -197,6 +199,9 @@ func (s *IntSchema) validateSigned(value any) (any, []ValidationIssue) {
 			Received: fmt.Sprintf("%d", i),
 		})
 	}
+	if len(s.exactConstraints) > 0 {
+		issues = append(issues, s.exactConstraintIssues(new(big.Rat).SetInt64(i))...)
+	}
 
 	if len(issues) > 0 {
 		return nil, issues
@@ -270,20 +275,8 @@ func (s *IntSchema) validateUnsigned(value any) (any, []ValidationIssue) {
 			Received: fmt.Sprintf("%d", u),
 		})
 	}
-	if s.uMin != nil && u < *s.uMin {
-		issues = append(issues, ValidationIssue{Code: IssueTooSmall, Message: fmt.Sprintf("value must be >= %d", *s.uMin)})
-	}
-	if s.uMax != nil && u > *s.uMax {
-		issues = append(issues, ValidationIssue{Code: IssueTooLarge, Message: fmt.Sprintf("value must be <= %d", *s.uMax)})
-	}
-	if s.uExclusiveMin != nil && u <= *s.uExclusiveMin {
-		issues = append(issues, ValidationIssue{Code: IssueTooSmall, Message: fmt.Sprintf("value must be > %d", *s.uExclusiveMin)})
-	}
-	if s.uExclusiveMax != nil && u >= *s.uExclusiveMax {
-		issues = append(issues, ValidationIssue{Code: IssueTooLarge, Message: fmt.Sprintf("value must be < %d", *s.uExclusiveMax)})
-	}
-	if s.uMultipleOf != nil && *s.uMultipleOf != 0 && u%*s.uMultipleOf != 0 {
-		issues = append(issues, ValidationIssue{Code: IssueInvalidNumber, Message: fmt.Sprintf("value must be a multiple of %d", *s.uMultipleOf)})
+	if len(s.exactConstraints) > 0 {
+		issues = append(issues, s.exactConstraintIssues(new(big.Rat).SetInt(new(big.Int).SetUint64(u)))...)
 	}
 
 	if len(issues) > 0 {
@@ -294,6 +287,46 @@ func (s *IntSchema) validateUnsigned(value any) (any, []ValidationIssue) {
 		return int64(u), nil
 	}
 	return u, nil
+}
+
+func (s *IntSchema) exactConstraintIssues(value *big.Rat) []ValidationIssue {
+	var issues []ValidationIssue
+	for _, key := range []string{"min", "max", "exclusiveMin", "exclusiveMax", "multipleOf"} {
+		constraint, ok := s.exactConstraints[key]
+		if !ok {
+			continue
+		}
+		comparison := value.Cmp(constraint.rat)
+		code := ""
+		symbol := ""
+		switch key {
+		case "min":
+			if comparison < 0 {
+				code, symbol = IssueTooSmall, ">="
+			}
+		case "max":
+			if comparison > 0 {
+				code, symbol = IssueTooLarge, "<="
+			}
+		case "exclusiveMin":
+			if comparison <= 0 {
+				code, symbol = IssueTooSmall, ">"
+			}
+		case "exclusiveMax":
+			if comparison >= 0 {
+				code, symbol = IssueTooLarge, "<"
+			}
+		case "multipleOf":
+			if constraint.rat.Sign() != 0 && !new(big.Rat).Quo(value, constraint.rat).IsInt() {
+				code, symbol = IssueInvalidNumber, "multiple of"
+			}
+		}
+		if code != "" {
+			expected := fmt.Sprintf("%s %v", symbol, constraint.value)
+			issues = append(issues, ValidationIssue{Code: code, Message: "value must be " + expected, Expected: expected, Received: value.RatString()})
+		}
+	}
+	return issues
 }
 
 func (s *IntSchema) ToNode() map[string]any {
@@ -313,20 +346,8 @@ func (s *IntSchema) ToNode() map[string]any {
 	if s.multipleOf != nil {
 		node["multipleOf"] = *s.multipleOf
 	}
-	if s.uMin != nil {
-		node["min"] = *s.uMin
-	}
-	if s.uMax != nil {
-		node["max"] = *s.uMax
-	}
-	if s.uExclusiveMin != nil {
-		node["exclusiveMin"] = *s.uExclusiveMin
-	}
-	if s.uExclusiveMax != nil {
-		node["exclusiveMax"] = *s.uExclusiveMax
-	}
-	if s.uMultipleOf != nil {
-		node["multipleOf"] = *s.uMultipleOf
+	for key, constraint := range s.exactConstraints {
+		node[key] = constraint.value
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)

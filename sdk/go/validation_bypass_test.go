@@ -69,10 +69,30 @@ func TestImportJSONPreservesWideIntegerConstraints(t *testing.T) {
 			}
 		})
 	}
+	for _, tc := range []struct {
+		schema, input string
+		valid         bool
+	}{
+		{`{"root":{"kind":"int64","min":1.5}}`, `1`, false},
+		{`{"root":{"kind":"int64","min":1.5}}`, `2`, true},
+		{`{"root":{"kind":"uint64","min":-1}}`, `0`, true},
+		{`{"root":{"kind":"uint64","max":-1}}`, `0`, false},
+		{`{"root":{"kind":"int64","multipleOf":1.5}}`, `3`, true},
+		{`{"root":{"kind":"int64","multipleOf":1.5}}`, `2`, false},
+		{`{"root":{"kind":"int64","min":1e400}}`, `0`, false},
+	} {
+		schema, err := ImportJSON([]byte(tc.schema))
+		if err != nil {
+			t.Fatalf("valid numeric constraint rejected: %s: %v", tc.schema, err)
+		}
+		if result := schema.SafeParse(json.Number(tc.input)); result.Success != tc.valid {
+			t.Fatalf("schema=%s input=%s: success=%v issues=%v", tc.schema, tc.input, result.Success, result.Issues)
+		}
+	}
 	for _, raw := range []string{
-		`{"root":{"kind":"int64","max":9223372036854775808}}`,
-		`{"root":{"kind":"uint64","max":-1}}`,
 		`{"root":{"kind":"int64","max":"10"}}`,
+		`{"root":{"kind":"number","min":1e400}}`,
+		`{"root":{"kind":"float32","max":1e400}}`,
 	} {
 		if _, err := ImportJSON([]byte(raw)); err == nil {
 			t.Fatalf("accepted invalid constraint: %s", raw)

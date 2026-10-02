@@ -142,7 +142,9 @@ func importStringSchema(node map[string]any) (*StringSchema, error) {
 
 func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, error) {
 	s := newFloat64Schema(kind)
-	importNumericConstraintsFloat(s, node)
+	if err := importNumericConstraintsFloat(s, node); err != nil {
+		return nil, err
+	}
 	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
@@ -150,28 +152,38 @@ func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, erro
 
 func importFloat32Schema(node map[string]any) (*Float32Schema, error) {
 	s := Float32()
-	importNumericConstraintsFloat(s, node)
+	if err := importNumericConstraintsFloat(s, node); err != nil {
+		return nil, err
+	}
 	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
-func importNumericConstraintsFloat(s *Float64Schema, node map[string]any) {
-	if v, ok := getFloat(node, "min"); ok {
-		s.Min(v)
+func importNumericConstraintsFloat(s *Float64Schema, node map[string]any) error {
+	for _, key := range []string{"min", "max", "exclusiveMin", "exclusiveMax", "multipleOf"} {
+		value, present := node[key]
+		if !present {
+			continue
+		}
+		n, ok := toFloat64(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) {
+			return fmt.Errorf("%s must be a finite float64 number", key)
+		}
+		switch key {
+		case "min":
+			s.Min(n)
+		case "max":
+			s.Max(n)
+		case "exclusiveMin":
+			s.ExclusiveMin(n)
+		case "exclusiveMax":
+			s.ExclusiveMax(n)
+		case "multipleOf":
+			s.MultipleOf(n)
+		}
 	}
-	if v, ok := getFloat(node, "max"); ok {
-		s.Max(v)
-	}
-	if v, ok := getFloat(node, "exclusiveMin"); ok {
-		s.ExclusiveMin(v)
-	}
-	if v, ok := getFloat(node, "exclusiveMax"); ok {
-		s.ExclusiveMax(v)
-	}
-	if v, ok := getFloat(node, "multipleOf"); ok {
-		s.MultipleOf(v)
-	}
+	return nil
 }
 
 func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSchema, error) {
@@ -200,41 +212,14 @@ func importNumericConstraintsInt(s *IntSchema, node map[string]any) error {
 		if !present {
 			continue
 		}
-		if s.unsigned {
-			n, ok := toUint64(value)
-			if !ok {
-				return fmt.Errorf("%s must be an unsigned integer", key)
-			}
-			switch key {
-			case "min":
-				s.uMin = &n
-			case "max":
-				s.uMax = &n
-			case "exclusiveMin":
-				s.uExclusiveMin = &n
-			case "exclusiveMax":
-				s.uExclusiveMax = &n
-			case "multipleOf":
-				s.uMultipleOf = &n
-			}
-		} else {
-			n, ok := toInt64(value)
-			if !ok {
-				return fmt.Errorf("%s must be an int64", key)
-			}
-			switch key {
-			case "min":
-				s.Min(n)
-			case "max":
-				s.Max(n)
-			case "exclusiveMin":
-				s.ExclusiveMin(n)
-			case "exclusiveMax":
-				s.ExclusiveMax(n)
-			case "multipleOf":
-				s.MultipleOf(n)
-			}
+		rat, ok := exactNumberRat(value)
+		if !ok {
+			return fmt.Errorf("%s must be a finite numeric constraint", key)
 		}
+		if s.exactConstraints == nil {
+			s.exactConstraints = make(map[string]exactConstraint)
+		}
+		s.exactConstraints[key] = exactConstraint{value: value, rat: rat}
 	}
 	return nil
 }

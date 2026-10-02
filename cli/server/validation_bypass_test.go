@@ -53,6 +53,17 @@ func TestValidateRejectsOverflowedLengthConstraints(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnrepresentableFloatConstraint(t *testing.T) {
+	srv := newTestServer(t, false, false)
+	req := httptest.NewRequest(http.MethodPost, "/validate", strings.NewReader(`{"schema":{"root":{"kind":"number","min":1e400}},"input":0}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("unrepresentable minimum was ignored: %d %s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestNamedSchemaPreservesIntegerPrecision(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "id.json"), []byte(`{"root":{"kind":"literal","value":9007199254740992}}`), 0600); err != nil {
