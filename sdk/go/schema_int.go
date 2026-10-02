@@ -8,17 +8,22 @@ import (
 // IntSchema validates integer values with optional constraints and range checks.
 type IntSchema struct {
 	baseSchema
-	kind         string
-	min          *int64
-	max          *int64
-	exclusiveMin *int64
-	exclusiveMax *int64
-	multipleOf   *int64
-	rangeLow     int64
-	rangeHigh    int64
-	unsigned     bool
-	uRangeLow    uint64
-	uRangeHigh   uint64
+	kind          string
+	min           *int64
+	max           *int64
+	exclusiveMin  *int64
+	exclusiveMax  *int64
+	multipleOf    *int64
+	rangeLow      int64
+	rangeHigh     int64
+	unsigned      bool
+	uRangeLow     uint64
+	uRangeHigh    uint64
+	uMin          *uint64
+	uMax          *uint64
+	uExclusiveMin *uint64
+	uExclusiveMax *uint64
+	uMultipleOf   *uint64
 }
 
 func newIntSchema(kind string, low, high int64) *IntSchema {
@@ -265,6 +270,21 @@ func (s *IntSchema) validateUnsigned(value any) (any, []ValidationIssue) {
 			Received: fmt.Sprintf("%d", u),
 		})
 	}
+	if s.uMin != nil && u < *s.uMin {
+		issues = append(issues, ValidationIssue{Code: IssueTooSmall, Message: fmt.Sprintf("value must be >= %d", *s.uMin)})
+	}
+	if s.uMax != nil && u > *s.uMax {
+		issues = append(issues, ValidationIssue{Code: IssueTooLarge, Message: fmt.Sprintf("value must be <= %d", *s.uMax)})
+	}
+	if s.uExclusiveMin != nil && u <= *s.uExclusiveMin {
+		issues = append(issues, ValidationIssue{Code: IssueTooSmall, Message: fmt.Sprintf("value must be > %d", *s.uExclusiveMin)})
+	}
+	if s.uExclusiveMax != nil && u >= *s.uExclusiveMax {
+		issues = append(issues, ValidationIssue{Code: IssueTooLarge, Message: fmt.Sprintf("value must be < %d", *s.uExclusiveMax)})
+	}
+	if s.uMultipleOf != nil && *s.uMultipleOf != 0 && u%*s.uMultipleOf != 0 {
+		issues = append(issues, ValidationIssue{Code: IssueInvalidNumber, Message: fmt.Sprintf("value must be a multiple of %d", *s.uMultipleOf)})
+	}
 
 	if len(issues) > 0 {
 		return nil, issues
@@ -292,6 +312,21 @@ func (s *IntSchema) ToNode() map[string]any {
 	}
 	if s.multipleOf != nil {
 		node["multipleOf"] = *s.multipleOf
+	}
+	if s.uMin != nil {
+		node["min"] = *s.uMin
+	}
+	if s.uMax != nil {
+		node["max"] = *s.uMax
+	}
+	if s.uExclusiveMin != nil {
+		node["exclusiveMin"] = *s.uExclusiveMin
+	}
+	if s.uExclusiveMax != nil {
+		node["exclusiveMax"] = *s.uExclusiveMax
+	}
+	if s.uMultipleOf != nil {
+		node["multipleOf"] = *s.uMultipleOf
 	}
 	s.addCoercionNode(node)
 	s.addDefaultNode(node)

@@ -1,8 +1,10 @@
 package anyvali
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 )
 
@@ -24,8 +26,14 @@ func Import(doc *Document) (Schema, error) {
 // ImportJSON parses JSON bytes into a Document and then converts to a Schema.
 func ImportJSON(data []byte) (Schema, error) {
 	var doc Document
-	if err := json.Unmarshal(data, &doc); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&doc); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return nil, fmt.Errorf("failed to parse JSON: trailing value or invalid content")
 	}
 	return Import(&doc)
 }
@@ -102,10 +110,14 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 
 func importStringSchema(node map[string]any) (*StringSchema, error) {
 	s := String()
-	if v, ok := getInt(node, "minLength"); ok {
+	if v, ok, err := getCountConstraint(node, "minLength"); err != nil {
+		return nil, err
+	} else if ok {
 		s.MinLength(v)
 	}
-	if v, ok := getInt(node, "maxLength"); ok {
+	if v, ok, err := getCountConstraint(node, "maxLength"); err != nil {
+		return nil, err
+	} else if ok {
 		s.MaxLength(v)
 	}
 	if v, ok := node["pattern"].(string); ok {
@@ -164,7 +176,9 @@ func importNumericConstraintsFloat(s *Float64Schema, node map[string]any) {
 
 func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSchema, error) {
 	s := newIntSchema(kind, low, high)
-	importNumericConstraintsInt(s, node)
+	if err := importNumericConstraintsInt(s, node); err != nil {
+		return nil, err
+	}
 	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
@@ -172,33 +186,57 @@ func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSch
 
 func importUintSchema(node map[string]any, kind string, low, high uint64) (*IntSchema, error) {
 	s := newUintSchema(kind, low, high)
-	importNumericConstraintsInt(s, node)
+	if err := importNumericConstraintsInt(s, node); err != nil {
+		return nil, err
+	}
 	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
-func importNumericConstraintsInt(s *IntSchema, node map[string]any) {
-	if v, ok := getFloat(node, "min"); ok {
-		iv := int64(v)
-		s.Min(iv)
+func importNumericConstraintsInt(s *IntSchema, node map[string]any) error {
+	for _, key := range []string{"min", "max", "exclusiveMin", "exclusiveMax", "multipleOf"} {
+		value, present := node[key]
+		if !present {
+			continue
+		}
+		if s.unsigned {
+			n, ok := toUint64(value)
+			if !ok {
+				return fmt.Errorf("%s must be an unsigned integer", key)
+			}
+			switch key {
+			case "min":
+				s.uMin = &n
+			case "max":
+				s.uMax = &n
+			case "exclusiveMin":
+				s.uExclusiveMin = &n
+			case "exclusiveMax":
+				s.uExclusiveMax = &n
+			case "multipleOf":
+				s.uMultipleOf = &n
+			}
+		} else {
+			n, ok := toInt64(value)
+			if !ok {
+				return fmt.Errorf("%s must be an int64", key)
+			}
+			switch key {
+			case "min":
+				s.Min(n)
+			case "max":
+				s.Max(n)
+			case "exclusiveMin":
+				s.ExclusiveMin(n)
+			case "exclusiveMax":
+				s.ExclusiveMax(n)
+			case "multipleOf":
+				s.MultipleOf(n)
+			}
+		}
 	}
-	if v, ok := getFloat(node, "max"); ok {
-		iv := int64(v)
-		s.Max(iv)
-	}
-	if v, ok := getFloat(node, "exclusiveMin"); ok {
-		iv := int64(v)
-		s.ExclusiveMin(iv)
-	}
-	if v, ok := getFloat(node, "exclusiveMax"); ok {
-		iv := int64(v)
-		s.ExclusiveMax(iv)
-	}
-	if v, ok := getFloat(node, "multipleOf"); ok {
-		iv := int64(v)
-		s.MultipleOf(iv)
-	}
+	return nil
 }
 
 func importBoolSchema(node map[string]any) (*BoolSchema, error) {
@@ -240,10 +278,14 @@ func (ctx *importContext) importArraySchema(node map[string]any, defs map[string
 		return nil, fmt.Errorf("array item: %w", err)
 	}
 	s := Array(item)
-	if v, ok := getInt(node, "minItems"); ok {
+	if v, ok, err := getCountConstraint(node, "minItems"); err != nil {
+		return nil, err
+	} else if ok {
 		s.MinItems(v)
 	}
-	if v, ok := getInt(node, "maxItems"); ok {
+	if v, ok, err := getCountConstraint(node, "maxItems"); err != nil {
+		return nil, err
+	} else if ok {
 		s.MaxItems(v)
 	}
 	importDefault(&s.baseSchema, node)
@@ -443,16 +485,20 @@ func getFloat(node map[string]any, key string) (float64, bool) {
 	return f, ok
 }
 
-func getInt(node map[string]any, key string) (int, bool) {
+func getCountConstraint(node map[string]any, key string) (int, bool, error) {
 	v, ok := node[key]
 	if !ok {
-		return 0, false
+		return 0, false, nil
 	}
-	f, fOk := toFloat64(v)
-	if fOk {
-		return int(f), true
+	rat, ok := exactNumberRat(v)
+	if !ok || !rat.IsInt() || !rat.Num().IsInt64() {
+		return 0, false, fmt.Errorf("%s must be a nonnegative integer within the platform int range", key)
 	}
-	return 0, false
+	n := rat.Num().Int64()
+	if n < 0 || int64(int(n)) != n {
+		return 0, false, fmt.Errorf("%s must be a nonnegative integer within the platform int range", key)
+	}
+	return int(n), true, nil
 }
 
 func importCoercions(b *baseSchema, node map[string]any) {
