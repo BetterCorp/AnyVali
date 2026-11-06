@@ -37,6 +37,38 @@ describe("forms bindings", () => {
 });
 
 describe("forms init", () => {
+  it("treats prototype names in form controls as data", () => {
+    document.body.innerHTML = `
+      <form id="hostile">
+        <input name="__proto__.polluted" value="yes" />
+        <input name="constructor.prototype.injected" value="yes" />
+      </form>
+    `;
+    const controller = initForm("#hostile", {
+      schema: exportSchema(object({}).unknownKeys("allow")),
+      nativeValidation: false,
+    });
+
+    try {
+      const values = controller.getValues() as Record<string, any>;
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+      expect(({} as Record<string, unknown>).injected).toBeUndefined();
+      expect(Object.getPrototypeOf(values)).toBe(Object.prototype);
+      expect(Object.getOwnPropertyDescriptor(values, "__proto__")?.value).toEqual({ polluted: "yes" });
+      expect(values.constructor.prototype.injected).toBe("yes");
+    } finally {
+      controller.destroy();
+      delete (Object.prototype as Record<string, unknown>).polluted;
+      delete (Object.prototype as Record<string, unknown>).injected;
+    }
+  });
+
+  it("parses long malformed field names within the test timeout", () => {
+    const path = "[a".repeat(50000);
+    const attributes = createFormBindings({ schema: object({}) }).field(path);
+    expect(attributes.name).toBe(path);
+  }, 2000);
+
   it("enhances an existing form and blocks invalid submit", () => {
     document.body.innerHTML = `
       <form id="signup">
