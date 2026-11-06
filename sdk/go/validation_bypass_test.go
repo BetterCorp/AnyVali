@@ -191,3 +191,34 @@ func TestSettersReplaceImportedIntegerConstraints(t *testing.T) {
 		}
 	}
 }
+
+func TestDefinedPrimitiveLiteralComparisons(t *testing.T) {
+	type status string
+	type flag bool
+	type count int64
+	type wide uint64
+	type fraction float32
+	for _, tc := range []struct {
+		literal, input any
+		valid          bool
+	}{
+		{status("ok"), status("ok"), true},
+		{status("ok"), "ok", true},
+		{"ok", status("ok"), true},
+		{flag(true), true, true},
+		{count(1), json.Number("1e0"), true},
+		{wide(9007199254740993), json.Number("9007199254740993"), true},
+		{wide(9007199254740993), uint64(9007199254740992), false},
+		{fraction(0.1), float32(0.1), true},
+		{status("true"), flag(true), false},
+		{status("1"), count(1), false},
+		{count(1), status("1"), false},
+		{flag(true), status("true"), false},
+	} {
+		for _, schema := range []Schema{Literal(tc.literal), Enum(tc.literal)} {
+			if result := schema.SafeParse(tc.input); result.Success != tc.valid {
+				t.Fatalf("%T literal %T(%v), input %T(%v): success=%v", schema, tc.literal, tc.literal, tc.input, tc.input, result.Success)
+			}
+		}
+	}
+}

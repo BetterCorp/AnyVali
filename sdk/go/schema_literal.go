@@ -1,6 +1,10 @@
 package anyvali
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+)
 
 // LiteralSchema validates that the value matches a specific literal value.
 type LiteralSchema struct {
@@ -54,7 +58,34 @@ func (s *LiteralSchema) validate(value any) (any, []ValidationIssue) {
 	return value, nil
 }
 
+// primitiveLiteralValue preserves primitive value semantics for defined Go types.
+func primitiveLiteralValue(value any) any {
+	if value == nil {
+		return nil
+	}
+	if _, ok := value.(json.Number); ok {
+		return value
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Bool:
+		return v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.Uint()
+	case reflect.Float32:
+		return float32(v.Float())
+	case reflect.Float64:
+		return v.Float()
+	}
+	return value
+}
+
 func literalEqual(a, b any) bool {
+	a, b = primitiveLiteralValue(a), primitiveLiteralValue(b)
 	if a == nil && b == nil {
 		return true
 	}

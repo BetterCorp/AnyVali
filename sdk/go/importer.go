@@ -245,6 +245,7 @@ func importLiteralSchema(node map[string]any) (*LiteralSchema, error) {
 // Reject numeric literals outside the bounded exact comparison range at import
 // time instead of creating a schema that rejects its own literal value.
 func validateImportedLiteral(value any) error {
+	value = primitiveLiteralValue(value)
 	switch value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64, json.Number:
