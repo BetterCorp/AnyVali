@@ -19,10 +19,22 @@ func exactNumberRat(value any) (*big.Rat, bool) {
 	}
 
 	data, err := json.Marshal(value)
-	if err != nil || len(data) > 128 {
+	if err != nil {
 		return nil, false
 	}
 	number := string(data)
+	mantissa := number
+	if index := strings.IndexAny(number, "eE"); index >= 0 {
+		mantissa = number[:index]
+	}
+	// JSON spelling and exponent size do not change zero's value. Recognize it
+	// before bounded rational parsing, without expanding a hostile exponent.
+	if strings.Trim(mantissa, "-0.") == "" {
+		return new(big.Rat), true
+	}
+	if len(data) > 128 {
+		return nil, false
+	}
 	exponent := 0
 	if index := strings.IndexAny(number, "eE"); index >= 0 {
 		exponent, err = strconv.Atoi(number[index+1:])

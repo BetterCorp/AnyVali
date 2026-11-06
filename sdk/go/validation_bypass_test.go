@@ -135,3 +135,25 @@ func TestImportRejectsUnsupportedNumericLiterals(t *testing.T) {
 		}
 	}
 }
+
+func TestZeroWithLargeExponentSpellings(t *testing.T) {
+	for _, number := range []string{"0e1001", "-0e-1001", "0.000e999999999999999999999", "0e" + strings.Repeat("9", 200)} {
+		for _, schema := range []Schema{Int64(), Uint64(), Literal(0), Enum(0, 1)} {
+			if result := schema.SafeParse(json.Number(number)); !result.Success {
+				t.Fatalf("%T rejected zero %s: %v", schema, number, result.Issues)
+			}
+		}
+		for _, root := range []string{
+			`{"kind":"literal","value":` + number + `}`,
+			`{"kind":"enum","values":[` + number + `]}`,
+		} {
+			schema, err := ImportJSON([]byte(`{"root":` + root + `}`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result := schema.SafeParse(0); !result.Success {
+				t.Fatalf("imported zero literal rejected zero: %s", root)
+			}
+		}
+	}
+}
