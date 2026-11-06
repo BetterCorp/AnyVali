@@ -558,7 +558,9 @@ function resolveFieldSchema(
 
     if (current.kind === "object" && typeof segment === "string") {
       const objectNode = current as ObjectSchemaNode;
-      const propertyNode = objectNode.properties[segment];
+      const propertyNode = Object.prototype.hasOwnProperty.call(objectNode.properties, segment)
+        ? objectNode.properties[segment]
+        : undefined;
       if (!propertyNode) {
         return null;
       }
@@ -606,7 +608,9 @@ function resolveRefNode(doc: AnyValiDocument, node: SchemaNode): SchemaNode {
       break;
     }
     seen.add(name);
-    const resolved = doc.definitions[name];
+    const resolved = Object.prototype.hasOwnProperty.call(doc.definitions, name)
+      ? doc.definitions[name]
+      : undefined;
     if (!resolved) {
       break;
     }
@@ -705,9 +709,25 @@ function isIssueForField(issue: ValidationIssue, fieldPath: FieldSegments) {
 
 function parseFieldPath(path: string): FieldSegments {
   const segments: FieldSegments = [];
-  const matcher = /([^[.\]]+)|\[(.*?)\]/g;
-  for (const match of path.matchAll(matcher)) {
-    const token = match[1] ?? match[2];
+  // A regex with a lazy bracket match backtracks quadratically on malformed
+  // names containing many unmatched '[' characters.
+  const lastClose = path.lastIndexOf("]");
+  for (let index = 0; index < path.length;) {
+    let token: string;
+    if (path[index] === "[" && index < lastClose) {
+      const close = path.indexOf("]", index + 1);
+      token = path.slice(index + 1, close);
+      index = close + 1;
+    } else if (path[index] === "[" || path[index] === "." || path[index] === "]") {
+      index++;
+      continue;
+    } else {
+      const start = index;
+      while (index < path.length && path[index] !== "[" && path[index] !== "." && path[index] !== "]") {
+        index++;
+      }
+      token = path.slice(start, index);
+    }
     if (!token) continue;
     if (/^\d+$/.test(token)) {
       segments.push(Number(token));
@@ -743,13 +763,17 @@ function setPathValue(root: Record<string, unknown>, path: FieldSegments, value:
     const key = String(segment);
 
     if (isLast) {
-      current[key] = value;
+      Object.defineProperty(current, key, {
+        value, writable: true, enumerable: true, configurable: true,
+      });
       return;
     }
 
-    const existing = current[key];
+    const existing = Object.prototype.hasOwnProperty.call(current, key) ? current[key] : undefined;
     if (!existing || typeof existing !== "object" || Array.isArray(existing)) {
-      current[key] = {};
+      Object.defineProperty(current, key, {
+        value: {}, writable: true, enumerable: true, configurable: true,
+      });
     }
     current = current[key] as Record<string, unknown>;
   }
