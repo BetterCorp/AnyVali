@@ -198,6 +198,7 @@ func TestDefinedPrimitiveLiteralComparisons(t *testing.T) {
 	type count int64
 	type wide uint64
 	type fraction float32
+	type address uintptr
 	for _, tc := range []struct {
 		literal, input any
 		valid          bool
@@ -206,6 +207,9 @@ func TestDefinedPrimitiveLiteralComparisons(t *testing.T) {
 		{status("ok"), "ok", true},
 		{"ok", status("ok"), true},
 		{flag(true), true, true},
+		{uintptr(1), uintptr(1), true},
+		{address(1), uint64(1), true},
+		{address(1), "1", false},
 		{count(1), json.Number("1e0"), true},
 		{wide(9007199254740993), json.Number("9007199254740993"), true},
 		{wide(9007199254740993), uint64(9007199254740992), false},
