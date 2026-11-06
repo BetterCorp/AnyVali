@@ -176,17 +176,17 @@ func TestPathTraversal(t *testing.T) {
 	handler := srv.Handler()
 
 	tests := []struct {
-		name       string
-		path       string
-		wantStatus int
+		name               string
+		path               string
+		wantStatus         int
+		allowSafeTraversal bool
 	}{
 		{
 			name: "parent directory traversal",
 			path: "/validate/..%2Fsecret",
-			// Go's default mux cleans the path and issues a 301 redirect,
-			// which prevents the request from reaching the handler. This is
-			// a safe outcome.
-			wantStatus: http.StatusMovedPermanently,
+			// Go versions differ on whether encoded traversal is redirected
+			// or rejected; neither may reach a schema handler.
+			allowSafeTraversal: true,
 		},
 		{
 			name:       "slash in schema name",
@@ -194,10 +194,9 @@ func TestPathTraversal(t *testing.T) {
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			name: "double dot without encoding",
-			path: "/validate/../secret",
-			// Go's default mux cleans ".." path segments and redirects.
-			wantStatus: http.StatusMovedPermanently,
+			name:               "double dot without encoding",
+			path:               "/validate/../secret",
+			allowSafeTraversal: true,
 		},
 		{
 			name:       "double dot with double encoding",
@@ -235,6 +234,24 @@ func TestPathTraversal(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			if tt.allowSafeTraversal {
+				if rr.Code >= 300 && rr.Code < 400 {
+					location := rr.Header().Get("Location")
+					if location != "/secret" {
+						t.Fatalf("unexpected traversal redirect destination %q", location)
+					}
+					// Preserve POST and its body, as clients do for 307/308,
+					// to ensure the destination cannot validate a schema.
+					follow := httptest.NewRequest(http.MethodPost, location, strings.NewReader(body))
+					follow.Header.Set("Content-Type", "application/json")
+					rr = httptest.NewRecorder()
+					handler.ServeHTTP(rr, follow)
+				}
+				if rr.Code != http.StatusNotFound {
+					t.Fatalf("traversal must end in 404, got %d: %s", rr.Code, rr.Body.String())
+				}
+				return
+			}
 			if rr.Code != tt.wantStatus {
 				t.Errorf("path %q: expected status %d, got %d (body: %s)",
 					tt.path, tt.wantStatus, rr.Code, rr.Body.String())

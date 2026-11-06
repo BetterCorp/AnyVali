@@ -7,7 +7,6 @@ require "date"
 module AnyVali
   module Format
     module Validators
-      EMAIL_REGEX = /\A[^@\s]+@[^@\s]+\.[^@\s]+\z/
       UUID_REGEX = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
       # Strict IPv4: no leading zeros, octets 0-255
       IPV4_REGEX = /\A(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\z/
@@ -39,7 +38,14 @@ module AnyVali
       end
 
       def valid_email?(value)
-        EMAIL_REGEX.match?(value)
+        # The old regex could backtrack across repeated dots in the domain.
+        at = value.index("@")
+        return false unless at && at.positive? && at < value.length - 1 && at == value.rindex("@")
+        return false if /\s/.match?(value)
+
+        domain = value[(at + 1)..]
+        dot = domain.index(".", 1)
+        !dot.nil? && dot < domain.length - 1
       end
 
       def valid_url?(value)
