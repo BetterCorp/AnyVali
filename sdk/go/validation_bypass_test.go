@@ -157,3 +157,37 @@ func TestZeroWithLargeExponentSpellings(t *testing.T) {
 		}
 	}
 }
+
+func TestSettersReplaceImportedIntegerConstraints(t *testing.T) {
+	for _, kind := range []string{"int64", "uint64"} {
+		for _, tc := range []struct {
+			key                                  string
+			old, replacement, accepted, rejected int64
+			set                                  func(*IntSchema, int64) *IntSchema
+		}{
+			{"min", 5, 0, 1, -1, (*IntSchema).Min},
+			{"max", 0, 5, 1, 6, (*IntSchema).Max},
+			{"exclusiveMin", 5, 0, 1, 0, (*IntSchema).ExclusiveMin},
+			{"exclusiveMax", 0, 5, 1, 5, (*IntSchema).ExclusiveMax},
+			{"multipleOf", 2, 3, 3, 2, (*IntSchema).MultipleOf},
+		} {
+			t.Run(kind+"/"+tc.key, func(t *testing.T) {
+				doc := &Document{Root: map[string]any{"kind": kind, tc.key: tc.old}}
+				imported, err := Import(doc)
+				if err != nil {
+					t.Fatal(err)
+				}
+				schema := tc.set(imported.(*IntSchema), tc.replacement)
+				if result := schema.SafeParse(tc.accepted); !result.Success {
+					t.Fatalf("replacement still applied old constraint: %v", result.Issues)
+				}
+				if result := schema.SafeParse(tc.rejected); result.Success {
+					t.Fatal("replacement constraint was not enforced")
+				}
+				if got := schema.ToNode()[tc.key]; got != tc.replacement {
+					t.Fatalf("exported constraint = %v, want %v", got, tc.replacement)
+				}
+			})
+		}
+	}
+}

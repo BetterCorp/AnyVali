@@ -46,26 +46,31 @@ func newUintSchema(kind string, low, high uint64) *IntSchema {
 }
 
 func (s *IntSchema) Min(n int64) *IntSchema {
+	delete(s.exactConstraints, "min")
 	s.min = &n
 	return s
 }
 
 func (s *IntSchema) Max(n int64) *IntSchema {
+	delete(s.exactConstraints, "max")
 	s.max = &n
 	return s
 }
 
 func (s *IntSchema) ExclusiveMin(n int64) *IntSchema {
+	delete(s.exactConstraints, "exclusiveMin")
 	s.exclusiveMin = &n
 	return s
 }
 
 func (s *IntSchema) ExclusiveMax(n int64) *IntSchema {
+	delete(s.exactConstraints, "exclusiveMax")
 	s.exclusiveMax = &n
 	return s
 }
 
 func (s *IntSchema) MultipleOf(n int64) *IntSchema {
+	delete(s.exactConstraints, "multipleOf")
 	s.multipleOf = &n
 	return s
 }
