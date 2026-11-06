@@ -10,6 +10,7 @@ The full repository spans multiple toolchains. Install what you need:
 |-----|-----------|
 | JS/TS | Node.js 18+ |
 | Python | Python 3.10+ |
+| Docs site | Python 3.11+ |
 | Go | Go 1.21+ |
 | Java | JDK 17+ |
 | C# | .NET 8 SDK |
@@ -191,6 +192,9 @@ docker run --rm -p 8080:8080 -v $(pwd)/schemas:/schemas anyvali/cli serve --sche
 The repository includes a static docs site powered by MkDocs Material and served by Angie in Docker.
 
 ### Local preview
+
+Use Python 3.11 or newer for the docs toolchain; mkdocs-material 9.8 requires it.
+The Python SDK continues to support Python 3.10+.
 
 ```bash
 python tools/docs/build_docs.py
