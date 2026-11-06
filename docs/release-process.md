@@ -44,14 +44,43 @@ bash tools/release/smoke_php_install.sh sdk/php 1.2.3
 
 The optional Docker build script produces a PHP source archive under `dist-release/packagist/` for review. This is not a registry upload.
 
+## NuGet trusted publishing
+
+NuGet publishing uses GitHub OIDC through the official `NuGet/login` action. The workflow exchanges its identity for a short-lived publishing key immediately before pushing the package; a stored `NUGET_API_KEY` secret is not required.
+
+Configure a trusted-publishing policy on NuGet.org under the account or organization that owns `AnyVali`:
+
+| Setting | Value |
+|---------|-------|
+| Repository owner | `BetterCorp` |
+| Repository | `AnyVali` |
+| Workflow file | `build-release.yml` (filename only) |
+| Environment | Leave empty; the NuGet job has no GitHub environment |
+| Package scope | New versions of `AnyVali` |
+
+Set the repository Actions variable `NUGET_USER` to the NuGet.org profile name used by the policy, not an email address. See [NuGet's trusted-publishing guide](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing).
+
+### Recover a missing NuGet package
+
+After the trusted-publishing workflow change is merged into `master`, use its NuGet-only dispatch mode to publish an existing release:
+
+```bash
+gh workflow run build-release.yml --repo BetterCorp/AnyVali --ref master \
+  -f nuget_only=true -f release_tag=v1.1.7
+```
+
+This runs the updated workflow from `master`, checks out `refs/tags/v1.1.7` for the .NET build, and skips every other publisher and GitHub release upload. It preserves the published tag and avoids retrying registries that have already accepted the version.
+
+A rerun of the original failed job retains the original tag's workflow, so it cannot pick up a later OIDC change on `master`.
+
 ## Workflows
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `ci.yml` | Branch pushes, merge groups, manual dispatch | SDK tests and conformance; PHP consumer installation |
 | `codeql.yml` | Configured code scanning events | Static security analysis |
-| `build-release.yml` | Unified `v*` tag push, manual dispatch on a version tag | Registry publishing, PHP source validation, CLI builds and GitHub release |
+| `build-release.yml` | Unified `v*` tag push, full dispatch on a version tag, or NuGet-only recovery dispatch | Registry publishing, PHP source validation, CLI builds and GitHub release |
 
-Build Release requires a version tag as its ref; dispatching it on `master` fails version validation. Publishing credentials are supplied through GitHub Actions secrets and environment configuration. Inspect the current workflow for required names.
+Full Build Release runs require a version tag as their ref; dispatching a full release on `master` fails version validation. NuGet-only recovery accepts an explicit release tag as described above. Other publishing credentials are supplied through GitHub Actions secrets and environment configuration. Inspect the current workflow for required names.
 
 Published releases are immutable. Do not delete an existing release or move its tag to retry publication. Diagnose failed jobs first; retry only where the corresponding registry and job support it, otherwise prepare a new version. A successful CLI release upload alone does not establish that every registry publish succeeded.

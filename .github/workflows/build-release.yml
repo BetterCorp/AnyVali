@@ -5,6 +5,15 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      nuget_only:
+        description: Publish only NuGet for an existing release tag
+        type: boolean
+        default: false
+      release_tag:
+        description: Existing version tag for NuGet-only recovery (for example v1.1.7)
+        type: string
+        required: false
 
 permissions:
   contents: write
@@ -15,19 +24,32 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      source_ref: ${{ steps.version.outputs.source_ref }}
     steps:
       - name: Read version from tag
         id: version
         shell: bash
+        env:
+          NUGET_ONLY: ${{ inputs.nuget_only }}
+          RECOVERY_TAG: ${{ inputs.release_tag }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.]+)?$ ]]; then
-            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+          release_tag="$GITHUB_REF_NAME"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$NUGET_ONLY" == "true" ]]; then
+            release_tag="$RECOVERY_TAG"
+          elif [[ -n "$RECOVERY_TAG" ]]; then
+            echo "release_tag is only supported with nuget_only enabled" >&2
+            exit 1
+          fi
+          version="${release_tag#v}"
+          if [[ "$release_tag" != v* || ! "$version" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.]+)?$ ]]; then
+            echo "Invalid release tag: $release_tag" >&2
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "source_ref=refs/tags/$release_tag" >> "$GITHUB_OUTPUT"
 
   npm:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: ubuntu-latest
     defaults:
@@ -61,6 +83,7 @@ jobs:
         run: npm publish --access public
 
   pypi:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     environment: release
@@ -98,6 +121,7 @@ jobs:
           skip-existing: true
 
   go:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
@@ -110,6 +134,7 @@ jobs:
         run: go mod verify
 
   maven:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
@@ -139,6 +164,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   kotlin:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
@@ -177,6 +203,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
   crates:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
@@ -208,12 +235,25 @@ jobs:
 
   nuget:
     needs: version
+    permissions:
+      contents: read
+      id-token: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: sdk/csharp
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.source_ref }}
+      - name: Check NuGet profile configuration
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        run: |
+          if [[ -z "$NUGET_USER" ]]; then
+            echo "::error::Set the NUGET_USER repository variable to your NuGet.org profile name."
+            exit 1
+          fi
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
@@ -237,12 +277,18 @@ jobs:
       - run: dotnet build AnyVali.sln --configuration Release --no-restore
       - run: dotnet test AnyVali.sln --configuration Release --no-build
       - run: dotnet pack --configuration Release --no-build -o nupkgs
+      - name: Authenticate to NuGet with OIDC
+        id: nuget_login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        with:
+          user: ${{ vars.NUGET_USER }}
       - name: Publish to NuGet
         run: dotnet nuget push nupkgs/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
 
   rubygems:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
@@ -283,6 +329,7 @@ jobs:
           rm -f ~/.gem/credentials
 
   php-source:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     runs-on: ubuntu-latest
     steps:
@@ -297,6 +344,7 @@ jobs:
         run: bash tools/release/smoke_php_install.sh sdk/php "$RELEASE_VERSION"
 
   cli:
+    if: ${{ !inputs.nuget_only }}
     needs: version
     strategy:
       matrix:
@@ -343,6 +391,7 @@ jobs:
           path: ${{ matrix.name }}
 
   cli-upload:
+    if: ${{ !inputs.nuget_only }}
     needs: [cli, version, php-source]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
