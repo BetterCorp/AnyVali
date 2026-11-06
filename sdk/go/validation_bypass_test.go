@@ -15,6 +15,8 @@ func TestLiteralAndEnumRejectCrossTypeLookalikes(t *testing.T) {
 	}{
 		{"boolean as string", Literal(true), "true"},
 		{"number as string", Literal(1), "1"},
+		{"array as string", Literal("ok"), []any{"ok"}},
+		{"object as string", Enum("ok"), map[string]any{"value": "ok"}},
 		{"enum number as string", Enum(1, 2), "1"},
 		{"distinct large integers", Literal(int64(9007199254740993)), int64(9007199254740992)},
 		{"distinct large unsigned integers", Enum(uint64(9007199254740993)), uint64(9007199254740992)},
@@ -31,6 +33,12 @@ func TestLiteralAndEnumRejectCrossTypeLookalikes(t *testing.T) {
 }
 
 func TestIntegerConversionRejectsOverflowWithoutWrapping(t *testing.T) {
+	if uint64(^uint(0)) > math.MaxInt64 {
+		maxUint := uint64(math.MaxUint64)
+		if result := Int64().SafeParse(uint(maxUint)); result.Success {
+			t.Fatal("platform uint above MaxInt64 wrapped into an accepted signed value")
+		}
+	}
 	if result := Int64().SafeParse(uint64(math.MaxUint64)); result.Success {
 		t.Fatal("uint above MaxInt64 wrapped into an accepted signed value")
 	}
