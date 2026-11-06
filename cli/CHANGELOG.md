@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Build the CLI with Go 1.26.10 for standard-library security fixes. Source builds require Go 1.26.10 or newer.
+- macOS CLI binaries require macOS 12 Monterey or later.
+
 ## [0.0.5](https://github.com/BetterCorp/AnyVali/compare/cli-v0.0.4...cli-v0.0.5) (2026-06-01)
 
 
