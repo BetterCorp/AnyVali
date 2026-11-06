@@ -236,13 +236,34 @@ func importLiteralSchema(node map[string]any) (*LiteralSchema, error) {
 	if !ok {
 		return nil, fmt.Errorf("literal schema missing 'value' field")
 	}
+	if err := validateImportedLiteral(value); err != nil {
+		return nil, err
+	}
 	return Literal(value), nil
+}
+
+// Reject numeric literals outside the bounded exact comparison range at import
+// time instead of creating a schema that rejects its own literal value.
+func validateImportedLiteral(value any) error {
+	switch value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64, json.Number:
+		if _, ok := exactNumberRat(value); !ok {
+			return fmt.Errorf("numeric literal exceeds the supported exact comparison range")
+		}
+	}
+	return nil
 }
 
 func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 	values, ok := node["values"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("enum schema missing 'values' field")
+	}
+	for _, value := range values {
+		if err := validateImportedLiteral(value); err != nil {
+			return nil, err
+		}
 	}
 	s := Enum(values...)
 	importDefault(&s.baseSchema, node)

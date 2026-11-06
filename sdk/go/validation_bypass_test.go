@@ -108,3 +108,30 @@ func mustJSON(t *testing.T, value any) []byte {
 	}
 	return data
 }
+
+func TestImportRejectsUnsupportedNumericLiterals(t *testing.T) {
+	for _, number := range []string{"1e1001", "1e-1001", strings.Repeat("9", 129)} {
+		for _, root := range []string{
+			`{"kind":"literal","value":` + number + `}`,
+			`{"kind":"enum","values":[1,` + number + `]}`,
+		} {
+			if _, err := ImportJSON([]byte(`{"root":` + root + `}`)); err == nil {
+				t.Fatalf("accepted unsupported numeric literal: %s", root)
+			}
+		}
+	}
+	for _, number := range []string{"1e1000", "1e-1000"} {
+		for _, root := range []string{
+			`{"kind":"literal","value":` + number + `}`,
+			`{"kind":"enum","values":[` + number + `]}`,
+		} {
+			schema, err := ImportJSON([]byte(`{"root":` + root + `}`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result := schema.SafeParse(json.Number(number)); !result.Success {
+				t.Fatalf("supported literal rejected its own value: %s", root)
+			}
+		}
+	}
+}
