@@ -8,7 +8,7 @@ The AnyVali CLI validates data against AnyVali schemas from the command line. It
 
 ### Pre-built binary
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/BetterCorp/AnyVali/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/BetterCorp/AnyVali/releases). macOS binaries require macOS 12 Monterey or later:
 
 ```bash
 # macOS (Apple Silicon)
@@ -32,7 +32,7 @@ Invoke-WebRequest -Uri https://github.com/BetterCorp/AnyVali/releases/latest/dow
 
 ### Build from source
 
-Requires Go 1.21+.
+Requires Go 1.26.10 or newer. With automatic toolchain selection enabled (the default), Go can download the required toolchain. With `GOTOOLCHAIN=local`, install Go 1.26.10 or newer before building.
 
 ```bash
 cd cli

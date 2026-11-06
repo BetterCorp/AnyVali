@@ -20,6 +20,12 @@ import {
   importSchema,
   RefSchema,
 } from "../../src/index.js";
+import { applyCoercion } from "../../src/parse/coerce.js";
+
+it("rejects a long invalid decimal coercion without regex backtracking", () => {
+  const result = applyCoercion("9".repeat(50000) + "x", { from: "string" }, "number");
+  expect(result.success).toBe(false);
+}, 2000);
 
 // ---------------------------------------------------------------------------
 // 1. ReDoS - CVE-2016-4055 / CVE-2022-25883
