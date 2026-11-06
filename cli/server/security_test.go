@@ -273,7 +273,22 @@ func TestPathTraversal(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
-			if tt.allowSafeTraversal && (rr.Code == http.StatusNotFound || rr.Code >= 300 && rr.Code < 400) {
+			if tt.allowSafeTraversal {
+				if rr.Code >= 300 && rr.Code < 400 {
+					location := rr.Header().Get("Location")
+					if location != "/secret" {
+						t.Fatalf("unexpected traversal redirect destination %q", location)
+					}
+					// Preserve POST and its body, as clients do for 307/308,
+					// to ensure the destination cannot validate a schema.
+					follow := httptest.NewRequest(http.MethodPost, location, strings.NewReader(body))
+					follow.Header.Set("Content-Type", "application/json")
+					rr = httptest.NewRecorder()
+					handler.ServeHTTP(rr, follow)
+				}
+				if rr.Code != http.StatusNotFound {
+					t.Fatalf("traversal must end in 404, got %d: %s", rr.Code, rr.Body.String())
+				}
 				return
 			}
 			if rr.Code != tt.wantStatus {
