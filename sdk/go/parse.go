@@ -294,6 +294,9 @@ func toInt64(v any) (int64, bool) {
 	case int64:
 		return n, true
 	case uint:
+		if uint64(n) > math.MaxInt64 {
+			return 0, false
+		}
 		return int64(n), true
 	case uint8:
 		return int64(n), true
@@ -307,21 +310,21 @@ func toInt64(v any) (int64, bool) {
 		}
 		return int64(n), true
 	case float32:
-		if n != float32(int64(n)) {
+		if math.IsNaN(float64(n)) || float64(n) < -0x1p63 || float64(n) >= 0x1p63 || math.Trunc(float64(n)) != float64(n) {
 			return 0, false
 		}
 		return int64(n), true
 	case float64:
-		if n != float64(int64(n)) {
+		if math.IsNaN(n) || n < -0x1p63 || n >= 0x1p63 || math.Trunc(n) != n {
 			return 0, false
 		}
 		return int64(n), true
 	case json.Number:
-		i, err := n.Int64()
-		if err != nil {
+		rat, ok := exactNumberRat(n)
+		if !ok || !rat.IsInt() || !rat.Num().IsInt64() {
 			return 0, false
 		}
-		return i, true
+		return rat.Num().Int64(), true
 	default:
 		return 0, false
 	}
@@ -366,20 +369,19 @@ func toUint64(v any) (uint64, bool) {
 	case uint64:
 		return n, true
 	case float32:
-		if n < 0 || n != float32(uint64(n)) {
+		if math.IsNaN(float64(n)) || n < 0 || float64(n) >= 0x1p64 || math.Trunc(float64(n)) != float64(n) {
 			return 0, false
 		}
 		return uint64(n), true
 	case float64:
-		if n < 0 || n != float64(uint64(n)) {
+		if math.IsNaN(n) || n < 0 || n >= 0x1p64 || math.Trunc(n) != n {
 			return 0, false
 		}
 		return uint64(n), true
 	case json.Number:
-		// Try int64 first
-		i, err := n.Int64()
-		if err == nil && i >= 0 {
-			return uint64(i), true
+		rat, ok := exactNumberRat(n)
+		if ok && rat.IsInt() && rat.Num().IsUint64() {
+			return rat.Num().Uint64(), true
 		}
 		return 0, false
 	default:

@@ -53,19 +53,14 @@ func decodeJSONResponse(t *testing.T, rr *httptest.ResponseRecorder) map[string]
 }
 
 // ---------------------------------------------------------------------------
-// CVE-2023-44487 / CWE-400: Request body size limits
+// CWE-400: Request body size limits
 // ---------------------------------------------------------------------------
-// The server currently uses json.NewDecoder(r.Body).Decode() without wrapping
-// r.Body in an io.LimitReader. These tests document that behaviour and verify
-// the server at least remains functional (does not crash) when receiving large
-// payloads.
 
-func TestRequestBodySizeNoLimit(t *testing.T) {
+func TestRequestBodyWithinLimit(t *testing.T) {
 	srv := newTestServer(t, false, false)
 	handler := srv.Handler()
 
-	// Build a ~1 MB JSON payload. The server has no configured limit, so it
-	// must still parse or reject this gracefully.
+	// A valid request below the configured limit should still be accepted.
 	bigValue := strings.Repeat("A", 1<<20) // 1 MiB string
 	body := map[string]any{
 		"schema": map[string]any{
@@ -93,39 +88,6 @@ func TestRequestBodySizeNoLimit(t *testing.T) {
 	}
 }
 
-func TestRequestBodySizeDocumentNoLimitReader(t *testing.T) {
-	// SECURITY FINDING: The server does not use io.LimitReader to cap the
-	// request body size. An attacker could send an extremely large payload
-	// to exhaust server memory (CWE-400 / CVE-2023-44487).
-	//
-	// Recommended fix: wrap r.Body with io.LimitReader(r.Body, maxBytes)
-	// where maxBytes is a sensible upper bound (e.g. 1 MB), and return 413
-	// Request Entity Too Large if exceeded.
-	//
-	// This test intentionally passes to document the gap.
-	srv := newTestServer(t, false, false)
-	handler := srv.Handler()
-
-	// 10 MB payload - server should ideally reject this with 413.
-	bigValue := strings.Repeat("X", 10<<20)
-	body := fmt.Sprintf(`{"schema":{"anyvaliVersion":"1.0","schemaVersion":"1","root":{"kind":"string"}},"input":"%s"}`, bigValue)
-
-	req := httptest.NewRequest(http.MethodPost, "/validate", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-
-	handler.ServeHTTP(rr, req)
-
-	// Currently succeeds (no limit). When a limit is added, change this to
-	// expect http.StatusRequestEntityTooLarge (413).
-	if rr.Code != http.StatusOK {
-		t.Logf("server returned %d for 10MB body (limit may have been added)", rr.Code)
-	}
-}
-
-// REVIEW: The test above documents the missing limit but still passes when the
-// server accepts an oversized body. This companion test is the enforceable
-// security expectation after request-body limiting is implemented.
 func TestRequestBodySizeLimitEnforced(t *testing.T) {
 	srv := newTestServer(t, false, false)
 	handler := srv.Handler()
@@ -144,45 +106,44 @@ func TestRequestBodySizeLimitEnforced(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsTrailingJSONAndOversizedSuffix(t *testing.T) {
+	srv := newTestServer(t, false, true)
+	handler := srv.Handler()
+	inline := `{"schema":{"anyvaliVersion":"1.0","schemaVersion":"1","root":{"kind":"string"}},"input":"ok"}`
+	named := `{"name":"test"}`
+
+	for _, endpoint := range []struct {
+		path string
+		body string
+	}{
+		{"/validate", inline},
+		{"/validate/user", named},
+	} {
+		for _, suffix := range []struct {
+			name   string
+			value  string
+			status int
+		}{
+			{"second JSON value", ` {"ignored":true}`, http.StatusBadRequest},
+			{"oversized whitespace", strings.Repeat(" ", maxRequestBodyBytes), http.StatusRequestEntityTooLarge},
+		} {
+			t.Run(endpoint.path+"/"+suffix.name, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodPost, endpoint.path, strings.NewReader(endpoint.body+suffix.value))
+				req.Header.Set("Content-Type", "application/json")
+				rr := httptest.NewRecorder()
+				handler.ServeHTTP(rr, req)
+				if rr.Code != suffix.status {
+					t.Fatalf("expected %d, got %d: %s", suffix.status, rr.Code, rr.Body.String())
+				}
+			})
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // CWE-400: Slowloris / timeout configuration
 // ---------------------------------------------------------------------------
 
-func TestServerTimeoutsNotConfigured(t *testing.T) {
-	// SECURITY FINDING: The http.Server in Start() does not set ReadTimeout,
-	// WriteTimeout, or IdleTimeout. This leaves the server vulnerable to
-	// slowloris-style denial-of-service attacks (CWE-400).
-	//
-	// Recommended fix:
-	//   s.httpSrv = &http.Server{
-	//       Addr:         addr,
-	//       Handler:      mux,
-	//       ReadTimeout:  10 * time.Second,
-	//       WriteTimeout: 30 * time.Second,
-	//       IdleTimeout:  120 * time.Second,
-	//   }
-
-	cfg := Config{Host: "localhost", Port: 0, SchemasDir: "", CORS: false}
-	srv, err := New(cfg)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	// The httpSrv field is only created in Start(), which actually listens.
-	// We verify the gap by checking the field is nil before Start.
-	if srv.httpSrv != nil {
-		t.Error("expected httpSrv to be nil before Start()")
-	}
-
-	// Document: when Start() creates the http.Server, it sets no timeouts.
-	// This test passes to document the finding. When timeouts are added,
-	// add assertions like:
-	//   if srv.httpSrv.ReadTimeout == 0 { t.Error("ReadTimeout not set") }
-	t.Log("SECURITY: http.Server timeouts (ReadTimeout, WriteTimeout, IdleTimeout) are not configured")
-}
-
-// REVIEW: The test above only logs the missing timeout configuration. This
-// companion test asserts the production http.Server has non-zero timeouts.
 func TestServerTimeoutsAreConfigured(t *testing.T) {
 	cfg := Config{Host: "127.0.0.1", Port: -1, SchemasDir: "", CORS: false}
 	srv, err := New(cfg)

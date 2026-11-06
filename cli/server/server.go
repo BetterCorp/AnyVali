@@ -1,10 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -148,14 +150,7 @@ func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
 		Input     json.RawMessage `json:"input"`
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(err, &maxBytesErr) {
-			writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
-			return
-		}
-		writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
+	if !decodeJSONRequest(w, r, &body) {
 		return
 	}
 
@@ -186,7 +181,9 @@ func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input any
-	if err := json.Unmarshal(body.Input, &input); err != nil {
+	inputDecoder := json.NewDecoder(bytes.NewReader(body.Input))
+	inputDecoder.UseNumber()
+	if err := inputDecoder.Decode(&input); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid input JSON: "+err.Error())
 		return
 	}
@@ -218,14 +215,7 @@ func (s *Server) handleValidateNamed(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	var input any
-	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(err, &maxBytesErr) {
-			writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
-			return
-		}
-		writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
+	if !decodeJSONRequest(w, r, &input) {
 		return
 	}
 
@@ -325,4 +315,35 @@ func isJSONContentType(r *http.Request) bool {
 	}
 	// Accept "application/json" or "application/json; charset=utf-8" etc.
 	return strings.HasPrefix(strings.ToLower(ct), "application/json")
+}
+
+// decodeJSONRequest consumes the entire bounded body. Decoder.Decode alone
+// accepts a valid first value while silently ignoring any trailing content.
+func decodeJSONRequest(w http.ResponseWriter, r *http.Request, dst any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+	decoder := json.NewDecoder(r.Body)
+	decoder.UseNumber()
+	if err := decoder.Decode(dst); err != nil {
+		writeDecodeError(w, err)
+		return false
+	}
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			writeJSONError(w, http.StatusBadRequest, "body must contain exactly one JSON value")
+		} else {
+			writeDecodeError(w, err)
+		}
+		return false
+	}
+	return true
+}
+
+func writeDecodeError(w http.ResponseWriter, err error) {
+	var maxBytesErr *http.MaxBytesError
+	if errors.As(err, &maxBytesErr) {
+		writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
+		return
+	}
+	writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 }
