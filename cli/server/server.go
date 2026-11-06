@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -180,7 +181,9 @@ func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input any
-	if err := json.Unmarshal(body.Input, &input); err != nil {
+	inputDecoder := json.NewDecoder(bytes.NewReader(body.Input))
+	inputDecoder.UseNumber()
+	if err := inputDecoder.Decode(&input); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid input JSON: "+err.Error())
 		return
 	}
@@ -319,6 +322,7 @@ func isJSONContentType(r *http.Request) bool {
 func decodeJSONRequest(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	decoder := json.NewDecoder(r.Body)
+	decoder.UseNumber()
 	if err := decoder.Decode(dst); err != nil {
 		writeDecodeError(w, err)
 		return false

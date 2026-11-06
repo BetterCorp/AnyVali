@@ -61,13 +61,22 @@ func literalEqual(a, b any) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	// Normalize numeric types for comparison
-	af, aIsNum := toFloat64(a)
-	bf, bIsNum := toFloat64(b)
-	if aIsNum && bIsNum {
-		return af == bf
+	// Numeric values compare by their exact JSON value. String and boolean
+	// literals must never match a different type with the same printed text.
+	ar, aIsNum := exactNumberRat(a)
+	br, bIsNum := exactNumberRat(b)
+	if aIsNum || bIsNum {
+		return aIsNum && bIsNum && ar.Cmp(br) == 0
 	}
-	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+	switch value := a.(type) {
+	case string:
+		other, ok := b.(string)
+		return ok && value == other
+	case bool:
+		other, ok := b.(bool)
+		return ok && value == other
+	}
+	return false
 }
 
 func (s *LiteralSchema) ToNode() map[string]any {
