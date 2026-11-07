@@ -404,7 +404,22 @@ For string transforms that can be combined:
 { "kind": "string", "coerce": ["trim", "lower"] }
 ```
 
-When `coerce` is an array, transforms are applied left to right.
+When `coerce` is an array, transforms are applied left to right. An empty
+array performs no coercion.
+
+A portable coercion applies only when the current value matches its listed input type.
+Otherwise, the value is left unchanged for subsequent operations and normal
+schema validation. For example, `string->int` leaves an already-typed integer
+unchanged; a non-numeric object still fails the integer validator.
+
+For a numeric or `bool` schema, string preprocessing (`trim`, `lower`, `upper`)
+MAY precede the matching `string->int`, `string->number`, or `string->bool`
+conversion in an ordered list. The preprocessing operations act on the
+intermediate string. For example, a `bool` node can use
+`"coerce": ["upper", "string->bool"]`. On these non-string targets, preprocessing
+MUST precede the first type conversion; a string transform after that conversion
+is an invalid coercion configuration. Each type conversion MUST match the
+schema's target kind as listed in Section 5.1.
 
 ### 5.3 Coercion Failure
 
