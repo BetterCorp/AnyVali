@@ -4,6 +4,91 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('coercions must match their primitive schema target', () {
+    final base = av.string().exportSchema();
+    for (final root in [
+      {'kind': 'bool', 'coerce': 'string->int'},
+      {'kind': 'int', 'coerce': 'string->number'},
+      {'kind': 'string', 'coerce': 'string->bool'},
+      {
+        'kind': 'int',
+        'coerce': ['string->int', 'string->number']
+      },
+      {
+        'kind': 'bool',
+        'coerce': {'toInt': true, 'toBool': true}
+      },
+    ]) {
+      expect(() => av.importSchema({...base, 'root': root}),
+          throwsFormatException);
+    }
+    expect(
+        av.importSchema({
+          ...base,
+          'root': {'kind': 'uint8', 'coerce': 'string->int'}
+        }).parse('1'),
+        1);
+    expect(
+        av.importSchema({
+          ...base,
+          'root': {'kind': 'bool', 'coerce': 'string->bool'}
+        }).parse('1'),
+        true);
+  });
+  test(
+      'encryption rejects ambiguous union storage while preserving opaque nodes',
+      () {
+    final plain = av.union([av.int_(), av.int_().coerce()]);
+    expect(
+        av.encrypt(
+            plain, '42', (p, v) => throw StateError('No sensitive data')),
+        42);
+    final sibling = av.object({
+      'choice': plain,
+      'secret': av.string().describe('Secret', sensitive: true)
+    });
+    expect(
+        av.encrypt(
+            sibling, {'choice': '42', 'secret': 'x'}, (p, v) => 'encrypted:$v'),
+        {'choice': 42, 'secret': 'encrypted:x'});
+    final parallel = av.intersection([
+      av.union([av.string(), av.int_()]),
+      av.int_().describe('Secret', sensitive: true)
+    ]);
+    final parallelStored = av.encrypt(parallel, 1234, (p, v) => 'encrypted:$v');
+    expect(
+        av.decrypt(parallel, parallelStored,
+            (p, v) => int.parse((v as String).substring(10))),
+        1234);
+
+    final ambiguous =
+        av.union([av.string(), av.int_().describe('PIN', sensitive: true)]);
+    expect(
+        () => av.encrypt(ambiguous, 1234, (p, v) => 'encrypted:$v'),
+        throwsA(predicate((e) =>
+            e is av.ValidationError &&
+            e.issues.single.code == 'invalid_union')));
+    final opaque = av.object({
+      'choice': av.union([av.string(), av.int_()])
+    }).describe('Opaque', sensitive: true);
+    final schema = av.object({'secret': opaque});
+    final input = {
+      'secret': {'choice': 1234}
+    };
+    final stored =
+        av.encrypt(schema, input, (p, v) => 'encrypted:${jsonEncode(v)}');
+    expect(
+        av.decrypt(
+            schema, stored, (p, v) => jsonDecode((v as String).substring(10))),
+        input);
+    final whole = ambiguous.describe('Whole union', sensitive: true);
+    final encrypted = av.encrypt(whole, 1234, (p, v) => 'encrypted:$v');
+    expect(
+        av.decrypt(
+            whole, encrypted, (p, v) => int.parse((v as String).substring(10))),
+        1234);
+  });
+
   test(
       'reserved metadata uses describe and replacement retains reserved fields',
       () {
@@ -308,13 +393,12 @@ void main() {
     expect(av.float32().parse(maximum), maximum);
     expect(av.float32().parse(-maximum), -maximum);
     for (final value in [3.40282355e38, -3.40282355e38]) {
-      expect(
-          av.float32().safeParse(value).issues.single.code, 'invalid_number');
+      expect(av.float32().safeParse(value).issues.single.code, 'too_large');
     }
     expect(av.float32().max(0.3).parse(0.3), 0.3);
     expect(av.float32().multipleOf(0.1).parse(0.3), 0.3);
     expect(av.float32().parse(1 / 3), 1 / 3);
-    expect(av.float32().safeParse(1e40).issues.single.code, 'invalid_number');
+    expect(av.float32().safeParse(1e40).issues.single.code, 'too_large');
   });
 
   test('parent unknown-key restrictions apply through arrays and composition',

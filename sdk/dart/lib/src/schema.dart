@@ -846,6 +846,19 @@ List<String> _coercions(dynamic config, String kind) {
         'lower',
         'upper'
       ].contains(v))) throw FormatException('Unknown coercion');
+  final conversions =
+      tokens.where((token) => token.startsWith('string->')).toSet();
+  final expected = _integerKinds.contains(kind)
+      ? 'string->int'
+      : _floatKinds.contains(kind)
+          ? 'string->number'
+          : kind == 'bool'
+              ? 'string->bool'
+              : null;
+  if (conversions.length > 1 ||
+      (conversions.isNotEmpty && conversions.single != expected)) {
+    throw FormatException('Coercion target does not match schema kind $kind');
+  }
   return tokens;
 }
 
@@ -1116,7 +1129,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       if (kind == 'float32') {
         const maxFloat32 = 3.4028234663852886e38;
         if ((value as num).abs() > maxFloat32) {
-          issue('invalid_number', 'float32', value);
+          issue('too_large', 'float32', value);
           return null;
         }
       }
@@ -1319,6 +1332,8 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   final issues = <ValidationIssue>[];
   final checked = _run(schema._node, input, [], issues, schema._definitions, 0,
       encrypted: decrypting, unions: unions);
+  final sensitiveUnions = <JsonMap, Map<String, int>>{};
+  final activeUnions = <(JsonMap, String, int)>[];
   if (issues.isNotEmpty) throw ValidationError(issues);
   // Reuse the branches selected from the original input. Parsed values may
   // match an earlier, non-sensitive variant after coercion or defaults.
@@ -1331,6 +1346,11 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
           [ValidationIssue('too_deep', 'Maximum depth exceeded', path)]);
     if (value == null || identical(value, absent)) return value;
     if ((node['metadata'] as Map?)?['sensitive'] == true) {
+      if (!decrypting)
+        for (final active in activeUnions) {
+          sensitiveUnions.putIfAbsent(active.$1, () => {})[active.$2] =
+              active.$3;
+        }
       final transformed = transform(List.unmodifiable(path), value);
       if (!decrypting &&
           (transformed is! String ||
@@ -1356,7 +1376,12 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     if (kind == 'union') {
       final selected = unions[sourceNode]?[jsonEncode(path)];
       if (selected == null) throw StateError('Missing validated union branch');
-      return walk(node['variants'][selected], value, path, depth + 1);
+      activeUnions.add((sourceNode, jsonEncode(path), selected));
+      try {
+        return walk(node['variants'][selected], value, path, depth + 1);
+      } finally {
+        activeUnions.removeLast();
+      }
     }
     if (kind == 'intersection') {
       // Cache callback results by path so overlapping members transform once.
@@ -1391,11 +1416,27 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   transform = (path, value) =>
       cache.putIfAbsent(jsonEncode(path), () => originalTransform(path, value));
   final output = walk(schema._node, checked, [], 0);
-  final result = decrypting
-      ? schema.safeParse(output)
-      : safeParseEncrypted(schema, output);
-  if (!result.success) throw ValidationError(result.issues);
-  return result.data;
+  if (decrypting) return schema.parse(output);
+  final encryptedUnions = <JsonMap, Map<String, int>>{};
+  final encryptedIssues = <ValidationIssue>[];
+  final stored = _run(
+      schema._node, output, [], encryptedIssues, schema._definitions, 0,
+      encrypted: true, unions: encryptedUnions);
+  if (encryptedIssues.isNotEmpty) throw ValidationError(encryptedIssues);
+  for (final entry in sensitiveUnions.entries) {
+    for (final selection in entry.value.entries) {
+      if (encryptedUnions[entry.key]?[selection.key] != selection.value) {
+        throw ValidationError([
+          ValidationIssue(
+              'invalid_union',
+              'Encrypted output changes union branch; use a discriminator or mark the union sensitive',
+              List<Object>.from(jsonDecode(selection.key)),
+              expected: 'stable union branch')
+        ]);
+      }
+    }
+  }
+  return stored;
 }
 
 /// Parse plaintext, transform sensitive nodes, and validate encrypted storage.

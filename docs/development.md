@@ -21,7 +21,9 @@ The full repository spans multiple toolchains. Install what you need:
 | C++ | CMake 3.14+ and a C++17 compiler |
 | Dart / Flutter | Dart 3.4+ (standalone or bundled with Flutter) |
 
-You don't need all of them. The runner skips nothing implicitly -- if a toolchain is missing, it fails loudly.
+Install the toolchains you need. The runner reports unavailable SDK toolchains as
+`SKIP` and can return success without running that SDK. Confirm the target's
+summary reports `PASS` before considering its checks complete.
 
 ## Using the Runner
 
@@ -259,3 +261,7 @@ dart pub publish --dry-run
 ```
 
 The VM suite loads both shared corpora. The Node suite checks web compilation and runtime behavior without Flutter dependencies.
+
+For Dart, confirm that the runner summary reports `PASS` for `dart`. A `SKIP`
+result means Dart was unavailable and no Dart checks ran, even if the command
+returned success.

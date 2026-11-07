@@ -46,7 +46,7 @@ void main() {
     expect(wide.success, !identical(1, 1.0));
     expect(av.uint64().coerce().parse('18446744073709551615'),
         BigInt.parse('18446744073709551615'));
-    expect(av.float32().safeParse(1e40).issues.single.code, 'invalid_number');
+    expect(av.float32().safeParse(1e40).issues.single.code, 'too_large');
     expect(() => av.uint64().defaultValue(BigInt.one).exportSchema(),
         throwsFormatException);
   });

@@ -139,7 +139,9 @@ final clear = av.decrypt(credentials, stored,
 
 Supply your own transformation and key management. Sensitive composites transform
 as opaque values. Encryption and decryption validate before and after the callback.
-Normal parsing always validates plaintext.
+Normal parsing always validates plaintext. Encryption rejects output when union branch selection could bypass decryption
+of a sensitive value. Add a literal discriminator
+or mark the entire union sensitive when encrypted branches would be ambiguous.
 
 ## Development
 

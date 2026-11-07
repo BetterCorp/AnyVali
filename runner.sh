@@ -500,6 +500,8 @@ run_kotlin() {
   esac
 }
 
+# Run Dart package actions, reporting an unavailable toolchain as skipped.
+# The CI action installs dependencies, checks analysis/formatting, and runs tests.
 run_dart() {
   local action="$1"
   if ! has_cmd dart; then
@@ -571,6 +573,7 @@ run_cpp() {
 # ---------------------------------------------------------------------------
 # Dispatch & top-level commands
 # ---------------------------------------------------------------------------
+# Dispatch one SDK action and preserve explicit skip markers in the summary.
 dispatch() {
   local action="$1"
   local target="$2"
