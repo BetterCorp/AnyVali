@@ -22,7 +22,7 @@ jobs:
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: python3 -m unittest discover -s tools/site -p 'test_*.py'
       - id: check
         env:
@@ -51,8 +51,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
@@ -60,7 +60,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci js
       - run: ./runner.sh coverage js
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.node-version == 24
         with:
           directory: sdk/js/coverage
@@ -79,8 +79,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -89,7 +89,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci python
       - run: ./runner.sh coverage python
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.python-version == '3.12'
         with:
           files: sdk/python/coverage.xml
@@ -108,8 +108,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: ${{ matrix.go-version }}
           cache-dependency-path: sdk/go/go.sum
@@ -118,7 +118,7 @@ jobs:
       - name: Check Go races
         run: cd sdk/go && go test -race ./...
       - run: ./runner.sh coverage go
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.go-version == '1.26.10'
         with:
           files: sdk/go/coverage.out
@@ -137,8 +137,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
@@ -148,7 +148,7 @@ jobs:
       - name: Validate release packaging without publishing
         run: mvn -B -f sdk/java/pom.xml -Prelease -Dgpg.skip=true -DskipTests verify
       - run: ./runner.sh coverage java
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.java-version == '17'
         with:
           files: sdk/java/target/site/jacoco/jacoco.xml
@@ -164,11 +164,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: "8.0.x"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('sdk/csharp/**/*.csproj') }}
@@ -176,7 +176,7 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci csharp
       - run: ./runner.sh coverage csharp
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push'
         with:
           directory: sdk/csharp
@@ -196,11 +196,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: sdk/rust
       - run: chmod +x runner.sh
@@ -211,7 +211,7 @@ jobs:
           cargo install cargo-llvm-cov --locked 2>/dev/null || true
           ./runner.sh coverage rust
         continue-on-error: true
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.toolchain == 'stable'
         with:
           files: sdk/rust/lcov.info
@@ -230,13 +230,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: ${{ matrix.php-version }}
           tools: composer
           coverage: xdebug
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: sdk/php/vendor
           key: composer-${{ matrix.php-version }}-${{ hashFiles('sdk/php/composer.lock') }}
@@ -247,7 +247,7 @@ jobs:
         run: bash tools/release/smoke_php_install.sh
       - run: ./runner.sh coverage php
         if: matrix.php-version == '8.3'
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.php-version == '8.3'
         with:
           files: sdk/php/coverage.xml
@@ -266,8 +266,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
@@ -276,7 +276,7 @@ jobs:
       - run: ./runner.sh ci ruby
       - run: ./runner.sh coverage ruby
         if: matrix.ruby-version == '3.3'
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push' && matrix.ruby-version == '3.3'
         with:
           files: sdk/ruby/coverage/coverage.xml
@@ -292,13 +292,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
       - run: chmod +x runner.sh
       - run: ./runner.sh ci kotlin
       - name: Validate signed publication locally
@@ -311,7 +311,7 @@ jobs:
           export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --armor --export-secret-keys ci@anyvali.invalid)"
           gradle --no-daemon publishToMavenLocal
       - run: ./runner.sh coverage kotlin
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: github.event_name == 'push'
         with:
           files: sdk/kotlin/build/reports/jacoco/test/jacocoTestReport.xml
@@ -335,7 +335,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: chmod +x runner.sh
       - run: ./runner.sh ci cpp
 
@@ -350,8 +350,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -372,16 +372,16 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: sdk/js/package-lock.json
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: "1.26.10"
           cache-dependency-path: sdk/go/go.sum
