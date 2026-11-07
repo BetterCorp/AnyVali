@@ -247,7 +247,7 @@ BoundedPattern compilePattern(String source) {
   }
   if (source.length > 1024)
     throw FormatException('Pattern exceeds 1024 characters');
-  final parser = _Parser(source);
+  final parser = _Parser(source, _countCaptures(source));
   final tree = parser.expression(0);
   if (parser.position != source.length)
     throw FormatException('Unmatched pattern group');
@@ -348,13 +348,41 @@ class _Node {
   return (minimum, maximum);
 }
 
+/// Count captures before interpreting legacy decimal escapes as references.
+/// Escaped delimiters and character classes do not introduce captures.
+int _countCaptures(String source) {
+  var captures = 0;
+  var inClass = false;
+  for (var i = 0; i < source.length; i++) {
+    final character = source[i];
+    if (character == '\\') {
+      i++;
+    } else if (inClass) {
+      if (character == ']') inClass = false;
+    } else if (character == '[') {
+      inClass = true;
+    } else if (character == '(') {
+      if (i + 1 >= source.length || source[i + 1] != '?') {
+        captures++;
+      } else if (source.startsWith('(?<', i) &&
+          i + 3 < source.length &&
+          source[i + 3] != '=' &&
+          source[i + 3] != '!') {
+        captures++;
+      }
+    }
+  }
+  return captures;
+}
+
 class _Parser {
   final String source;
+  final int totalCaptures;
   int position = 0;
   int captureCount = 0;
   bool hasBackreferences = false;
   final names = <String, int>{};
-  _Parser(this.source);
+  _Parser(this.source, this.totalCaptures);
   String get peek => position < source.length ? source[position] : '';
 
   /// Parse alternatives and concatenation while bounding nested groups.
@@ -429,12 +457,30 @@ class _Parser {
     } else if (character == '\\') {
       if (peek.isEmpty) throw FormatException('Trailing pattern escape');
       final escaped = source[position++];
-      if ('123456789'.contains(escaped)) {
-        while (peek.isNotEmpty && '0123456789'.contains(peek)) position++;
-        final id = int.tryParse(source.substring(start + 1, position));
-        if (id == null) throw FormatException('Invalid backreference');
-        hasBackreferences = true;
-        return _Node('backref', capture: id);
+      if ('0123456789'.contains(escaped)) {
+        var end = position;
+        while (end < source.length && '0123456789'.contains(source[end])) end++;
+        final id = int.tryParse(source.substring(start + 1, end));
+        if (escaped != '0' && id != null && id <= totalCaptures) {
+          position = end;
+          hasBackreferences = true;
+          return _Node('backref', capture: id);
+        }
+        // Annex B numeric escapes consume at most three octal digits (0..3)
+        // or two (4..7); remaining digits are separate, quantifiable atoms.
+        if ('01234567'.contains(escaped)) {
+          final maximum = '0123'.contains(escaped) ? 3 : 2;
+          var digits = escaped;
+          while (digits.length < maximum &&
+              peek.isNotEmpty &&
+              '01234567'.contains(peek)) {
+            digits += source[position++];
+          }
+          return _Node('atom',
+              atom: RegExp.escape(
+                  String.fromCharCode(int.parse(digits, radix: 8))));
+        }
+        return _Node('atom', atom: escaped);
       }
       if (escaped == 'k') {
         if (peek != '<') throw FormatException('Invalid named backreference');
@@ -442,9 +488,6 @@ class _Parser {
         final name = readName();
         hasBackreferences = true;
         return _Node('backref', atom: name);
-      }
-      if (escaped == '0' && peek.isNotEmpty && '0123456789'.contains(peek)) {
-        throw FormatException('Legacy octal escapes are not supported');
       }
       if (escaped == 'x' || escaped == 'u' || escaped == 'c') {
         final count = escaped == 'x'

@@ -4,6 +4,40 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test(
+      'wide integer constraints reject rounded doubles and preserve native ints',
+      () {
+    final document = av.uint64().exportSchema();
+    final rounded = jsonDecode(
+            '{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":'
+            '{"kind":"uint64","max":18446744073709551614},"definitions":{},"extensions":{}}')
+        as Map<String, dynamic>;
+    expect(() => av.importSchema(rounded), throwsFormatException);
+    for (final key in [
+      'min',
+      'max',
+      'exclusiveMin',
+      'exclusiveMax',
+      'multipleOf'
+    ]) {
+      expect(
+          () => av.importSchema({
+                ...document,
+                'root': {'kind': 'uint64', key: 18446744073709551616.0}
+              }),
+          throwsFormatException);
+    }
+    expect(
+        () => av.uint64().max(18446744073709551616.0), throwsFormatException);
+    if (!identical(1, 1.0)) {
+      final bound = int.parse('9223372036854775806');
+      final exact = av.int64().max(bound);
+      expect(exact.safeParse(bound).success, isTrue);
+      expect(exact.safeParse(bound + 1).success, isFalse);
+      expect(av.importSchema(exact.exportSchema()).safeParse(bound).success,
+          isTrue);
+    }
+  });
   test('overlapping sensitive members encrypt the final parsed value once', () {
     final secret = av.string().describe('Secret', sensitive: true);
     final schemas = <(av.Schema, Object?)>[

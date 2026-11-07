@@ -129,10 +129,13 @@ classes, dot, anchors, word boundaries, ordinary and noncapturing groups,
 alternatives, positive and negative lookahead/lookbehind, and `*`, `+`, `?`,
 `{m,n}` repetitions (including lazy forms). Nested lookarounds share the same
 compilation and execution limits. Numeric and named backreferences and named
-capturing groups are supported. Patterns follow the JavaScript SDK's flags-free
-ECMA-262 mode: `\p{L}` matches the literal text `p{L}`, and `[\p{L}]` is a
-character class, rather than Unicode property matching. Braces outside valid
-quantifiers are literals. Legacy octal escapes outside character classes are
+capturing groups are supported. For supported syntax, patterns follow the
+JavaScript SDK's flags-free ECMA-262 mode: `\p{L}` matches the literal text
+`p{L}`, and `[\p{L}]` is a character class, rather than Unicode property matching. Braces outside valid
+quantifiers are literals. Legacy octal escapes and non-reference `\8`/`\9`
+identity escapes are supported with JavaScript's consumption and quantifier
+rules. Numeric escapes refer to captures when the complete decimal reference
+exists, including forward references. Unresolved named backreferences are
 rejected during construction or import with `FormatException`.
 
 Compilation allows at most 1,024 UTF-16 code units, 64 nested groups, repetition
@@ -145,7 +148,10 @@ native and JavaScript targets.
 
 ## Numeric limits
 
-Native Dart integers are signed 64-bit. On JavaScript targets, numeric integer
+Native Dart integers are signed 64-bit. Integer constraints supplied as doubles
+outside the safe range (`±(2^53 - 1)`) are rejected, including oversized JSON
+integer tokens decoded as rounded doubles. Exact native `int` bounds remain
+valid. On JavaScript targets, numeric integer
 inputs beyond ±(2^53−1) are rejected to prevent silently accepting rounded values.
 `uint64()` accepts `BigInt` for the full unsigned range; string coercion can
 produce a `BigInt` when needed. Other integer schemas return `int` and reject

@@ -730,12 +730,13 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
             (key == 'multipleOf' && node[key] <= 0)))
       throw FormatException('Invalid $key');
   }
-  if (identical(1, 1.0) && _integerKinds.contains(kind)) {
+  if (_integerKinds.contains(kind)) {
     for (final key in _numericProperties) {
       if (node.containsKey(key) &&
+          (identical(1, 1.0) || node[key] is double) &&
           (node[key] as num).abs() > 9007199254740991) {
         throw FormatException(
-            'Integer constraints beyond the JavaScript safe range cannot be imported exactly');
+            'Wide integer constraints require an exact native int; double and JavaScript bounds exceed the safe range');
       }
     }
   }

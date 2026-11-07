@@ -4,6 +4,73 @@ import 'package:test/test.dart';
 
 /// Verify pattern semantics and compilation/matching resource boundaries.
 void main() {
+  test(
+      'legacy numeric escapes retain JavaScript reference and quantifier rules',
+      () {
+    final patterns = [
+      r'^\1$',
+      r'^\8$',
+      r'^\9$',
+      r'^\11+$',
+      r'^(a)\11+$',
+      r'^(a)\18+$',
+      r'^\1234+$',
+      r'^\377+$',
+      r'^\400+$',
+      r'^\777+$',
+      r'^\0007$',
+      r'^\08$',
+      r'^\09$',
+      r'^\0$',
+      r'^(a)\1$',
+      r'^\2(a)(b)$',
+      r'^[\1\8]$',
+      r'^(?:\(a\)|[()])\1$',
+      r'^(?<x>a)\1$',
+      r'^(?<=x)(a)\1$'
+    ];
+    final inputs = [
+      '',
+      '1',
+      '8',
+      '9',
+      'aa',
+      'ab',
+      'a\u0002',
+      'a\t',
+      'a\t\t',
+      'a\u00018',
+      'a\u000188',
+      'S4',
+      'S444',
+      '\u00ff',
+      '\u00ff\u00ff',
+      ' 0',
+      ' 00',
+      '?7',
+      '?77',
+      '\u00007',
+      '\u00008',
+      '\u00009',
+      '\u0000',
+      '\u0001',
+      '\t',
+      '\t\t',
+      '(a)\u0001',
+      '(\u0001',
+      'xaa'
+    ];
+    for (final pattern in patterns) {
+      final schema = av.string().pattern(pattern);
+      final restored = av.importSchema(schema.exportSchema());
+      final reference = RegExp(pattern);
+      for (final input in inputs) {
+        expect(schema.safeParse(input).success, reference.hasMatch(input),
+            reason: '$pattern on ${input.codeUnits}');
+        expect(restored.safeParse(input).success, reference.hasMatch(input));
+      }
+    }
+  });
   test('property-looking escapes use flags-free JavaScript semantics', () {
     for (final pattern in [
       r'^\p{L}$',
@@ -358,7 +425,7 @@ void main() {
     expect(attack.issues.single.message, contains('limit'));
     expect(
         () => av.string().pattern('${'(a)' * 65}\\1'), throwsFormatException);
-    expect(() => av.string().pattern(r'(a)\2'), throwsFormatException);
+    expect(av.string().pattern(r'(a)\2').parse('a\u0002'), 'a\u0002');
     expect(() => av.string().pattern(r'(?<x>a)(?<x>b)'), throwsFormatException);
   });
 
