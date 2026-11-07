@@ -517,3 +517,63 @@ func TestDartImportedSensitiveMetadata(t *testing.T) {
 		t.Fatalf("decrypt: %v %v", plain, err)
 	}
 }
+
+// TestDartCoercionTargetValidation rejects documents that would otherwise silently
+// change unconstrained values, while accepting matching wrapped numeric targets.
+func TestDartCoercionTargetValidation(t *testing.T) {
+	invalid := []map[string]any{
+		{"kind": "any"}, {"kind": "unknown"}, {"kind": "never"}, {"kind": "null"},
+		{"kind": "string"}, {"kind": "bool"}, {"kind": "number"},
+		{"kind": "literal", "value": "7"}, {"kind": "enum", "values": []any{"7"}},
+		{"kind": "array", "items": map[string]any{"kind": "int"}},
+		{"kind": "tuple", "elements": []any{map[string]any{"kind": "int"}}},
+		{"kind": "record", "values": map[string]any{"kind": "int"}},
+		{"kind": "object", "properties": map[string]any{}},
+		{"kind": "union", "variants": []any{map[string]any{"kind": "int"}}},
+		{"kind": "intersection", "allOf": []any{map[string]any{"kind": "int"}}},
+		{"kind": "optional", "schema": map[string]any{"kind": "any"}},
+		{"kind": "nullable", "schema": map[string]any{"kind": "string"}},
+		{"kind": "ref", "ref": "#/definitions/Any"},
+	}
+	defs := map[string]map[string]any{"Any": {"kind": "any"}, "Int": {"kind": "int"}, "Cycle": {"kind": "ref", "ref": "#/definitions/Cycle"}}
+	for _, node := range invalid {
+		for _, operations := range []any{[]any{"string->int"}, []any{"int"}, []any{"trim"}} {
+			if (node["kind"] == "string" || node["kind"] == "nullable") && reflect.DeepEqual(operations, []any{"trim"}) {
+				continue
+			}
+			node["coerce"] = operations
+			if schema, err := Import(&Document{Root: node, Definitions: defs}); err == nil || schema != nil {
+				t.Fatalf("accepted incompatible target %v", node)
+			}
+		}
+	}
+	for _, operations := range []any{true, nil, []any{false}, []any{"unknown"}, []any{"string->int", "trim"}, []any{"string->number"}, []any{"trim"}} {
+		node := map[string]any{"kind": "int", "coerce": operations}
+		if _, err := Import(&Document{Root: node}); err == nil {
+			t.Fatalf("accepted invalid coercion configuration %v", operations)
+		}
+	}
+	for _, ref := range []string{"#/definitions/Missing", "#/definitions/Cycle"} {
+		if _, err := Import(&Document{Root: map[string]any{"kind": "ref", "ref": ref, "coerce": "string->int"}, Definitions: defs}); err == nil {
+			t.Fatalf("accepted unresolved coercion target %s", ref)
+		}
+	}
+	for _, node := range []map[string]any{
+		{"kind": "int"},
+		{"kind": "optional", "schema": map[string]any{"kind": "int"}},
+		{"kind": "nullable", "schema": map[string]any{"kind": "optional", "schema": map[string]any{"kind": "ref", "ref": "#/definitions/Int"}}},
+		{"kind": "ref", "ref": "#/definitions/Int"},
+	} {
+		node["coerce"] = []any{"trim", "string->int"}
+		schema, err := Import(&Document{Root: node, Definitions: defs})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result := schema.SafeParse(" 7 "); !result.Success || result.Data != int64(7) {
+			t.Fatalf("matching coercion failed: %+v", result)
+		}
+	}
+	if _, err := Import(&Document{Root: map[string]any{"kind": "any", "coerce": []any{}}}); err != nil {
+		t.Fatalf("empty list must remain a no-op: %v", err)
+	}
+}

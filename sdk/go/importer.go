@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strings"
 )
 
 // importContext owns reference resolution for one document. Placeholders are
@@ -56,6 +57,9 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	kind, ok := node["kind"].(string)
 	if !ok {
 		return nil, fmt.Errorf("schema node missing 'kind' field")
+	}
+	if err := validateImportedCoercions(node, defs); err != nil {
+		return nil, err
 	}
 
 	switch kind {
@@ -517,6 +521,90 @@ func getCountConstraint(node map[string]any, key string) (int, bool, error) {
 		return 0, false, fmt.Errorf("%s must be a nonnegative integer within the platform int range", key)
 	}
 	return int(n), true, nil
+}
+
+// validateImportedCoercions rejects incompatible targets and operation order before
+// attaching modifiers. Legacy short conversions retain their runtime semantics.
+func validateImportedCoercions(node map[string]any, defs map[string]map[string]any) error {
+	config, present := node["coerce"]
+	if !present {
+		return nil
+	}
+	var operations []any
+	switch value := config.(type) {
+	case string:
+		operations = []any{value}
+	case []any:
+		operations = value
+	default:
+		return fmt.Errorf("coerce must be an identifier or ordered list")
+	}
+	if len(operations) == 0 {
+		return nil
+	}
+	kind, err := importedCoercionTarget(node, defs, 0)
+	if err != nil {
+		return err
+	}
+	expected := ""
+	switch kind {
+	case "int", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64":
+		expected = "int"
+	case "number", "float32", "float64":
+		expected = "number"
+	case "bool":
+		expected = "bool"
+	}
+	converted, preprocessed := false, false
+	for _, operation := range operations {
+		token, ok := operation.(string)
+		if !ok {
+			return fmt.Errorf("coerce identifiers must be strings")
+		}
+		switch token {
+		case "trim", "lower", "upper":
+			if kind != "string" {
+				if converted {
+					return fmt.Errorf("string preprocessing must precede conversion for %s", kind)
+				}
+				preprocessed = true
+			}
+		case "int", "number", "bool", "string->int", "string->number", "string->bool":
+			if expected == "" || strings.TrimPrefix(token, "string->") != expected {
+				return fmt.Errorf("coercion %q does not match target kind %s", token, kind)
+			}
+			converted = true
+		default:
+			return fmt.Errorf("unknown coercion identifier %q", token)
+		}
+	}
+	if preprocessed && !converted {
+		return fmt.Errorf("string preprocessing requires a matching conversion for %s", kind)
+	}
+	return nil
+}
+
+// importedCoercionTarget follows transparent schema edges with a fixed depth bound.
+// Reading the document also handles recursive refs not yet bound in the Go graph.
+func importedCoercionTarget(node map[string]any, defs map[string]map[string]any, depth int) (string, error) {
+	if depth >= maxValidationDepth || node == nil {
+		return "", fmt.Errorf("unresolved or excessively nested coercion target")
+	}
+	kind, _ := node["kind"].(string)
+	switch kind {
+	case "optional", "nullable":
+		child, _ := node["schema"].(map[string]any)
+		return importedCoercionTarget(child, defs, depth+1)
+	case "ref":
+		ref, _ := node["ref"].(string)
+		const prefix = "#/definitions/"
+		if !strings.HasPrefix(ref, prefix) {
+			return "", fmt.Errorf("invalid coercion reference target")
+		}
+		return importedCoercionTarget(defs[strings.TrimPrefix(ref, prefix)], defs, depth+1)
+	default:
+		return kind, nil
+	}
 }
 
 // importCoercions accepts one identifier or an ordered list without moving node ownership.
