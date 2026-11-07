@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { any, importSchema, object, optional, nullable, record, string, tuple } from "../../src/index.js";
+import { any, importSchema, int, object, optional, nullable, record, string, tuple } from "../../src/index.js";
 import type { AnyValiDocument, CoercionConfig } from "../../src/types.js";
 
 /** Build the native JS producer for the fixture consumed by Go and Dart tests. */
@@ -15,6 +15,7 @@ function producer() {
   return object({
     name: ref("Text", { trim: true, upper: true }), count: ref("Value", {}), flag: ref("Flag", { upper: true }),
     optional: optional(nullable(string().coerce({ trim: true }).startsWith("x")).default(" x ")),
+    wrappedNumber: nullable(int()).coerce(),
     record: record(ref("Text", { trim: true })),
     tuple: tuple([nullable(ref("Value", {})), string().coerce({ lower: true })]),
     data: any().default({ kind: "ref", coerce: { trim: true }, schema: { coerce: { lower: true } } }),
@@ -55,6 +56,7 @@ describe("canonical portable interoperability", () => {
       root: { kind: "string", coerce: operations }, definitions: {}, extensions: {} });
     expect(schema.parse("MiXeD")).toBe("mixed");
     expect(schema.export().root.coerce).toEqual(operations);
+    expect(schema.export("extended").root.coerce).toEqual(operations);
     expect(importSchema(schema.export()).parse("MiXeD")).toBe("mixed");
   });
 });

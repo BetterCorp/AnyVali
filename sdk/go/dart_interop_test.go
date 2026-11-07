@@ -350,3 +350,60 @@ func TestJavaScriptPortableCoercionFixture(t *testing.T) {
 		t.Fatalf("roundtrip output: %s (%v)", roundTrip, err)
 	}
 }
+
+// TestDartWrapperCoercions retains optional/nullable modifiers at their own node
+// and distinguishes declaring-node defaults from defaults entering an inner coercion.
+func TestDartWrapperCoercions(t *testing.T) {
+	for _, kind := range []string{"optional", "nullable"} {
+		root := map[string]any{"kind": kind, "schema": map[string]any{"kind": "int"}, "coerce": []any{"string->int"}}
+		importRoot := func(node map[string]any) Schema {
+			t.Helper()
+			doc := map[string]any{"anyvaliVersion": "1.0", "schemaVersion": "1.1", "root": node, "definitions": map[string]any{}, "extensions": map[string]any{}}
+			data, err := json.Marshal(doc)
+			if err != nil {
+				t.Fatal(err)
+			}
+			schema, err := ImportJSON(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return schema
+		}
+		schema := importRoot(root)
+		for _, input := range []any{"7", int64(7)} {
+			result := schema.SafeParse(input)
+			if !result.Success || result.Data != int64(7) {
+				t.Fatalf("%s wrapper conversion: %+v", kind, result)
+			}
+		}
+		if kind == "nullable" {
+			if result := schema.SafeParse(nil); !result.Success || result.Data != nil {
+				t.Fatalf("nullable null: %+v", result)
+			}
+		}
+		encoded, err := ExportJSON(schema, Portable)
+		if err != nil {
+			t.Fatal(err)
+		}
+		restored, err := ImportJSON(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result := restored.SafeParse("7"); !result.Success || result.Data != int64(7) {
+			t.Fatalf("%s roundtrip: %+v", kind, result)
+		}
+		root["coerce"] = "string->int"
+		if result := importRoot(root).SafeParse("7"); !result.Success || result.Data != int64(7) {
+			t.Fatalf("single coercion identifier: %+v", result)
+		}
+		root["default"] = "7"
+		if result := importRoot(root).SafeParse(absentValue); result.Success || result.Issues[0].Code != IssueDefaultInvalid {
+			t.Fatalf("own default must skip own conversion: %+v", result)
+		}
+		delete(root, "coerce")
+		root["schema"] = map[string]any{"kind": "int", "coerce": []any{"string->int"}}
+		if result := importRoot(root).SafeParse(absentValue); !result.Success || result.Data != int64(7) {
+			t.Fatalf("default must enter target conversion: %+v", result)
+		}
+	}
+}

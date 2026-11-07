@@ -42,6 +42,15 @@
             }
           }
         },
+        "wrappedNumber": {
+          "kind": "nullable",
+          "coerce": [
+            "string->int"
+          ],
+          "schema": {
+            "kind": "int"
+          }
+        },
         "record": {
           "kind": "record",
           "values": {
@@ -92,6 +101,7 @@
         "name",
         "count",
         "flag",
+        "wrappedNumber",
         "record",
         "tuple",
         "data"
@@ -125,6 +135,7 @@
     "name": " x ",
     "count": "42",
     "flag": "falſe",
+    "wrappedNumber": "13",
     "record": {
       "key": " x "
     },
@@ -138,6 +149,7 @@
     "count": 42,
     "flag": false,
     "optional": "x",
+    "wrappedNumber": 13,
     "record": {
       "key": "x"
     },

@@ -722,8 +722,9 @@ const doc = schema.export("portable");
 
 Portable exports use canonical child keys (`schema`, `values`, and `elements`)
 and ordered coercion identifiers such as `["trim", "upper"]` or
-`["string->int"]`. Imported operation lists retain their order. Extended exports
-retain the native flag-object form and legacy child keys.
+`["string->int"]`. Imported operation lists retain their order. Extended exports retain flag
+objects for native flag configurations and keep legacy child keys. Imported
+coercion lists such as `["upper", "lower"]` remain lists in extended exports.
 
 The document structure:
 

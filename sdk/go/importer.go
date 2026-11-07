@@ -439,6 +439,7 @@ func (ctx *importContext) importIntersectionSchema(node map[string]any, defs map
 	return Intersection(schemas...), nil
 }
 
+// importOptionalSchema retains modifiers declared on the optional wrapper itself.
 func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[string]map[string]any) (*OptionalSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -449,10 +450,12 @@ func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("optional inner: %w", err)
 	}
 	s := Optional(inner)
+	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importNullableSchema retains modifiers declared on the nullable wrapper itself.
 func (ctx *importContext) importNullableSchema(node map[string]any, defs map[string]map[string]any) (*NullableSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -463,6 +466,7 @@ func (ctx *importContext) importNullableSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("nullable inner: %w", err)
 	}
 	s := Nullable(inner)
+	importCoercions(&s.baseSchema, node)
 	importDefault(&s.baseSchema, node)
 	return s, nil
 }
@@ -532,9 +536,15 @@ func getCountConstraint(node map[string]any, key string) (int, bool, error) {
 	return int(n), true, nil
 }
 
+// importCoercions accepts one identifier or an ordered list without moving node ownership.
 func importCoercions(b *baseSchema, node map[string]any) {
-	cs, ok := node["coerce"].([]any)
-	if !ok {
+	var cs []any
+	switch value := node["coerce"].(type) {
+	case string:
+		cs = []any{value}
+	case []any:
+		cs = value
+	default:
 		return
 	}
 	for _, c := range cs {

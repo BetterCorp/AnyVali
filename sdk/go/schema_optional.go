@@ -69,6 +69,7 @@ func (s *OptionalSchema) ToNode() map[string]any {
 		"kind":   "optional",
 		"schema": s.inner.ToNode(),
 	}
+	s.addCoercionNode(node)
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node
