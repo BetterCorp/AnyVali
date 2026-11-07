@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 /// An omitted value, distinct from an explicit null.
 const absent = _Absent();
@@ -973,8 +972,8 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
             : integer.toInt();
       }
       if (kind == 'float32') {
-        final rounded = (Float32List(1)..[0] = (value as num).toDouble())[0];
-        if (!rounded.isFinite) {
+        const maxFloat32 = 3.4028234663852886e38;
+        if ((value as num).abs() > maxFloat32) {
           issue('invalid_number', 'float32', value);
           return null;
         }

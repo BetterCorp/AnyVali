@@ -4,6 +4,13 @@ import 'package:test/test.dart';
 
 void main() {
   test('float32 preserves the original value for constraints and output', () {
+    const maximum = 3.4028234663852886e38;
+    expect(av.float32().parse(maximum), maximum);
+    expect(av.float32().parse(-maximum), -maximum);
+    for (final value in [3.40282355e38, -3.40282355e38]) {
+      expect(
+          av.float32().safeParse(value).issues.single.code, 'invalid_number');
+    }
     expect(av.float32().max(0.3).parse(0.3), 0.3);
     expect(av.float32().multipleOf(0.1).parse(0.3), 0.3);
     expect(av.float32().parse(1 / 3), 1 / 3);
