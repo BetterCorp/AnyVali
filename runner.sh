@@ -116,6 +116,7 @@ print_summary() {
 # ---------------------------------------------------------------------------
 # Prerequisites check
 # ---------------------------------------------------------------------------
+# Report the availability of each SDK toolchain used by the runner.
 check_prerequisites() {
   log_header "Checking prerequisites"
 
@@ -602,6 +603,7 @@ run_conformance() {
   fi
 }
 
+# Return the primary command used to detect whether an SDK is available.
 sdk_primary_cmd() {
   case "$1" in
     js)      echo "npm" ;;
@@ -619,6 +621,7 @@ sdk_primary_cmd() {
   esac
 }
 
+# Remove generated build, dependency, and coverage directories for every SDK.
 clean_all() {
   log_header "Cleaning build artifacts"
   rm -rf "$ROOT_DIR/sdk/js/node_modules" "$ROOT_DIR/sdk/js/dist" "$ROOT_DIR/sdk/js/coverage"
