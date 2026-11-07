@@ -126,6 +126,7 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	}
 }
 
+// importStringSchema build string constraints; importNode attaches common modifiers.
 func importStringSchema(node map[string]any) (*StringSchema, error) {
 	s := String()
 	if v, ok, err := getCountConstraint(node, "minLength"); err != nil {
@@ -156,6 +157,7 @@ func importStringSchema(node map[string]any) (*StringSchema, error) {
 	return s, nil
 }
 
+// importFloat64Schema build number/float64 constraints without changing the requested kind.
 func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, error) {
 	s := newFloat64Schema(kind)
 	if err := importNumericConstraintsFloat(s, node); err != nil {
@@ -164,6 +166,7 @@ func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, erro
 	return s, nil
 }
 
+// importFloat32Schema build float32 constraints before shared modifier import.
 func importFloat32Schema(node map[string]any) (*Float32Schema, error) {
 	s := Float32()
 	if err := importNumericConstraintsFloat(s, node); err != nil {
@@ -198,6 +201,7 @@ func importNumericConstraintsFloat(s *Float64Schema, node map[string]any) error 
 	return nil
 }
 
+// importIntSchema preserve the signed target width while importing numeric constraints.
 func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSchema, error) {
 	s := newIntSchema(kind, low, high)
 	if err := importNumericConstraintsInt(s, node); err != nil {
@@ -206,6 +210,7 @@ func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSch
 	return s, nil
 }
 
+// importUintSchema preserve the unsigned target width while importing numeric constraints.
 func importUintSchema(node map[string]any, kind string, low, high uint64) (*IntSchema, error) {
 	s := newUintSchema(kind, low, high)
 	if err := importNumericConstraintsInt(s, node); err != nil {
@@ -232,6 +237,7 @@ func importNumericConstraintsInt(s *IntSchema, node map[string]any) error {
 	return nil
 }
 
+// importBoolSchema build the boolean validator before shared modifier import.
 func importBoolSchema(node map[string]any) (*BoolSchema, error) {
 	s := Bool()
 	return s, nil
@@ -262,6 +268,7 @@ func validateImportedLiteral(value any) error {
 	return nil
 }
 
+// importEnumSchema validate the allowed values before constructing an enum.
 func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 	values, ok := node["values"].([]any)
 	if !ok {
@@ -276,6 +283,7 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 	return s, nil
 }
 
+// importArraySchema import the item schema and validate array length constraints.
 func (ctx *importContext) importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
 	// Accept both "item" and "items" keys for compatibility
 	itemNode, ok := node["item"].(map[string]any)
@@ -327,6 +335,7 @@ func (ctx *importContext) importTupleSchema(node map[string]any, defs map[string
 	return Tuple(items...), nil
 }
 
+// importObjectSchema import property schemas, required fields, and unknown-key behavior.
 func (ctx *importContext) importObjectSchema(node map[string]any, defs map[string]map[string]any) (*ObjectSchema, error) {
 	propsNode, ok := node["properties"].(map[string]any)
 	if !ok {

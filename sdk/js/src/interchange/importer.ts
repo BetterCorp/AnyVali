@@ -53,6 +53,7 @@ import type { StringFormat, UnknownKeyMode } from "../types.js";
  */
 const MAX_IMPORT_DEPTH = 512;
 
+/** Build the root and definition contracts using a per-document reference cache. */
 export function importSchema(doc: AnyValiDocument): BaseSchema {
   const extensions = doc.extensions === undefined ? {} : doc.extensions;
   if (extensions === null || typeof extensions !== "object" || Array.isArray(extensions)) {
@@ -78,6 +79,7 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
   const definitions = structuredClone(doc.definitions ?? {});
   const resolvedDefs = new Map<string, BaseSchema>();
 
+  /** Build one node without expanding referenced definitions recursively. */
   function importNode(node: any, depth: number = 0): BaseSchema {
     if (depth > MAX_IMPORT_DEPTH) {
       throw new Error(
