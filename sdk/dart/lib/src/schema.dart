@@ -382,7 +382,8 @@ Schema<Object?> importSchema(JsonMap document) {
   for (final node in defs.values) {
     _checkNode(node, defs, 0);
   }
-  return Schema._(document['root'], definitions: defs, extensions: extensions);
+  return Schema._(Map<String, dynamic>.from(document['root']),
+      definitions: defs, extensions: extensions);
 }
 
 /// Accept JSON objects by their string keys rather than Dart generic arguments.
