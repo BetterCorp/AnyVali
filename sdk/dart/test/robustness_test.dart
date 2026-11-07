@@ -4,6 +4,29 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('manual Dart documents accept empty and raw string-keyed maps', () {
+    final document = <String, dynamic>{
+      'anyvaliVersion': '1.0',
+      'schemaVersion': '1.1',
+      'root': <dynamic, dynamic>{
+        'kind': 'object',
+        'properties': <dynamic, dynamic>{},
+        'required': []
+      },
+      'definitions': {},
+      'extensions': {}
+    };
+    expect(av.importSchema(document).parse({}), {});
+    expect(
+        () => av.importSchema({
+              ...document,
+              'definitions': {
+                1: {'kind': 'string'}
+              }
+            }),
+        throwsFormatException);
+  });
+
   test('present sensitive encryption cannot return null or absence', () {
     final schemas = [
       av.string().optional().describe('Secret', sensitive: true),

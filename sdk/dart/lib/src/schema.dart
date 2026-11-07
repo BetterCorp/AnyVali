@@ -367,29 +367,35 @@ Schema<Object?> importSchema(JsonMap document) {
       !keys.every(document.containsKey) ||
       document['anyvaliVersion'] != '1.0' ||
       !['1', '1.0', '1.1'].contains(document['schemaVersion']) ||
-      document['definitions'] is! Map<String, dynamic> ||
-      document['extensions'] is! Map<String, dynamic>) {
+      !_stringMap(document['definitions']) ||
+      !_stringMap(document['extensions'])) {
     throw FormatException('Invalid AnyVali document');
   }
-  final defs = document['definitions'] as JsonMap;
+  final defs = Map<String, dynamic>.from(document['definitions']);
+  final extensions = Map<String, dynamic>.from(document['extensions']);
   for (final name in defs.keys) {
     if (!RegExp(r'^[A-Za-z_][A-Za-z0-9_-]*$').hasMatch(name))
       throw FormatException('Invalid definition name');
   }
-  _checkExtensions(document['extensions']);
+  _checkExtensions(extensions);
   _checkNode(document['root'], defs, 0);
   for (final node in defs.values) {
     _checkNode(node, defs, 0);
   }
-  return Schema._(document['root'],
-      definitions: defs, extensions: document['extensions']);
+  return Schema._(document['root'], definitions: defs, extensions: extensions);
 }
+
+/// Accept JSON objects by their string keys rather than Dart generic arguments.
+/// Empty map literals commonly have dynamic key types before normalization.
+bool _stringMap(dynamic value) =>
+    value is Map && value.keys.every((key) => key is String);
 
 /// Validate criticality and reject custom validators or unknown semantic rules.
 void _checkExtensions(dynamic extensions) {
-  if (extensions is! Map) throw FormatException('Invalid extensions');
+  if (!_stringMap(extensions)) throw FormatException('Invalid extensions');
   for (final value in extensions.values) {
-    if (value is! Map) throw FormatException('Invalid extension namespace');
+    if (!_stringMap(value))
+      throw FormatException('Invalid extension namespace');
     if (value['customValidator'] != null || value['customValidators'] != null) {
       _importError('custom_validation_not_portable');
     }
@@ -473,8 +479,9 @@ const _nodeProperties = {
 /// Recurse through structural children while refs resolve through definitions.
 void _checkNode(dynamic node, JsonMap definitions, int depth) {
   if (depth > 200) throw FormatException('Schema nesting too deep');
-  if (node is! JsonMap || !_kinds.contains(node['kind']))
+  if (!_stringMap(node) || !_kinds.contains(node['kind']))
     _importError('unsupported_schema_kind');
+  node = Map<String, dynamic>.from(node);
   if (node.containsKey('customValidator') ||
       node.containsKey('customValidators'))
     _importError('custom_validation_not_portable');
@@ -504,14 +511,14 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
         !_equal(node[pair.key], node[pair.value]))
       throw FormatException('Conflicting schema aliases');
   }
-  node = _aliases(node);
+  node = _aliases(node as JsonMap);
   if (node.containsKey('format') && !_formats.contains(node['format']))
     throw FormatException('Unsupported portable format');
   if (node.containsKey('extensions')) _checkExtensions(node['extensions']);
   if (node.containsKey('customValidator') ||
       node.containsKey('customValidators'))
     _importError('custom_validation_not_portable');
-  if (node.containsKey('metadata') && node['metadata'] is! Map)
+  if (node.containsKey('metadata') && !_stringMap(node['metadata']))
     throw FormatException('Invalid metadata');
   final metadata = node['metadata'] as Map?;
   if (metadata != null) {
@@ -584,7 +591,7 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
           !definitions.containsKey(ref.substring(14)))
         throw FormatException('Unresolved ref: $ref');
     case 'object':
-      if (node['properties'] is! JsonMap ||
+      if (!_stringMap(node['properties']) ||
           node['required'] is! List ||
           !(node['required'] as List)
               .every((k) => k is String && node['properties'].containsKey(k)) ||
