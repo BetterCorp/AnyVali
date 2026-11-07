@@ -4,6 +4,77 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test(
+      'portable coercions use ordered token lists across nodes and definitions',
+      () {
+    for (final entry in [
+      (av.int_().coerce(), ['string->int']),
+      (av.uint64().coerce(), ['string->int']),
+      (av.number().coerce(), ['string->number']),
+      (av.bool_().coerce(), ['string->bool']),
+      (av.string().coerce(trim: true, lower: true), ['trim', 'lower']),
+    ]) {
+      expect(entry.$1.exportSchema()['root']['coerce'], entry.$2);
+      expect(
+          entry.$1.exportSchema(mode: 'extended')['root']['coerce'], entry.$2);
+    }
+    final base = av.any().exportSchema();
+    for (final entry in [
+      ('int', '7', 7),
+      ('number', '2.5', 2.5),
+      ('bool', 'true', true)
+    ]) {
+      final imported = av.importSchema({
+        ...base,
+        'root': {
+          'kind': entry.$1,
+          'coerce': [entry.$1]
+        }
+      });
+      expect(imported.parse(entry.$2), entry.$3);
+      expect(
+          imported.exportSchema()['root']['coerce'], ['string->${entry.$1}']);
+    }
+    final legacy = av.importSchema({
+      ...base,
+      'root': {
+        'kind': 'object',
+        'required': ['count', 'text'],
+        'properties': {
+          'count': {
+            'kind': 'ref',
+            'ref': '#/definitions/Count',
+            'coerce': {'toInt': true}
+          },
+          'text': {
+            'kind': 'optional',
+            'schema': {
+              'kind': 'string',
+              'coerce': ['trim', 'lower']
+            }
+          }
+        }
+      },
+      'definitions': {
+        'Count': {'kind': 'int', 'coerce': {}}
+      }
+    });
+    final portable = legacy.exportSchema();
+    expect(portable['root']['properties']['count']['coerce'], ['string->int']);
+    expect(portable['definitions']['Count']['coerce'], ['string->int']);
+    expect(portable['root']['properties']['text']['schema']['coerce'],
+        ['trim', 'lower']);
+    expect(
+        legacy.exportSchema(mode: 'extended')['definitions']['Count']['coerce'],
+        {});
+    expect(av.importSchema(portable).parse({'count': '7', 'text': ' A '}),
+        {'count': 7, 'text': 'a'});
+    final single = av.importSchema({
+      ...base,
+      'root': {'kind': 'string', 'coerce': 'trim'}
+    });
+    expect(single.exportSchema()['root']['coerce'], ['trim']);
+  });
   test('schema data must contain actual JSON values', () {
     final base = av.any().exportSchema();
     final cycle = <String, dynamic>{};

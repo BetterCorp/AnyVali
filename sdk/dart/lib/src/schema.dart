@@ -146,11 +146,13 @@ class Schema<T> {
   /// Enable type coercion and optional trim, lower, or upper string transforms.
   Schema<T> coerce(
           {bool trim = false, bool lower = false, bool upper = false}) =>
-      _set('coerce', {
-        if (trim) 'trim': true,
-        if (lower) 'lower': true,
-        if (upper) 'upper': true
-      });
+      _set(
+          'coerce',
+          _coercions({
+            if (trim) 'trim': true,
+            if (lower) 'lower': true,
+            if (upper) 'upper': true
+          }, _coercionKind(_node, _definitions)));
 
   /// Merge a description and typed reserved metadata options into this schema.
   Schema<T> describe(String description,
@@ -237,10 +239,10 @@ class Schema<T> {
     final document = {
       'anyvaliVersion': '1.0',
       'schemaVersion': '1.1',
-      'root': mode == 'portable' ? _portableNode(_node) : _node,
+      'root': mode == 'portable' ? _portableNode(_node, _definitions) : _node,
       'definitions': mode == 'portable'
-          ? _definitions
-              .map((key, value) => MapEntry(key, _portableNode(value)))
+          ? _definitions.map(
+              (key, value) => MapEntry(key, _portableNode(value, _definitions)))
           : _definitions,
       'extensions': mode == 'extended' ? _extensions : <String, dynamic>{}
     };
@@ -736,25 +738,29 @@ JsonMap _aliases(JsonMap node) => {
 
 /// Remove informational extensions from schema nodes in portable mode.
 /// Traverse schema edges only; defaults and metadata remain unchanged as data.
-JsonMap _portableNode(JsonMap node, [int depth = 0]) {
+JsonMap _portableNode(JsonMap node, JsonMap definitions, [int depth = 0]) {
   if (depth > 200) throw FormatException('Schema nesting too deep');
   node = _aliases(node);
   final output = {...node}..remove('extensions');
+  if (node.containsKey('coerce')) {
+    output['coerce'] =
+        _coercions(node['coerce'], _coercionKind(node, definitions));
+  }
   for (final alias in ['inner', 'valueSchema', 'schemas']) {
     output.remove(alias);
   }
   if (node['kind'] == 'tuple') output.remove('items');
   switch (node['kind']) {
     case 'object':
-      output['properties'] = (node['properties'] as Map)
-          .map((key, value) => MapEntry(key, _portableNode(value, depth + 1)));
+      output['properties'] = (node['properties'] as Map).map((key, value) =>
+          MapEntry(key, _portableNode(value, definitions, depth + 1)));
     case 'array' || 'record' || 'optional' || 'nullable':
       final key = switch (node['kind']) {
         'array' => 'items',
         'record' => 'values',
         _ => 'schema',
       };
-      output[key] = _portableNode(node[key], depth + 1);
+      output[key] = _portableNode(node[key], definitions, depth + 1);
     case 'tuple' || 'union' || 'intersection':
       final key = switch (node['kind']) {
         'tuple' => 'elements',
@@ -762,7 +768,8 @@ JsonMap _portableNode(JsonMap node, [int depth = 0]) {
         _ => 'allOf',
       };
       output[key] = [
-        for (final child in node[key]) _portableNode(child, depth + 1)
+        for (final child in node[key])
+          _portableNode(child, definitions, depth + 1)
       ];
   }
   return output;
@@ -902,6 +909,13 @@ List<String> _coercions(dynamic config, String kind) {
   } else {
     throw FormatException('Invalid coercion');
   }
+  // Older SDK exports use short primitive target names.
+  const aliases = {
+    'int': 'string->int',
+    'number': 'string->number',
+    'bool': 'string->bool'
+  };
+  tokens = [for (final token in tokens) aliases[token] ?? token];
   if (!tokens.every((v) => [
         'string->int',
         'string->number',

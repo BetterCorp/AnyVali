@@ -107,7 +107,9 @@ Definitions and metadata survive export and native composition. Conflicting
 imported definition names are rejected. Unknown semantic extensions and custom
 validator references are rejected. Informational extensions are retained in
 `exportSchema(mode: 'extended')`; portable exports remove extensions from the document and every schema node,
-while preserving defaults and metadata as data.
+while preserving defaults and metadata as data. Portable exports use canonical
+child keys and ordered coercion token lists; imports also accept older short
+coercion names (`int`, `number`, and `bool`).
 
 ## Pattern limits
 

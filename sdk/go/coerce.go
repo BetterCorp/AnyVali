@@ -49,11 +49,11 @@ func coercionForKind(kind string) CoercionType {
 // applyCoercion attempts to coerce the input value according to the given coercion type.
 func applyCoercion(value any, coercion CoercionType) (any, error) {
 	switch coercion {
-	case CoerceToInt:
+	case CoerceToInt, "string->int":
 		return coerceToInt(value)
-	case CoerceToNumber:
+	case CoerceToNumber, "string->number":
 		return coerceToNumber(value)
-	case CoerceToBool:
+	case CoerceToBool, "string->bool":
 		return coerceToBool(value)
 	case CoerceTrim:
 		return coerceTrimString(value)
