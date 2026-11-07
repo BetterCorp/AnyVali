@@ -4,6 +4,78 @@ import 'package:test/test.dart';
 
 /// Verify pattern semantics and compilation/matching resource boundaries.
 void main() {
+  test('legacy malformed control and hex escapes retain literal semantics', () {
+    for (final pattern in [
+      r'^\c$',
+      r'^\c1$',
+      r'^\c*$',
+      r'^\x$',
+      r'^\x1Z$',
+      r'^\u$',
+      r'^\u12XZ$',
+      r'^\u{2}$',
+      r'^\u{L}$',
+      r'^[\c1\xZ]+$'
+    ]) {
+      final schema = av.string().pattern(pattern);
+      final reference = RegExp(pattern);
+      for (final input in [
+        r'\c',
+        r'\c1',
+        r'\',
+        r'\ccc',
+        'x',
+        'x1Z',
+        'u',
+        'u12XZ',
+        'uu',
+        'u{L}',
+        'Z',
+        '\u0011',
+        '1'
+      ]) {
+        expect(schema.safeParse(input).success, reference.hasMatch(input),
+            reason: '$pattern on ${input.codeUnits}');
+      }
+    }
+    expect(() => av.string().pattern(r'(?<x>a)[\k<x>]'), throwsFormatException);
+  });
+  test('named identity escapes depend on named captures in the whole pattern',
+      () {
+    for (final pattern in [
+      r'^\k<x>$',
+      r'^\k<not a name>$',
+      r'^\k$',
+      r'^\k<x>+$',
+      r'^\k<(a)>$',
+      r'^\k<x>(?<x>a)$',
+      r'^(?<x>a)\k<x>$',
+      r'^(?:\(\?<x>a\)|[()])\k<x>$'
+    ]) {
+      final schema = av.string().pattern(pattern);
+      final imported = av.importSchema(schema.exportSchema());
+      final reference = RegExp(pattern);
+      for (final input in [
+        'k<x>',
+        'k<not a name>',
+        'k',
+        'k<x>>>',
+        'k<a>',
+        'a',
+        'aa',
+        'ak<x>',
+        '(?<x>a)k<x>',
+        '(k<x>'
+      ]) {
+        expect(schema.safeParse(input).success, reference.hasMatch(input),
+            reason: '$pattern on $input');
+        expect(imported.safeParse(input).success, reference.hasMatch(input));
+      }
+    }
+    expect(() => av.string().pattern(r'(?<x>a)\k<missing>'),
+        throwsFormatException);
+    expect(() => av.string().pattern(r'\k(?<x>a)'), throwsFormatException);
+  });
   test(
       'legacy numeric escapes retain JavaScript reference and quantifier rules',
       () {

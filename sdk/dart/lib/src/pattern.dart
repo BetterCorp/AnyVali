@@ -261,6 +261,9 @@ BoundedPattern compilePattern(String source) {
   final fragment = compiler.compile(tree);
   final accept = compiler.add(_State('accept'));
   compiler.patch(fragment.$2, accept);
+  // Validate contextual syntax only after the bounded compiler has succeeded.
+  // Matching always uses the bounded states, never this whole-pattern RegExp.
+  RegExp(source);
   final result = BoundedPattern._(compiler.states, fragment.$1, accept,
       parser.captureCount, parser.hasBackreferences, compiler.registerCount);
   if (_cache.length >= 16) _cache.remove(_cache.keys.first);
@@ -350,8 +353,9 @@ class _Node {
 
 /// Count captures before interpreting legacy decimal escapes as references.
 /// Escaped delimiters and character classes do not introduce captures.
-int _countCaptures(String source) {
+(int, bool) _countCaptures(String source) {
   var captures = 0;
+  var named = false;
   var inClass = false;
   for (var i = 0; i < source.length; i++) {
     final character = source[i];
@@ -369,20 +373,24 @@ int _countCaptures(String source) {
           source[i + 3] != '=' &&
           source[i + 3] != '!') {
         captures++;
+        named = true;
       }
     }
   }
-  return captures;
+  return (captures, named);
 }
 
 class _Parser {
   final String source;
   final int totalCaptures;
+  final bool hasNamedCaptures;
   int position = 0;
   int captureCount = 0;
   bool hasBackreferences = false;
   final names = <String, int>{};
-  _Parser(this.source, this.totalCaptures);
+  _Parser(this.source, (int, bool) captures)
+      : totalCaptures = captures.$1,
+        hasNamedCaptures = captures.$2;
   String get peek => position < source.length ? source[position] : '';
 
   /// Parse alternatives and concatenation while bounding nested groups.
@@ -449,6 +457,10 @@ class _Parser {
         if (peek == '\\') {
           position++;
           if (peek.isEmpty) throw FormatException('Unclosed character class');
+          if (peek == 'k' && hasNamedCaptures) {
+            throw FormatException(
+                'Named references are not allowed in classes');
+          }
         }
         position++;
       }
@@ -482,7 +494,7 @@ class _Parser {
         }
         return _Node('atom', atom: escaped);
       }
-      if (escaped == 'k') {
+      if (escaped == 'k' && hasNamedCaptures) {
         if (peek != '<') throw FormatException('Invalid named backreference');
         position++;
         final name = readName();
@@ -495,13 +507,21 @@ class _Parser {
             : escaped == 'u'
                 ? 4
                 : 1;
-        if (position + count > source.length)
-          throw FormatException('Incomplete pattern escape');
-        final digits = source.substring(position, position + count);
+        final digits = source.substring(
+            position,
+            position + count <= source.length
+                ? position + count
+                : source.length);
         final valid = escaped == 'c'
             ? RegExp(r'^[a-zA-Z]$').hasMatch(digits)
             : RegExp(r'^[0-9a-fA-F]+$').hasMatch(digits);
-        if (!valid) throw FormatException('Invalid pattern escape');
+        if (!valid || digits.length != count) {
+          if (escaped == 'c') {
+            position--;
+            return _Node('atom', atom: r'\\');
+          }
+          return _Node('atom', atom: escaped);
+        }
         position += count;
       }
       if (escaped == 'b' || escaped == 'B') {

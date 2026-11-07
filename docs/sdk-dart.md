@@ -135,8 +135,9 @@ JavaScript SDK's flags-free ECMA-262 mode: `\p{L}` matches the literal text
 quantifiers are literals. Legacy octal escapes and non-reference `\8`/`\9`
 identity escapes are supported with JavaScript's consumption and quantifier
 rules. Numeric escapes refer to captures when the complete decimal reference
-exists, including forward references. Unresolved named backreferences are
-rejected during construction or import with `FormatException`.
+exists, including forward references. Without named captures, `\k<name>`
+matches the literal text `k<name>`. With named captures present, unresolved
+named backreferences are rejected with `FormatException`.
 
 Compilation allows at most 1,024 UTF-16 code units, 64 nested groups, repetition
 counts of 1,000, and 2,048 states. A match accepts at most 100,000 UTF-16 input
