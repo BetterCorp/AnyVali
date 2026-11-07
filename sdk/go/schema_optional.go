@@ -45,6 +45,7 @@ func (s *OptionalSchema) SafeParse(input any) ParseResult {
 	return parseAtDepth(s, input, newParseContext())
 }
 
+// safeParseAtDepth permits absence or delegates it to a default-bearing child.
 func (s *OptionalSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
 	if isAbsent(input) && !s.hasDefault {
 		if hasTransitiveDefault(s.inner, 0) {

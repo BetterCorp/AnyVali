@@ -33,14 +33,22 @@ export class RefSchema extends BaseSchema<unknown, unknown> {
     return undefined;
   }
 
+  /** Run occurrence-specific modifiers before validating the resolved target. */
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
-    if (((input === undefined || input === ABSENT) && this._defaultValue !== ABSENT) ||
+    if (this._coercionConfig !== undefined ||
+        ((input === undefined || input === ABSENT) && this._defaultValue !== ABSENT) ||
         (this._metadata?.sensitive === true && ctx.sensitiveMode)) {
       return super._runPipeline(input, ctx);
     }
     return this._resolver
       ? this._resolver()._runPipeline(input, ctx)
       : this._validate(input, ctx);
+  }
+
+  /** @internal Resolve conversion kinds with the same bound as default lookup. */
+  _getCoercionTarget(depth = 0): string {
+    return depth < MAX_DEPTH && this._resolver
+      ? this._resolver()._getCoercionTarget(depth + 1) : "unknown";
   }
 
   _toNode(): SchemaNode {

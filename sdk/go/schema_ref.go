@@ -49,6 +49,7 @@ func (s *RefSchema) SafeParse(input any) ParseResult {
 	return parseAtDepth(s, input, newParseContext())
 }
 
+// safeParseAtDepth applies local modifiers before delegating without losing absence.
 func (s *RefSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
 	if s.resolved == nil {
 		return ParseResult{
@@ -59,14 +60,23 @@ func (s *RefSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
 			}},
 		}
 	}
-	return parseAtDepth(s.resolved, input, ctx.child())
+	if isAbsent(input) && !s.hasDefault {
+		return parseAtDepth(s.resolved, input, ctx.child())
+	}
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) {
+		result := parseAtDepth(s.resolved, value, ctx.child())
+		return result.Data, result.Issues
+	})
 }
 
+// ToNode exports this reference occurrence and its local modifiers.
 func (s *RefSchema) ToNode() map[string]any {
 	node := map[string]any{
 		"kind": "ref",
 		"ref":  s.ref,
 	}
+	s.addCoercionNode(node)
+	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node
 }

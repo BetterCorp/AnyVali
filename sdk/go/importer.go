@@ -11,7 +11,8 @@ import (
 // importContext owns reference resolution for one document. Placeholders are
 // registered before descending so recursive references share the completed graph.
 type importContext struct {
-	refs map[string]*RefSchema
+	refs        map[string]*RefSchema
+	pendingRefs map[string][]*RefSchema
 }
 
 // Import converts a Document to a Schema.
@@ -19,7 +20,7 @@ func Import(doc *Document) (Schema, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("document is nil")
 	}
-	ctx := &importContext{refs: make(map[string]*RefSchema)}
+	ctx := &importContext{refs: make(map[string]*RefSchema), pendingRefs: make(map[string][]*RefSchema)}
 	return ctx.importNode(doc.Root, doc.Definitions)
 }
 
@@ -38,6 +39,7 @@ func ImportJSON(data []byte) (Schema, error) {
 	return Import(&doc)
 }
 
+// importNode builds one schema using this document's reference-resolution context.
 func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (Schema, error) {
 	if node == nil {
 		return nil, fmt.Errorf("schema node is nil")
@@ -465,16 +467,27 @@ func (ctx *importContext) importNullableSchema(node map[string]any, defs map[str
 	return s, nil
 }
 
+// importRefSchema shares definition resolution while retaining modifiers per occurrence.
+// Pending wrappers bind to the completed target so recursive refs add no proxy depth.
 func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]map[string]any) (*RefSchema, error) {
 	ref, ok := node["ref"].(string)
 	if !ok {
 		return nil, fmt.Errorf("ref schema missing 'ref' field")
 	}
+	occurrence := newRefSchema(ref)
+	importCoercions(&occurrence.baseSchema, node)
+	importDefault(&occurrence.baseSchema, node)
 	if cached, ok := ctx.refs[ref]; ok {
-		return cached, nil
+		if cached.resolved != nil {
+			occurrence.Resolve(cached.resolved)
+		} else {
+			ctx.pendingRefs[ref] = append(ctx.pendingRefs[ref], occurrence)
+		}
+		return occurrence, nil
 	}
-	s := newRefSchema(ref)
-	ctx.refs[ref] = s
+	placeholder := newRefSchema(ref)
+	ctx.refs[ref] = placeholder
+	ctx.pendingRefs[ref] = append(ctx.pendingRefs[ref], occurrence)
 	const defPrefix = "#/definitions/"
 	if len(ref) > len(defPrefix) && ref[:len(defPrefix)] == defPrefix {
 		if defNode, ok := defs[ref[len(defPrefix):]]; ok {
@@ -482,11 +495,14 @@ func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]m
 			if err != nil {
 				return nil, fmt.Errorf("ref %q: %w", ref, err)
 			}
-			s.Resolve(resolved)
+			placeholder.Resolve(resolved)
+			for _, pending := range ctx.pendingRefs[ref] {
+				pending.Resolve(resolved)
+			}
+			delete(ctx.pendingRefs, ref)
 		}
 	}
-
-	return s, nil
+	return occurrence, nil
 }
 
 // Helper functions for extracting typed values from node maps.

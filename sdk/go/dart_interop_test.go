@@ -126,6 +126,7 @@ func TestDartTransitiveDefaults(t *testing.T) {
 	}
 }
 
+// TestDartTransitiveDefaultFailuresAndCycles checks invalid values and bounded recursive lookup.
 func TestDartTransitiveDefaultFailuresAndCycles(t *testing.T) {
 	for _, doc := range []string{
 		`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"object","properties":{"x":{"kind":"nullable","schema":{"kind":"string","default":42}}},"required":[]},"definitions":{},"extensions":{}}`,
@@ -146,6 +147,7 @@ func TestDartTransitiveDefaultFailuresAndCycles(t *testing.T) {
 	}
 }
 
+// TestDartCanonicalSignedOverflowDiagnostic distinguishes integer overflow from invalid types.
 func TestDartCanonicalSignedOverflowDiagnostic(t *testing.T) {
 	for _, target := range []*IntSchema{Int(), Int64(), Int8()} {
 		result := target.Coerce("string->int").SafeParse("18446744073709551615")
@@ -159,6 +161,7 @@ func TestDartCanonicalSignedOverflowDiagnostic(t *testing.T) {
 	}
 }
 
+// TestDartPrimitiveDefaultRoundTrip preserves primitive defaults and validates impossible never defaults.
 func TestDartPrimitiveDefaultRoundTrip(t *testing.T) {
 	for _, test := range []struct {
 		kind  string
@@ -193,5 +196,51 @@ func TestDartPrimitiveDefaultRoundTrip(t *testing.T) {
 				t.Fatalf("%s default: %+v", test.kind, result)
 			}
 		}
+	}
+}
+
+// TestDartRefOccurrenceModifiers prevents defaults/coercions from leaking through
+// shared definition resolution and preserves target pipeline order across export.
+func TestDartRefOccurrenceModifiers(t *testing.T) {
+	doc := []byte(`{"anyvaliVersion":"1.0","schemaVersion":"1.1","extensions":{},"root":{"kind":"object","required":["c","d"],"properties":{
+ "a":{"kind":"ref","ref":"#/definitions/Value","default":7},
+ "b":{"kind":"ref","ref":"#/definitions/Value","default":8},
+ "c":{"kind":"ref","ref":"#/definitions/Value","coerce":["string->int"]},
+ "d":{"kind":"ref","ref":"#/definitions/Value"},
+ "chain":{"kind":"ref","ref":"#/definitions/Upper","default":" x ","coerce":["trim"]},
+ "wrapped":{"kind":"optional","schema":{"kind":"nullable","default":" x ","schema":{"kind":"string","coerce":["trim"],"startsWith":"x"}}}
+ }},"definitions":{"Value":{"kind":"int"},"Upper":{"kind":"string","coerce":["upper"]}}}`)
+	schema, err := ImportJSON(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string]any{"a": int64(7), "b": int64(8), "c": int64(9), "d": int64(10), "chain": " X ", "wrapped": "x"}
+	check := func(candidate Schema) {
+		t.Helper()
+		result := candidate.SafeParse(map[string]any{"c": "9", "d": int64(10)})
+		if !result.Success || !reflect.DeepEqual(result.Data, expected) {
+			t.Fatalf("ref modifiers: %+v", result)
+		}
+	}
+	check(schema)
+	encoded, err := ExportJSON(schema, Portable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := ImportJSON(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(restored)
+	for _, key := range []string{"a", "d"} {
+		input := map[string]any{"c": "9", "d": int64(10)}
+		input[key] = "7"
+		if result := schema.SafeParse(input); result.Success {
+			t.Fatalf("coercion leaked to %s", key)
+		}
+	}
+	present := schema.SafeParse(map[string]any{"c": "9", "d": int64(10), "chain": " y "})
+	if !present.Success || present.Data.(map[string]any)["chain"] != "Y" {
+		t.Fatalf("ref coercion order: %+v", present)
 	}
 }

@@ -102,6 +102,7 @@ func (s *ObjectSchema) safeParseWithInherited(input any, inherited UnknownKeyMod
 	})
 }
 
+// validateWithInherited enforces property presence, transitive defaults and inherited key policy.
 func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode, hasInherited bool, ctx parseContext) (any, []ValidationIssue) {
 	obj, ok := value.(map[string]any)
 	if !ok {

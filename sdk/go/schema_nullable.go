@@ -45,6 +45,7 @@ func (s *NullableSchema) SafeParse(input any) ParseResult {
 	return parseAtDepth(s, input, newParseContext())
 }
 
+// safeParseAtDepth preserves null and materializes defaults at their declaring node.
 func (s *NullableSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
 	if isAbsent(input) {
 		if s.hasDefault {

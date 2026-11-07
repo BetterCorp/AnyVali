@@ -10,9 +10,6 @@ export class OptionalSchema<
   constructor(inner: T) {
     super();
     this._inner = inner;
-    // Inherit defaults/coercion from inner
-    this._defaultValue = inner._defaultValue as any;
-    this._coercionConfig = inner._coercionConfig;
   }
 
   /** @internal Resolve presence without moving defaults across coercion steps. */
@@ -21,17 +18,20 @@ export class OptionalSchema<
       (depth < MAX_DEPTH && this._inner._hasDefault(depth + 1));
   }
 
+  /** Validate a materialized wrapper default through the inner pipeline. */
   _validate(input: unknown, ctx: ParseContext): unknown {
     if (input === undefined || input === ABSENT) {
       return undefined;
     }
-    return this._inner._validate(input, ctx);
+    return this._inner._runPipeline(input, ctx);
   }
 
+  /** Preserve absence while applying defaults and coercions at their declaring nodes. */
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
     const isAbsent = input === undefined || input === ABSENT;
 
-    if (!isAbsent && this._metadata?.sensitive === true && ctx.sensitiveMode) {
+    if ((!isAbsent && this._coercionConfig !== undefined) ||
+        (!isAbsent && this._metadata?.sensitive === true && ctx.sensitiveMode)) {
       return super._runPipeline(input, ctx);
     }
 
@@ -49,6 +49,11 @@ export class OptionalSchema<
 
     // Delegate to inner's pipeline for coercion etc.
     return this._inner._runPipeline(input, ctx);
+  }
+
+  /** @internal Infer conversion targets through transparent wrappers. */
+  _getCoercionTarget(depth = 0): string {
+    return depth < MAX_DEPTH ? this._inner._getCoercionTarget(depth + 1) : "unknown";
   }
 
   _children(): BaseSchema[] { return [this._inner]; }

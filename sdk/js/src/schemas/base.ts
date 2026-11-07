@@ -231,7 +231,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   }
 
   /** Override in subclasses to provide the coercion target type name */
-  _getCoercionTarget(): string {
+  _getCoercionTarget(_depth = 0): string {
     return "unknown";
   }
 

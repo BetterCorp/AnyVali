@@ -71,6 +71,7 @@ export class ObjectSchema<
     return this._unknownKeysExplicit ? this._unknownKeys : "strip";
   }
 
+  /** Validate object properties, including transitive defaults and inherited key policies. */
   _validate(input: unknown, ctx: ParseContext): unknown {
     if (typeof input !== "object" || input === null || Array.isArray(input)) {
       ctx.issues.push({

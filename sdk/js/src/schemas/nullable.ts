@@ -17,24 +17,32 @@ export class NullableSchema<
       (depth < MAX_DEPTH && this._inner._hasDefault(depth + 1));
   }
 
+  /** Preserve null and run all inner validation stages for other values. */
   _validate(input: unknown, ctx: ParseContext): unknown {
     if (input === null) {
       return null;
     }
-    return this._inner._validate(input, ctx);
+    return this._inner._runPipeline(input, ctx);
   }
 
+  /** Apply wrapper modifiers before delegating non-null values. */
   _runPipeline(input: unknown, ctx: ParseContext): unknown {
     if (input === null) {
       return null;
     }
-    if (this._metadata?.sensitive === true && ctx.sensitiveMode) {
+    if (this._coercionConfig !== undefined ||
+        (this._metadata?.sensitive === true && ctx.sensitiveMode)) {
       return super._runPipeline(input, ctx);
     }
     if ((input === undefined || input === ABSENT) && this._defaultValue !== ABSENT) {
       return super._runPipeline(input, ctx);
     }
     return this._inner._runPipeline(input, ctx);
+  }
+
+  /** @internal Infer conversion targets through transparent wrappers. */
+  _getCoercionTarget(depth = 0): string {
+    return depth < MAX_DEPTH ? this._inner._getCoercionTarget(depth + 1) : "unknown";
   }
 
   _children(): BaseSchema[] { return [this._inner]; }

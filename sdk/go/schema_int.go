@@ -137,6 +137,7 @@ func (s *IntSchema) validate(value any) (any, []ValidationIssue) {
 	return s.validateSigned(value)
 }
 
+// validateSigned checks signed width and constraints, classifying exact uint64 overflow as a range error.
 func (s *IntSchema) validateSigned(value any) (any, []ValidationIssue) {
 	i, ok := toInt64(value)
 	if !ok {
