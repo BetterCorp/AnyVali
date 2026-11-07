@@ -4,6 +4,49 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('overlapping sensitive members encrypt the final parsed value once', () {
+    final secret = av.string().describe('Secret', sensitive: true);
+    final schemas = <(av.Schema, Object?)>[
+      (
+        av.intersection([secret.defaultValue('a'), secret.defaultValue('b')]),
+        av.absent
+      ),
+      (
+        av.intersection(
+            [secret.coerce(lower: true), secret.coerce(upper: true)]),
+        'Mixed'
+      ),
+      (
+        av.intersection([
+          av.object({'value': secret.defaultValue('a')}),
+          av.object({'value': secret.defaultValue('b')})
+        ]),
+        <String, Object?>{}
+      ),
+      (
+        av.intersection([
+          av.object({'value': secret.coerce(lower: true)}),
+          av.object({'value': secret.coerce(upper: true)})
+        ]),
+        {'value': 'Mixed'}
+      ),
+    ];
+    for (final (schema, input) in schemas) {
+      final parsed = schema.parse(input);
+      var calls = 0;
+      final stored = av.encrypt(schema, input, (path, value) {
+        calls++;
+        expect(value, path.isEmpty ? parsed : (parsed as Map)['value']);
+        return 'encrypted:$value';
+      });
+      expect(calls, 1);
+      expect(av.safeParseEncrypted(schema, stored).success, isTrue);
+      final restored = av.decrypt(
+          schema, stored, (path, value) => (value as String).substring(10));
+      // Decryption applies ordinary parsing, including any further coercion.
+      expect(restored, schema.parse(parsed));
+    }
+  });
   test('intersection transforms use member results before merging defaults',
       () {
     final choice = av.object({

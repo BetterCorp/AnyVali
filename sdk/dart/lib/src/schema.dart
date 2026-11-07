@@ -1595,6 +1595,11 @@ Object? _transform(
           [ValidationIssue('too_deep', 'Maximum depth exceeded', path)]);
     if (value == null || identical(value, absent)) return value;
     if ((node['metadata'] as Map?)?['sensitive'] == true) {
+      // Member results determine traversal; encryption sees the final parse value.
+      if (!decrypting && !inspectOnly) {
+        value = _valueAt(checked, path);
+        if (value == null || identical(value, absent)) return value;
+      }
       if (inspectOnly) {
         storagePaths.add(jsonEncode(path));
         return value;
