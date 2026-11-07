@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 /// An omitted value, distinct from an explicit null.
@@ -1016,7 +1017,11 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
           matches = (integer * denominator) % numerator == BigInt.zero;
         } else {
           final remainder = (value as num) % divisor;
-          final tolerance = divisor < 1 ? divisor * 1e-10 : 1e-10;
+          // Bound roundoff by both the spec ceiling and a fraction of the
+          // divisor so tiny divisors never make every value a multiple.
+          final roundoff = (value as num).abs() * 2.220446049250313e-16;
+          final tolerance = math.min(1e-10,
+              math.min(divisor / 4, math.max(divisor * 1e-10, roundoff)));
           matches = remainder.abs() <= tolerance ||
               (divisor - remainder).abs() <= tolerance;
         }

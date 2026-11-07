@@ -164,6 +164,8 @@ void main() {
         'ok');
   });
   test('tiny floating divisors do not admit fractional multiples', () {
+    expect(av.number().multipleOf(0.1).safeParse(1000000.1).success, isTrue);
+    expect(av.number().multipleOf(0.1).safeParse(1000000.15).success, isFalse);
     expect(av.number().multipleOf(1e-12).safeParse(1.5e-12).success, isFalse);
     expect(av.number().multipleOf(1e-12).safeParse(2e-12).success, isTrue);
   });
