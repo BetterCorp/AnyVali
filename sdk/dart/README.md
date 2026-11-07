@@ -177,6 +177,8 @@ as opaque values. Encryption and decryption validate before and after the callba
 Normal parsing always validates plaintext. Encryption rejects output when union branch selection could bypass decryption
 of a sensitive value. Add a literal discriminator
 or mark the entire union sensitive when encrypted branches would be ambiguous.
+Encrypted parsing and transform helpers reject ciphertext-changing sibling coercions;
+mark the whole intersection sensitive when its members normalize the same value.
 
 ## Development
 

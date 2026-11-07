@@ -43,7 +43,7 @@ dart pub publish --dry-run
 
 The VM suite reads both corpora under `spec/`; run it from a complete repository
 checkout. That repository-only test is excluded from the package archive; the
-standalone schema and robustness tests remain included. The package dry run
+standalone schema, robustness, and pattern tests remain included. The package dry run
 lists the actual upload contents and performs
 package validation. It does not establish ownership of the package name.
 

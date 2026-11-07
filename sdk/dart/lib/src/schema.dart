@@ -1491,16 +1491,44 @@ bool _format(String format, String value) {
 /// Validate encrypted storage without decrypting sensitive values.
 ParseResult<Object?> safeParseEncrypted(Schema schema,
     [Object? input = absent]) {
-  final issues = <ValidationIssue>[];
-  final value = _run(schema._node, input, [], issues, schema._definitions, 0,
-      encrypted: true);
-  return ParseResult._(issues.isEmpty, issues.isEmpty ? value : null, issues);
+  try {
+    final value = _transform(schema, input, (path, value) => value, true,
+        validateOnly: true);
+    return ParseResult._(true, value, const []);
+  } on ValidationError catch (error) {
+    return ParseResult._(false, null, error.issues);
+  }
 }
+
+/// Read a validation data path without changing absent values into null.
+dynamic _valueAt(dynamic value, List<Object> path) {
+  for (final segment in path) {
+    if (value is Map && value.containsKey(segment)) {
+      value = value[segment];
+    } else if (value is List &&
+        segment is int &&
+        segment >= 0 &&
+        segment < value.length) {
+      value = value[segment];
+    } else {
+      return absent;
+    }
+  }
+  return value;
+}
+
+/// Ciphertext is opaque even when another intersection member has coercions.
+Never _changedCiphertext(List<Object> path) => throw ValidationError([
+      ValidationIssue('invalid_string',
+          'Schema validation changed an encrypted value', path,
+          expected: 'unchanged encrypted:<payload>')
+    ]);
 
 /// Validate before and after walking sensitive nodes with caller-owned transforms.
 /// Retain original union selections and cache callback results by data path.
-Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
-    bool decrypting) {
+Object? _transform(
+    Schema schema, Object? input, SensitiveTransform transform, bool decrypting,
+    {bool validateOnly = false}) {
   final unions = <JsonMap, Map<String, Object>>{};
   final issues = <ValidationIssue>[];
   final checked = _run(schema._node, input, [], issues, schema._definitions, 0,
@@ -1524,6 +1552,11 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
       if (inspectOnly) {
         storagePaths.add(jsonEncode(path));
         return value;
+      }
+      if (decrypting) {
+        final original = _valueAt(input, path);
+        if (!identical(original, absent) && !_equal(original, value))
+          _changedCiphertext(path);
       }
       if (!decrypting) encryptedPaths.add(jsonEncode(path));
       final transformed = transform(List.unmodifiable(path), value);
@@ -1558,9 +1591,11 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
       dynamic result = value;
       for (final member in node['allOf']) {
         final next = walk(member, value, path, depth + 1);
-        result = result is Map && next is Map
-            ? _mergeParsed(value, result, next)
-            : next;
+        if (result is Map && next is Map) {
+          result = _mergeParsed(value, result, next);
+        } else if (!_equal(next, value)) {
+          result = next;
+        }
       }
       return result;
     }
@@ -1586,7 +1621,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   transform = (path, value) =>
       cache.putIfAbsent(jsonEncode(path), () => originalTransform(path, value));
   final output = walk(schema._node, checked, [], 0);
-  if (decrypting) return schema.parse(output);
+  if (decrypting) return validateOnly ? output : schema.parse(output);
   final encryptedUnions = <JsonMap, Map<String, Object>>{};
   final encryptedIssues = <ValidationIssue>[];
   final stored = _run(
@@ -1617,6 +1652,10 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
           List<Object>.from(jsonDecode(drift)),
           expected: 'stable sensitive paths')
     ]);
+  }
+  for (final entry in cache.entries) {
+    final path = List<Object>.from(jsonDecode(entry.key));
+    if (!_equal(_valueAt(stored, path), entry.value)) _changedCiphertext(path);
   }
   return stored;
 }

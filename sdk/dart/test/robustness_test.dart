@@ -4,6 +4,62 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test(
+      'sensitive intersections preserve transformed values in either member order',
+      () {
+    final secret = av.string().describe('Secret', sensitive: true);
+    for (final members in [
+      [secret, av.string()],
+      [av.string(), secret],
+      [secret, secret]
+    ]) {
+      final schema = av.intersection(members);
+      var calls = 0;
+      final stored = av.encrypt(schema, 'value', (path, value) {
+        calls++;
+        return 'encrypted:$value';
+      });
+      expect(stored, 'encrypted:value');
+      expect(calls, 1);
+      calls = 0;
+      expect(
+          av.decrypt(schema, stored, (path, value) {
+            calls++;
+            return (value as String).substring(10);
+          }),
+          'value');
+      expect(calls, 1);
+    }
+    final arrays = av.intersection([av.array(secret), av.array(av.string())]);
+    final stored =
+        av.encrypt(arrays, ['value'], (path, value) => 'encrypted:$value');
+    expect(stored, ['encrypted:value']);
+    expect(
+        av.decrypt(
+            arrays, stored, (path, value) => (value as String).substring(10)),
+        ['value']);
+    final coercing = av.intersection([secret, av.string().coerce(lower: true)]);
+    expect(
+        () =>
+            av.encrypt(coercing, 'value', (path, value) => 'encrypted:PAYLOAD'),
+        throwsA(isA<av.ValidationError>()));
+    expect(
+        av.safeParseEncrypted(coercing, 'encrypted:PAYLOAD').success, isFalse);
+    var called = false;
+    expect(
+        () => av.decrypt(coercing, 'encrypted:PAYLOAD', (path, value) {
+              called = true;
+              return 'value';
+            }),
+        throwsA(isA<av.ValidationError>()));
+    expect(called, isFalse);
+    final opaque = coercing.describe('Whole secret', sensitive: true);
+    final opaqueStored =
+        av.encrypt(opaque, 'VALUE', (path, value) => 'encrypted:PAYLOAD');
+    expect(opaqueStored, 'encrypted:PAYLOAD');
+    expect(av.safeParseEncrypted(opaque, opaqueStored).data, opaqueStored);
+    expect(av.decrypt(opaque, opaqueStored, (path, value) => 'VALUE'), 'value');
+  });
   test('native unions decode the original selected branch at each data path',
       () {
     final plain =
