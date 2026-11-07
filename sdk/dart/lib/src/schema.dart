@@ -11,6 +11,9 @@ class _Absent {
 typedef JsonMap = Map<String, dynamic>;
 typedef _UnionTrace = Map<JsonMap, Map<String, int>>;
 
+/// Cache compiled patterns by immutable node identity without retaining schemas.
+final _compiledPatterns = Expando<BoundedPattern>();
+
 typedef SensitiveTransform = Object? Function(List<Object> path, Object? value);
 
 /// A validation failure with an ordered object-key and array-index path.
@@ -386,9 +389,13 @@ Schema<Object?> union(List<Schema> variants) {
 }
 
 /// Require every member and merge their parsed results.
-Schema<Object?> intersection(List<Schema> schemas) => _composite(
-    {'kind': 'intersection', 'allOf': schemas.map((s) => s._node).toList()},
-    schemas);
+Schema<Object?> intersection(List<Schema> schemas) {
+  if (schemas.isEmpty)
+    throw ArgumentError('An intersection needs at least one member');
+  return _composite(
+      {'kind': 'intersection', 'allOf': schemas.map((s) => s._node).toList()},
+      schemas);
+}
 
 /// Validate a portable document and retain its definitions and metadata.
 Schema<Object?> importSchema(JsonMap document) {
@@ -697,7 +704,7 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
         'intersection': 'allOf'
       }[node['kind']]!;
       if (node[key] is! List ||
-          (node['kind'] == 'union' && (node[key] as List).isEmpty))
+          (node['kind'] != 'tuple' && (node[key] as List).isEmpty))
         throw FormatException('Invalid $key');
       for (final value in node[key]) {
         child(value);
@@ -978,14 +985,10 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   final sourceNode = node;
   node = _aliases(node);
   final kind = node['kind'] as String;
-  final localUnknownKeys = node['unknownKeys'] ?? 'strip';
-  final unknownKeys = kind != 'object'
-      ? inheritedUnknownKeys
-      : localUnknownKeys == 'reject' || inheritedUnknownKeys == 'reject'
-          ? 'reject'
-          : localUnknownKeys == 'strip' || inheritedUnknownKeys == 'strip'
-              ? 'strip'
-              : 'allow';
+  // Match JS/Go: restrictive inherited modes propagate unchanged; allow does not.
+  final unknownKeys = kind == 'object'
+      ? inheritedUnknownKeys ?? node['unknownKeys'] ?? 'strip'
+      : inheritedUnknownKeys;
   var value = input;
   final encryptedSensitive =
       encrypted && (node['metadata'] as Map?)?['sensitive'] == true;
@@ -1163,7 +1166,9 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         issue('too_large', node['maxLength'], s.runes.length);
       if (node['pattern'] != null) {
         try {
-          if (!compilePattern(node['pattern']).hasMatch(s)) {
+          final compiled =
+              _compiledPatterns[sourceNode] ??= compilePattern(node['pattern']);
+          if (!compiled.hasMatch(s)) {
             issue('invalid_string', node['pattern'], s);
           }
         } on PatternWorkLimit {

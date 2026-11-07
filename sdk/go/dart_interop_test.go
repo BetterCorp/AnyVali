@@ -25,3 +25,33 @@ func TestDartPortableCoercionsImport(t *testing.T) {
 		t.Fatalf("unexpected result: %s", encoded)
 	}
 }
+
+// TestDartUnknownKeyInheritanceContract anchors the shared precedence used by
+// Dart: restrictive parents propagate unchanged; allow defers to each child.
+func TestDartUnknownKeyInheritanceContract(t *testing.T) {
+	for _, parent := range []UnknownKeyMode{Allow, Strip, Reject} {
+		for _, child := range []UnknownKeyMode{Allow, Strip, Reject} {
+			schema := Object(map[string]Schema{
+				"child": Object(map[string]Schema{"name": String()}).UnknownKeys(child),
+			}).UnknownKeys(parent)
+			result := schema.SafeParse(map[string]any{"child": map[string]any{"name": "Alice", "admin": true}})
+			effective := parent
+			if parent == Allow {
+				effective = child
+			}
+			if effective == Reject {
+				if result.Success || len(result.Issues) != 1 || result.Issues[0].Code != "unknown_key" {
+					t.Fatalf("%s/%s: expected unknown_key, got %+v", parent, child, result)
+				}
+			} else {
+				if !result.Success {
+					t.Fatalf("%s/%s: %+v", parent, child, result.Issues)
+				}
+				_, retained := result.Data.(map[string]any)["child"].(map[string]any)["admin"]
+				if retained != (effective == Allow) {
+					t.Fatalf("%s/%s: unexpected retention", parent, child)
+				}
+			}
+		}
+	}
+}

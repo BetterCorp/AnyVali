@@ -4,6 +4,20 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('empty intersections fail native construction and interchange import',
+      () {
+    expect(() => av.intersection([]), throwsArgumentError);
+    final base = av.any().exportSchema();
+    for (final key in ['allOf', 'schemas']) {
+      expect(
+          () => av.importSchema({
+                ...base,
+                'root': {'kind': 'intersection', key: []}
+              }),
+          throwsFormatException);
+    }
+    expect(av.intersection([av.int_()]).parse(7), 7);
+  });
   test(
       'portable coercions use ordered token lists across nodes and definitions',
       () {
@@ -163,7 +177,7 @@ void main() {
           throwsFormatException);
     }
   });
-  test('nested unknown-key policies retain the stricter restriction', () {
+  test('nested unknown-key policies match inherited JS and Go behavior', () {
     final input = {
       'child': {'name': 'Alice', 'admin': true}
     };
@@ -172,15 +186,21 @@ void main() {
         final schema = av.object({
           'child': av.object({'name': av.string()}).unknownKeys(child)
         }).unknownKeys(parent);
-        final result = schema.safeParse(input);
-        if (parent == 'reject' || child == 'reject') {
-          expect(result.success, isFalse);
-          expect(result.issues.single.code, 'unknown_key');
-          expect(result.issues.single.path, ['child', 'admin']);
-        } else {
-          expect(result.success, isTrue);
-          expect((result.data!['child'] as Map).containsKey('admin'),
-              parent == 'allow' && child == 'allow');
+        final effective = parent == 'allow' ? child : parent;
+        for (final current in [
+          schema,
+          av.importSchema(schema.exportSchema())
+        ]) {
+          final result = current.safeParse(input);
+          if (effective == 'reject') {
+            expect(result.success, isFalse);
+            expect(result.issues.single.code, 'unknown_key');
+            expect(result.issues.single.path, ['child', 'admin']);
+          } else {
+            expect(result.success, isTrue);
+            expect(((result.data as Map)['child'] as Map).containsKey('admin'),
+                effective == 'allow');
+          }
         }
       }
     }

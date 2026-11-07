@@ -24,9 +24,10 @@ void main() {
     }
   });
   test(
-      'empty intersections preserve input and portable URLs use the spec grammar',
+      'single-member intersections preserve input and portable URLs use the spec grammar',
       () {
-    expect(av.intersection([]).parse({'keep': 'value'}), {'keep': 'value'});
+    expect(av.intersection([av.any()]).parse({'keep': 'value'}),
+        {'keep': 'value'});
     expect(av.string().format('url').parse('https://example/path with spaces'),
         'https://example/path with spaces');
     expect(() => av.string().format('bad format'), throwsFormatException);
