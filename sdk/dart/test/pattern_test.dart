@@ -4,6 +4,46 @@ import 'package:test/test.dart';
 
 /// Verify pattern semantics and compilation/matching resource boundaries.
 void main() {
+  test('property-looking escapes use flags-free JavaScript semantics', () {
+    for (final pattern in [
+      r'^\p{L}$',
+      r'^[\p{L}]$',
+      r'^\P{Nd}$',
+      r'^[\P{Nd}]$',
+      r'^\p{2}$',
+      r'^\p{L}+$',
+      r'^a{x}$',
+      r'^a{2x}$',
+      r'^a{$',
+      r'^{L}$',
+    ]) {
+      final schema = av.string().pattern(pattern);
+      final imported = av.importSchema(schema.exportSchema());
+      final reference = RegExp(pattern);
+      for (final input in [
+        'p{L}',
+        'P{Nd}',
+        'p{L}}',
+        'pp',
+        'p',
+        'L',
+        '{',
+        '}',
+        'P',
+        'N',
+        'd',
+        'é',
+        'a{x}',
+        'a{2x}',
+        'a{',
+        '{L}'
+      ]) {
+        expect(schema.safeParse(input).success, reference.hasMatch(input),
+            reason: '$pattern on $input');
+        expect(imported.safeParse(input).success, reference.hasMatch(input));
+      }
+    }
+  });
   test('bounded patterns agree with Dart for the supported regular subset', () {
     final patterns = <String>[
       '',
@@ -205,9 +245,6 @@ void main() {
       () {
     final base = av.any().exportSchema();
     for (final pattern in [
-      r'\p{L}',
-      r'[\p{L}]',
-      r'[\P{Nd}]',
       r'a{1001}',
       'a' * 1025,
       '${'(' * 65}a${')' * 65}',

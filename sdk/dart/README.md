@@ -116,7 +116,8 @@ custom Dart objects are rejected; custom `toJson()` methods are not invoked.
 Definitions and metadata survive export and native composition. Conflicting
 imported definition names are rejected. Unknown semantic extensions and custom
 validator references are rejected. Informational extensions are retained in
-`exportSchema(mode: 'extended')`; portable exports remove extensions from the document and every schema node,
+`exportSchema(mode: 'extended')`; conflicting informational payloads from composed
+children only block extended export. Portable exports remove extensions from the document and every schema node,
 while preserving defaults and metadata as data. Portable exports use canonical
 child keys and ordered coercion token lists; imports also accept older short
 coercion names (`int`, `number`, and `bool`).
@@ -128,10 +129,11 @@ classes, dot, anchors, word boundaries, ordinary and noncapturing groups,
 alternatives, positive and negative lookahead/lookbehind, and `*`, `+`, `?`,
 `{m,n}` repetitions (including lazy forms). Nested lookarounds share the same
 compilation and execution limits. Numeric and named backreferences and named
-capturing groups are supported. Legacy octal escapes outside character classes
-and Unicode property escapes are rejected during construction or import with
-`FormatException`.
-Escape literal braces rather than relying on permissive regex parsing.
+capturing groups are supported. Patterns follow the JavaScript SDK's flags-free
+ECMA-262 mode: `\p{L}` matches the literal text `p{L}`, and `[\p{L}]` is a
+character class, rather than Unicode property matching. Braces outside valid
+quantifiers are literals. Legacy octal escapes outside character classes are
+rejected during construction or import with `FormatException`.
 
 Compilation allows at most 1,024 UTF-16 code units, 64 nested groups, repetition
 counts of 1,000, and 2,048 states. A match accepts at most 100,000 UTF-16 input

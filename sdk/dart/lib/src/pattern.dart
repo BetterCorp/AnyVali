@@ -421,8 +421,6 @@ class _Parser {
         if (peek == '\\') {
           position++;
           if (peek.isEmpty) throw FormatException('Unclosed character class');
-          if (peek == 'p' || peek == 'P')
-            throw FormatException('Property escapes are not supported');
         }
         position++;
       }
@@ -445,10 +443,8 @@ class _Parser {
         hasBackreferences = true;
         return _Node('backref', atom: name);
       }
-      if ('pP'.contains(escaped) ||
-          (escaped == '0' && peek.isNotEmpty && '0123456789'.contains(peek))) {
-        throw FormatException(
-            'Legacy octal and property escapes are not supported');
+      if (escaped == '0' && peek.isNotEmpty && '0123456789'.contains(peek)) {
+        throw FormatException('Legacy octal escapes are not supported');
       }
       if (escaped == 'x' || escaped == 'u' || escaped == 'c') {
         final count = escaped == 'x'
@@ -468,10 +464,13 @@ class _Parser {
       if (escaped == 'b' || escaped == 'B') {
         return _Node('assert', atom: source.substring(start, position));
       }
-    } else if ('*+?{}'.contains(character)) {
+    } else if ('*+?'.contains(character) ||
+        (character == '{' && _quantifierAt(start))) {
       throw FormatException('Unexpected pattern quantifier');
     }
-    final text = source.substring(start, position);
+    final text = character == '{' || character == '}'
+        ? '\\$character'
+        : source.substring(start, position);
     // Compiling a single atom also validates class ranges and escape syntax.
     RegExp(text);
     return _Node(character == '^' || character == r'$' ? 'assert' : 'atom',
@@ -492,9 +491,15 @@ class _Parser {
             String.fromCharCode(int.parse(match[1] ?? match[2]!, radix: 16)));
   }
 
+  /// Non-Unicode ECMA-262 treats braces outside valid quantifiers literally.
+  bool _quantifierAt(int offset) =>
+      RegExp(r'\{[0-9]+(?:,[0-9]*)?\}').matchAsPrefix(source, offset) != null;
+
   /// Parse bounded repetitions, treating lazy order identically for existence.
   _Node repeated(_Node inner) {
-    if (peek.isEmpty || !'*+?{'.contains(peek)) return inner;
+    if (peek.isEmpty ||
+        !'*+?{'.contains(peek) ||
+        (peek == '{' && !_quantifierAt(position))) return inner;
     if (inner.kind == 'assert' || inner.kind.endsWith('Lookbehind'))
       throw FormatException('Assertions cannot be repeated');
     final quantifier = source[position++];

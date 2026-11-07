@@ -90,16 +90,19 @@ class Schema<T> {
   final JsonMap _node;
   final JsonMap _definitions;
   final JsonMap _extensions;
+  final Set<String> _extensionConflicts;
   final _Decoder<T> _decode;
 
   /// Snapshot node context and retain the typed output decoder.
   Schema._(JsonMap node,
       {JsonMap definitions = const {},
       JsonMap extensions = const {},
+      Iterable<String> extensionConflicts = const [],
       _Decoder<T>? decode})
       : _node = _clone(node),
         _definitions = _clone(definitions),
         _extensions = _clone(extensions),
+        _extensionConflicts = Set.unmodifiable(extensionConflicts),
         _decode = decode ?? ((v, _) => v as T);
 
   /// Validate one modifier and return a new immutable schema snapshot.
@@ -108,7 +111,10 @@ class Schema<T> {
     final node = {..._node, key: value};
     _checkNode(node, _definitions, 0);
     return Schema._(node,
-        definitions: _definitions, extensions: _extensions, decode: _decode);
+        definitions: _definitions,
+        extensions: _extensions,
+        extensionConflicts: _extensionConflicts,
+        decode: _decode);
   }
 
   /// Require a numeric value greater than or equal to value.
@@ -225,6 +231,7 @@ class Schema<T> {
   Schema<T?> optional() => Schema._({'kind': 'optional', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
+      extensionConflicts: _extensionConflicts,
       decode: (v, context) => v == null || identical(v, absent)
           ? null
           : _decode(v, context.child(context.shape['schema'])));
@@ -233,6 +240,7 @@ class Schema<T> {
   Schema<T?> nullable() => Schema._({'kind': 'nullable', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
+      extensionConflicts: _extensionConflicts,
       decode: (v, context) => v == null
           ? null
           : _decode(v, context.child(context.shape['schema'])));
@@ -266,6 +274,10 @@ class Schema<T> {
   JsonMap exportSchema({String mode = 'portable'}) {
     if (!['portable', 'extended'].contains(mode))
       throw ArgumentError.value(mode);
+    if (mode == 'extended' && _extensionConflicts.isNotEmpty) {
+      throw StateError(
+          'Conflicting informational extensions: ${_extensionConflicts.join(', ')}');
+    }
     final document = {
       'anyvaliVersion': '1.0',
       'schemaVersion': '1.1',
@@ -350,12 +362,14 @@ Schema<T> enum_<T>(List<T> values) {
 }
 
 /// Combine child schemas while retaining imported definitions and extensions.
-/// Conflicting imported names fail instead of changing reference semantics.
+/// Definition conflicts fail immediately; informational conflicts defer to export.
 Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
     {_Decoder<T>? decode}) {
   final definitions = <String, dynamic>{};
   final extensions = <String, dynamic>{};
+  final extensionConflicts = <String>{};
   for (final child in children) {
+    extensionConflicts.addAll(child._extensionConflicts);
     for (final entry in child._definitions.entries) {
       if (definitions.containsKey(entry.key) &&
           !_equal(definitions[entry.key], entry.value)) {
@@ -366,13 +380,16 @@ Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
     for (final entry in child._extensions.entries) {
       if (extensions.containsKey(entry.key) &&
           !_equal(extensions[entry.key], entry.value)) {
-        throw ArgumentError('Conflicting extension: ${entry.key}');
+        extensionConflicts.add(entry.key);
       }
       extensions[entry.key] = entry.value;
     }
   }
   return Schema._(node,
-      definitions: definitions, extensions: extensions, decode: decode);
+      definitions: definitions,
+      extensions: extensions,
+      extensionConflicts: extensionConflicts,
+      decode: decode);
 }
 
 /// Build a homogeneous array preserving the item output type.
@@ -898,6 +915,35 @@ dynamic _mergeParsed(dynamic original, Map left, Map right, [int depth = 0]) {
                   : entry.value
           : entry.value,
   };
+}
+
+/// Apply transform changes against each member's own validated value.
+/// Preserve values and defaults contributed by other intersection members.
+dynamic _mergeTransformed(dynamic original, dynamic left, dynamic right,
+    [int depth = 0]) {
+  if (_equal(original, right) || depth > 200) return left;
+  if (original is Map && left is Map && right is Map) {
+    return <String, dynamic>{
+      ...left,
+      for (final entry in right.entries)
+        entry.key as String: _mergeTransformed(
+            original.containsKey(entry.key) ? original[entry.key] : absent,
+            left.containsKey(entry.key) ? left[entry.key] : absent,
+            entry.value,
+            depth + 1)
+    };
+  }
+  if (original is List &&
+      left is List &&
+      right is List &&
+      original.length == right.length &&
+      left.length == right.length) {
+    return [
+      for (var i = 0; i < right.length; i++)
+        _mergeTransformed(original[i], left[i], right[i], depth + 1)
+    ];
+  }
+  return right;
 }
 
 /// Describe a value using portable type names, including the absence sentinel.
@@ -1555,8 +1601,10 @@ Object? _transform(
       }
       if (decrypting) {
         final original = _valueAt(input, path);
-        if (!identical(original, absent) && !_equal(original, value))
+        if ((!identical(original, absent) && !_equal(original, value)) ||
+            !_equal(_valueAt(checked, path), value)) {
           _changedCiphertext(path);
+        }
       }
       if (!decrypting) encryptedPaths.add(jsonEncode(path));
       final transformed = transform(List.unmodifiable(path), value);
@@ -1587,15 +1635,16 @@ Object? _transform(
       return walk(node['variants'][selected], value, path, depth + 1);
     }
     if (kind == 'intersection') {
-      // Cache callback results by path so overlapping members transform once.
+      // Each member must use the values and union decisions validated for it.
+      // A sibling default may add fields that were absent in another member.
+      final parsed =
+          currentUnions[sourceNode]?[jsonEncode(path)] as _IntersectionResult?;
+      if (parsed == null) throw StateError('Missing validated intersection');
       dynamic result = value;
-      for (final member in node['allOf']) {
-        final next = walk(member, value, path, depth + 1);
-        if (result is Map && next is Map) {
-          result = _mergeParsed(value, result, next);
-        } else if (!_equal(next, value)) {
-          result = next;
-        }
+      for (var i = 0; i < parsed.members.length; i++) {
+        final original = parsed.members[i];
+        final next = walk(node['allOf'][i], original, path, depth + 1);
+        result = _mergeTransformed(original, result, next);
       }
       return result;
     }

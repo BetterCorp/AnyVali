@@ -4,6 +4,86 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('intersection transforms use member results before merging defaults',
+      () {
+    final choice = av.object({
+      'value': av.union([av.string(), av.int_()]).optional()
+    });
+    final plain = av.intersection([
+      choice,
+      av.object({'value': av.string().defaultValue('default')})
+    ]);
+    Object? unexpected(List<Object> path, Object? value) =>
+        throw StateError('No sensitive node');
+    expect(av.safeParseEncrypted(plain, {}).data, {'value': 'default'});
+    expect(av.encrypt(plain, {}, unexpected), {'value': 'default'});
+    expect(av.decrypt(plain, {}, unexpected), {'value': 'default'});
+    final secret = av.string().describe('Secret', sensitive: true);
+    final sensitive = av.intersection([
+      choice,
+      av.object({'value': secret.defaultValue('default')})
+    ]);
+    var calls = 0;
+    final stored = av.encrypt(sensitive, {}, (path, value) {
+      calls++;
+      return 'encrypted:$value';
+    });
+    expect(stored, {'value': 'encrypted:default'});
+    expect(calls, 1);
+    expect(av.safeParseEncrypted(sensitive, stored).data, stored);
+    expect(
+        av.decrypt(sensitive, stored,
+            (path, value) => (value as String).substring(10)),
+        {'value': 'default'});
+    final tuples = av.intersection([
+      av.tuple([secret, av.string()]),
+      av.tuple([av.string(), secret])
+    ]);
+    final encoded =
+        av.encrypt(tuples, ['a', 'b'], (path, value) => 'encrypted:$value');
+    expect(encoded, ['encrypted:a', 'encrypted:b']);
+    expect(
+        av.decrypt(
+            tuples, encoded, (path, value) => (value as String).substring(10)),
+        ['a', 'b']);
+  });
+  test('informational extension conflicts defer until extended export', () {
+    final base = av.string().exportSchema();
+    av.Schema<Object?> imported(String note) => av.importSchema({
+          ...base,
+          'extensions': {
+            'app': {'_criticality': 'informational', 'note': note}
+          }
+        });
+    final left = imported('left');
+    final right = imported('right');
+    final schemas = <(av.Schema, Object?)>[
+      (av.object({'a': left, 'b': right}), {'a': 'x', 'b': 'y'}),
+      (av.tuple([left, right]), ['x', 'y']),
+      (av.union([left, right]), 'x'),
+      (av.intersection([left, right]), 'x'),
+    ];
+    for (final (schema, input) in schemas) {
+      expect(schema.safeParse(input).success, isTrue);
+      expect(schema.exportSchema()['extensions'], isEmpty);
+      expect(av.importSchema(schema.exportSchema()).safeParse(input).success,
+          isTrue);
+      for (final wrapped in [
+        schema,
+        schema.optional(),
+        schema.nullable(),
+        schema.describe('Example'),
+        av.array(schema),
+        av.record(schema)
+      ]) {
+        expect(wrapped.exportSchema()['extensions'], isEmpty);
+        expect(() => wrapped.exportSchema(mode: 'extended'), throwsStateError);
+      }
+    }
+    final same = av.tuple([left, imported('left')]);
+    expect(same.exportSchema(mode: 'extended')['extensions']['app']['note'],
+        'left');
+  });
   test(
       'sensitive intersections preserve transformed values in either member order',
       () {
