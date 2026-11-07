@@ -90,9 +90,12 @@ Dart keywords use a trailing underscore (`int_`, `bool_`, `null_`, `enum_`).
 `Schema<T>` carries primitive and collection output types; heterogeneous objects
 return `Map<String, Object?>`, and imported documents return `Schema<Object?>`.
 
-A parent object's `strip` or `reject` unknown-key mode propagates unchanged to
-nested objects, matching the JavaScript and Go SDKs. A parent set to `allow`
-leaves each nested object's own mode in effect.
+In Dart, a parent object's `strip` or `reject` unknown-key mode propagates
+unchanged to nested objects, including union variants. A parent set to `allow`
+leaves each nested object's own mode in effect. JavaScript and Go currently reset
+the inherited mode at union boundaries. An `allow` object inside a union can
+therefore retain extra keys in those SDKs that Dart strips or rejects according
+to the parent's mode.
 
 ## Interchange
 
