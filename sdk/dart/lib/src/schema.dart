@@ -144,18 +144,48 @@ class Schema<T> {
         if (upper) 'upper': true
       });
 
-  /// Attach a description and optional title or sensitive-data marker.
-  Schema<T> describe(String description, {bool? sensitive, String? title}) =>
+  /// Merge a description and typed reserved metadata options into this schema.
+  Schema<T> describe(String description,
+          {String? title,
+          bool? deprecated,
+          String? deprecatedMessage,
+          bool? notStable,
+          String? since,
+          bool? sensitive,
+          bool? readonly,
+          bool? writeonly,
+          List<Object?>? examples}) =>
       _set('metadata', {
         ...?_node['metadata'] as Map?,
         'description': description,
+        if (title != null) 'title': title,
+        if (deprecated != null) 'deprecated': deprecated,
+        if (deprecatedMessage != null) 'deprecatedMessage': deprecatedMessage,
+        if (notStable != null) 'notStable': notStable,
+        if (since != null) 'since': since,
         if (sensitive != null) 'sensitive': sensitive,
-        if (title != null) 'title': title
+        if (readonly != null) 'readonly': readonly,
+        if (writeonly != null) 'writeonly': writeonly,
+        if (examples != null) 'examples': examples,
       });
 
-  /// Merge metadata, validating reserved key types and relationships.
-  Schema<T> metadata(JsonMap value) =>
-      _set('metadata', {...?_node['metadata'] as Map?, ...value});
+  /// Merge custom metadata; reserved names must be configured with describe.
+  /// With replace, remove previous custom keys while retaining reserved fields.
+  Schema<T> metadata(JsonMap value, {bool replace = false}) {
+    for (final key in value.keys) {
+      if (_reservedMetadata.contains(key))
+        throw ArgumentError(
+            'Reserved metadata key $key: use describe() instead');
+    }
+    final previous = _node['metadata'] as Map?;
+    return _set('metadata', {
+      if (previous != null)
+        for (final entry in previous.entries)
+          if (!replace || _reservedMetadata.contains(entry.key))
+            entry.key: entry.value,
+      ...value,
+    });
+  }
 
   /// Accept absent input while retaining validation for present values.
   Schema<T?> optional() => Schema._({'kind': 'optional', 'schema': _node},
@@ -444,6 +474,18 @@ const _kinds = {
   'ref',
   ..._integerKinds,
   ..._floatKinds
+};
+const _reservedMetadata = {
+  'title',
+  'description',
+  'deprecated',
+  'deprecatedMessage',
+  'notStable',
+  'since',
+  'sensitive',
+  'readonly',
+  'writeonly',
+  'examples'
 };
 const _formats = {'email', 'url', 'uuid', 'ipv4', 'ipv6', 'date', 'date-time'};
 const _numericProperties = {

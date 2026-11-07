@@ -4,6 +4,59 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test(
+      'reserved metadata uses describe and replacement retains reserved fields',
+      () {
+    for (final key in [
+      'title',
+      'description',
+      'deprecated',
+      'deprecatedMessage',
+      'notStable',
+      'since',
+      'sensitive',
+      'readonly',
+      'writeonly',
+      'examples'
+    ]) {
+      expect(
+          () => av.string().metadata({key: true}),
+          throwsA(predicate(
+              (e) => e is ArgumentError && e.toString().contains('describe'))));
+    }
+    final described = av.string().describe('Original',
+        title: 'Title',
+        deprecated: true,
+        deprecatedMessage: 'Use next',
+        notStable: true,
+        since: '1.0',
+        sensitive: true,
+        readonly: true,
+        writeonly: false,
+        examples: ['example']);
+    final original = described.metadata({
+      'custom': {'owner': 'one'},
+      'old': 1
+    });
+    final replaced = original.metadata({
+      'custom': {'owner': 'two'}
+    }, replace: true).describe('Updated');
+    final metadata = replaced.exportSchema()['root']['metadata'] as Map;
+    expect(metadata['description'], 'Updated');
+    expect(metadata['title'], 'Title');
+    expect(metadata['deprecated'], true);
+    expect(metadata['sensitive'], true);
+    expect(metadata['readonly'], true);
+    expect(metadata['writeonly'], false);
+    expect(metadata['examples'], ['example']);
+    expect(metadata.containsKey('old'), false);
+    expect(metadata['custom'], {'owner': 'two'});
+    expect(original.exportSchema()['root']['metadata']['old'], 1);
+    expect(
+        () => av.string().describe('Invalid', readonly: true, writeonly: true),
+        throwsFormatException);
+  });
+
   test('manual Dart documents accept empty and raw string-keyed maps', () {
     final document = <String, dynamic>{
       'anyvaliVersion': '1.0',
@@ -296,7 +349,11 @@ void main() {
       {'deprecatedMessage': 'old'},
       {'deprecated': false, 'deprecatedMessage': 'old'}
     ]) {
-      expect(() => av.string().metadata(metadata), throwsFormatException);
+      expect(
+          () => av.string().describe('Old',
+              deprecated: metadata['deprecated'] as bool?,
+              deprecatedMessage: 'old'),
+          throwsFormatException);
       final document = av.string().exportSchema();
       expect(
           () => av.importSchema({
@@ -306,8 +363,10 @@ void main() {
           throwsFormatException);
     }
     expect(
-        av.string().metadata(
-            {'deprecated': true, 'deprecatedMessage': 'use next'}).parse('ok'),
+        av
+            .string()
+            .describe('Old', deprecated: true, deprecatedMessage: 'use next')
+            .parse('ok'),
         'ok');
   });
 

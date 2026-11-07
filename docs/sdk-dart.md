@@ -76,7 +76,11 @@ on mobile, desktop, servers, and Flutter web.
   `.includes()`, `.format()`, `.minItems()`, `.maxItems()`.
 - Behavior: `.defaultValue(value)`, `.coerce(trim: true, lower: true)`,
   `.unknownKeys('strip' | 'allow' | 'reject')`.
-- Metadata: `.describe('Description', sensitive: true)`, `.metadata({...})`.
+- Reserved metadata: `.describe('Description', title: 'Title', sensitive: true,
+  deprecated: true, deprecatedMessage: 'Use next', since: '1.0',
+  notStable: true, readonly: true, writeonly: false, examples: ['value'])`.
+- Custom metadata: `.metadata({...})`; use `replace: true` to replace custom
+  keys while preserving reserved fields. Reserved names must use `describe()`.
 
 A parent object using `strip` or `reject` applies that policy recursively to nested
 objects, including through arrays, wrappers, and references. A parent using

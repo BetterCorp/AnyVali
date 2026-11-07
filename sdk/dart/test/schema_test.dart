@@ -56,8 +56,8 @@ void main() {
     expect(() => av.number().multipleOf(0), throwsArgumentError);
     expect(() => av.literal({'a': 1}), throwsArgumentError);
     expect(() => av.enum_([double.nan]), throwsArgumentError);
-    expect(() => av.string().metadata({'sensitive': 'yes'}),
-        throwsFormatException);
+    expect(
+        () => av.string().metadata({'sensitive': 'yes'}), throwsArgumentError);
   });
   test('typed output, immutable builders and nested arrays', () {
     final int literal = av.literal(1).parse(1.0);
