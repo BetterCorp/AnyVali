@@ -3,6 +3,52 @@ import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
 void main() {
+  test('required keys take precedence over imported optional wrappers', () {
+    final base = av.string().exportSchema();
+    final document = {
+      ...base,
+      'root': {
+        'kind': 'object',
+        'properties': {
+          'name': {
+            'kind': 'optional',
+            'schema': {'kind': 'string'}
+          }
+        },
+        'required': ['name']
+      }
+    };
+    final schema = av.importSchema(document);
+    for (final input in [
+      <String, dynamic>{},
+      {'name': av.absent}
+    ]) {
+      expect(schema.safeParse(input).issues.single.code, 'required');
+    }
+    expect(schema.parse({'name': 'Alice'}), {'name': 'Alice'});
+    document['root'] = {
+      'kind': 'object',
+      'properties': {
+        'name': {
+          'kind': 'optional',
+          'schema': {'kind': 'string'},
+          'default': 'fallback'
+        }
+      },
+      'required': ['name']
+    };
+    expect(av.importSchema(document).parse({}), {'name': 'fallback'});
+  });
+  test('numeric bounds treat negative and positive zero as equal', () {
+    for (final schema in [av.number(), av.float32(), av.float64()]) {
+      expect(schema.min(0).max(0).safeParse(-0.0).success, isTrue);
+      expect(schema.min(-0.0).max(-0.0).safeParse(0).success, isTrue);
+      expect(schema.exclusiveMin(0).safeParse(-0.0).success, isFalse);
+      expect(schema.exclusiveMax(0).safeParse(-0.0).success, isFalse);
+      expect(schema.coerce().min(0).safeParse('-0').success, isTrue);
+    }
+  });
+
   test('float32 preserves the original value for constraints and output', () {
     const maximum = 3.4028234663852886e38;
     expect(av.float32().parse(maximum), maximum);

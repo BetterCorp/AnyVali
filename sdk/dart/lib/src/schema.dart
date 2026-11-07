@@ -979,7 +979,14 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         }
       }
       int compare(num limit) {
-        if (value is! BigInt) return (value as num).compareTo(limit);
+        if (value is! BigInt) {
+          final numeric = value as num;
+          return numeric == limit
+              ? 0
+              : numeric < limit
+                  ? -1
+                  : 1;
+        }
         final truncated = BigInt.from(limit);
         final comparison = (value as BigInt).compareTo(truncated);
         if (comparison != 0 || limit == limit.truncateToDouble())
@@ -1038,15 +1045,16 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       final required = node['required'] as List;
       for (final entry in props.entries) {
         final field = entry.value as JsonMap;
-        final present = map.containsKey(entry.key);
-        if (!present &&
-            !field.containsKey('default') &&
-            field['kind'] != 'optional') {
-          if (required.contains(entry.key))
+        final present =
+            map.containsKey(entry.key) && !identical(map[entry.key], absent);
+        if (!present && !field.containsKey('default')) {
+          if (required.contains(entry.key)) {
             issues.add(ValidationIssue('required',
                 'Required field ${entry.key} is missing', [...path, entry.key],
                 expected: field['kind'], received: 'undefined'));
-          continue;
+            continue;
+          }
+          if (field['kind'] != 'optional') continue;
         }
         final parsed = child(
             field, present ? map[entry.key] : absent, [...path, entry.key]);
