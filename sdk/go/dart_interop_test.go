@@ -55,3 +55,32 @@ func TestDartUnknownKeyInheritanceContract(t *testing.T) {
 		}
 	}
 }
+
+// TestDartUint64CanonicalCoercionBoundaries verifies exact conversion across the
+// signed boundary and uint64 maximum without weakening the target range checks.
+func TestDartUint64CanonicalCoercionBoundaries(t *testing.T) {
+	schema, err := ImportJSON([]byte(`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"uint64","coerce":["string->int"]},"definitions":{},"extensions":{}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range []string{"9223372036854775807", "9223372036854775808", "18446744073709551615"} {
+		result := schema.SafeParse(" " + input + " ")
+		if !result.Success {
+			t.Fatalf("%s: %+v", input, result.Issues)
+		}
+		encoded, err := json.Marshal(result.Data)
+		if err != nil || string(encoded) != input {
+			t.Fatalf("%s: precision lost: %s (%v)", input, encoded, err)
+		}
+	}
+	for _, input := range []string{"-1", "18446744073709551616", "+1", "1.5"} {
+		if result := schema.SafeParse(input); result.Success {
+			t.Fatalf("accepted invalid uint64 %s", input)
+		}
+	}
+	for _, target := range []Schema{Int().Coerce("string->int"), Uint8().Coerce("string->int")} {
+		if result := target.SafeParse("18446744073709551615"); result.Success {
+			t.Fatal("target range check bypassed")
+		}
+	}
+}

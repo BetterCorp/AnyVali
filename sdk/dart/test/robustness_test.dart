@@ -4,6 +4,30 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('native tuples decode child values and snapshot their element list', () {
+    final slots = <av.Schema>[
+      av.any(),
+      av.int_().optional(),
+      av.array(av.string().optional()),
+      av.record(av.bool_().optional())
+    ];
+    final schema = av.tuple(slots);
+    slots[0] = av.string();
+    slots.add(av.int_());
+    final parsed = schema.parse([
+      av.absent,
+      av.absent,
+      [av.absent],
+      {'missing': av.absent}
+    ]);
+    expect(identical(parsed[0], av.absent), isTrue);
+    expect(parsed[1], isNull);
+    expect(parsed[2], <String?>[null]);
+    expect(parsed[2], isA<List<String?>>());
+    expect(parsed[3], <String, bool?>{'missing': null});
+    expect(parsed[3], isA<Map<String, bool?>>());
+    expect(av.tuple([av.int_().coerce()]).parse(['7']), [7]);
+  });
   test('permissive schemas preserve absence while native optionals decode null',
       () {
     for (final schema in [

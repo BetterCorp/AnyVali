@@ -353,10 +353,15 @@ Schema<List<T>> array<T>(Schema<T> items) =>
         decode: (v) => (v as List).map(items._decode).toList());
 
 /// Build a fixed-length array with a schema for each position.
-Schema<List<Object?>> tuple(List<Schema> elements) => _composite({
-      'kind': 'tuple',
-      'elements': elements.map((s) => s._node).toList()
-    }, elements, decode: (v) => List<Object?>.from(v));
+Schema<List<Object?>> tuple(List<Schema> elements) {
+  final slots = List<Schema>.unmodifiable(elements);
+  return _composite(
+      {'kind': 'tuple', 'elements': slots.map((s) => s._node).toList()}, slots,
+      decode: (v) => <Object?>[
+            for (var index = 0; index < slots.length; index++)
+              slots[index]._decode((v as List)[index])
+          ]);
+}
 
 /// Build an object, stripping unknown keys by default.
 Schema<Map<String, Object?>> object(Map<String, Schema> properties) =>
