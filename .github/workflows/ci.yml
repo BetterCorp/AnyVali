@@ -356,7 +356,7 @@ jobs:
         with:
           node-version: 24
       - name: Test JavaScript target
-        run: cd sdk/dart && dart test --platform node test/schema_test.dart
+        run: cd sdk/dart && dart test --platform node test/schema_test.dart test/robustness_test.dart
       - name: Validate package contents
         run: cd sdk/dart && dart pub publish --dry-run
 

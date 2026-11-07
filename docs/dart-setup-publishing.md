@@ -36,7 +36,7 @@ From the AnyVali repository root:
 ```bash
 bash runner.sh ci dart
 cd sdk/dart
-dart test --platform node test/schema_test.dart
+dart test --platform node test/schema_test.dart test/robustness_test.dart
 dart run example/main.dart
 dart pub publish --dry-run
 ```
@@ -165,7 +165,7 @@ jobs:
           package_version=$(sed -n 's/^version: *//p' sdk/dart/pubspec.yaml)
           test "$package_version" = "${GITHUB_REF_NAME#v}"
       - run: bash runner.sh ci dart
-      - run: cd sdk/dart && dart test --platform node test/schema_test.dart
+      - run: cd sdk/dart && dart test --platform node test/schema_test.dart test/robustness_test.dart
       - run: cd sdk/dart && dart pub publish --dry-run
   publish:
     needs: validate

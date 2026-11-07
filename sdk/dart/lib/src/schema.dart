@@ -292,6 +292,9 @@ void _checkExtensions(dynamic extensions) {
     if (value['customValidator'] != null || value['customValidators'] != null) {
       _importError('custom_validation_not_portable');
     }
+    if (value.containsKey('_criticality') &&
+        !['informational', 'semantic'].contains(value['_criticality']))
+      throw FormatException('Invalid extension criticality');
     if (value['_criticality'] == 'semantic')
       _importError('unsupported_extension');
   }
@@ -333,15 +336,72 @@ const _kinds = {
   ..._integerKinds,
   ..._floatKinds
 };
+const _formats = {'email', 'url', 'uuid', 'ipv4', 'ipv6', 'date', 'date-time'};
+const _numericProperties = {
+  'min',
+  'max',
+  'exclusiveMin',
+  'exclusiveMax',
+  'multipleOf'
+};
+const _nodeProperties = {
+  'string': {
+    'minLength',
+    'maxLength',
+    'pattern',
+    'startsWith',
+    'endsWith',
+    'includes',
+    'format'
+  },
+  'literal': {'value'},
+  'enum': {'values'},
+  'array': {'items', 'minItems', 'maxItems'},
+  'tuple': {'elements', 'items'},
+  'object': {'properties', 'required', 'unknownKeys'},
+  'record': {'values', 'valueSchema'},
+  'union': {'variants', 'schemas'},
+  'intersection': {'allOf', 'schemas'},
+  'optional': {'schema', 'inner'},
+  'nullable': {'schema', 'inner'},
+  'ref': {'ref'},
+};
 void _checkNode(dynamic node, JsonMap definitions, int depth) {
   if (depth > 200) throw FormatException('Schema nesting too deep');
   if (node is! JsonMap || !_kinds.contains(node['kind']))
     _importError('unsupported_schema_kind');
+  if (node.containsKey('customValidator') ||
+      node.containsKey('customValidators'))
+    _importError('custom_validation_not_portable');
+  final kind = node['kind'];
+  final allowed = {
+    'kind',
+    'default',
+    'coerce',
+    'metadata',
+    'extensions',
+    ...?_nodeProperties[kind],
+    if (_integerKinds.contains(kind) || _floatKinds.contains(kind))
+      ..._numericProperties
+  };
+  if ((node as Map).keys.any((key) => !allowed.contains(key)))
+    throw FormatException('Unsupported property for $kind');
+  for (final pair in const {
+    'schema': 'inner',
+    'values': 'valueSchema',
+    'elements': 'items',
+    'variants': 'schemas',
+    'allOf': 'schemas'
+  }.entries) {
+    if (allowed.contains(pair.value) &&
+        node.containsKey(pair.key) &&
+        node.containsKey(pair.value) &&
+        !_equal(node[pair.key], node[pair.value]))
+      throw FormatException('Conflicting schema aliases');
+  }
   node = _aliases(node);
-  if (node.containsKey('format') &&
-      node['format'] is String &&
-      !RegExp(r'^[A-Za-z][A-Za-z0-9-]*$').hasMatch(node['format']))
-    throw FormatException('Invalid format name');
+  if (node.containsKey('format') && !_formats.contains(node['format']))
+    throw FormatException('Unsupported portable format');
   if (node.containsKey('extensions')) _checkExtensions(node['extensions']);
   if (node.containsKey('customValidator') ||
       node.containsKey('customValidators'))
@@ -481,33 +541,38 @@ dynamic _clone(dynamic value) {
   return value;
 }
 
-bool _equal(dynamic a, dynamic b) {
+bool _equal(dynamic a, dynamic b, [int depth = 0]) {
+  if (identical(a, b)) return true;
+  if (depth > 200) return false;
   if (a is Map && b is Map)
     return a.length == b.length &&
-        a.keys.every((k) => b.containsKey(k) && _equal(a[k], b[k]));
+        a.keys.every((k) => b.containsKey(k) && _equal(a[k], b[k], depth + 1));
   if (a is List && b is List)
     return a.length == b.length &&
-        List.generate(a.length, (i) => i).every((i) => _equal(a[i], b[i]));
+        List.generate(a.length, (i) => i)
+            .every((i) => _equal(a[i], b[i], depth + 1));
   return a == b;
 }
 
 // Preserve values parsed by one intersection member when another member
 // passes the original key through unchanged.
-dynamic _mergeParsed(dynamic original, Map left, Map right) =>
-    <String, dynamic>{
-      ...left,
-      for (final entry in right.entries)
-        entry.key as String: left.containsKey(entry.key) &&
-                original is Map &&
-                original.containsKey(entry.key)
-            ? left[entry.key] is Map && entry.value is Map
-                ? _mergeParsed(
-                    original[entry.key], left[entry.key], entry.value)
-                : _equal(entry.value, original[entry.key])
-                    ? left[entry.key]
-                    : entry.value
-            : entry.value,
-    };
+dynamic _mergeParsed(dynamic original, Map left, Map right, [int depth = 0]) {
+  if (identical(left, right) || depth > 200) return left;
+  return <String, dynamic>{
+    ...left,
+    for (final entry in right.entries)
+      entry.key as String: left.containsKey(entry.key) &&
+              original is Map &&
+              original.containsKey(entry.key)
+          ? left[entry.key] is Map && entry.value is Map
+              ? _mergeParsed(
+                  original[entry.key], left[entry.key], entry.value, depth + 1)
+              : _equal(entry.value, original[entry.key])
+                  ? left[entry.key]
+                  : entry.value
+          : entry.value,
+  };
+}
 
 String _type(dynamic v) => identical(v, absent)
     ? 'undefined'
@@ -588,18 +653,11 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   node = _aliases(node);
   final kind = node['kind'] as String;
   var value = input;
-  if (encrypted &&
-      !identical(value, absent) &&
-      value != null &&
-      (node['metadata'] as Map?)?['sensitive'] == true) {
-    if (value is! String) {
-      issue('invalid_type', 'encrypted:<value>', _type(value));
-    } else if (!value.startsWith('encrypted:') || value.length == 10) {
-      issue('invalid_string', 'encrypted:<value>', value);
-    }
-    return value;
-  }
-  if (!identical(value, absent) && node.containsKey('coerce')) {
+  final encryptedSensitive =
+      encrypted && (node['metadata'] as Map?)?['sensitive'] == true;
+  if (!identical(value, absent) &&
+      !(encryptedSensitive && value != null) &&
+      node.containsKey('coerce')) {
     for (final token in _coercions(node['coerce'], kind)) {
       if (value is! String) continue;
       final original = value;
@@ -628,7 +686,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
               : parsed;
         case 'string->number':
           final parsed =
-              RegExp(r'^[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$')
+              RegExp(r'^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$')
                       .hasMatch(trimmed)
                   ? double.tryParse(trimmed)
                   : null;
@@ -657,6 +715,14 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       _run(childNode, v, p, into ?? issues, definitions, depth + 1,
           encrypted: encrypted);
   dynamic validate() {
+    if (encryptedSensitive && !identical(value, absent) && value != null) {
+      if (value is! String) {
+        issue('invalid_type', 'encrypted:<value>', _type(value));
+      } else if (!value.startsWith('encrypted:') || value.length == 10) {
+        issue('invalid_string', 'encrypted:<value>', value);
+      }
+      return value;
+    }
     if (kind == 'ref')
       return child(
           definitions[(node['ref'] as String).substring(14)], value, path);
@@ -826,8 +892,9 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
           matches = (integer * denominator) % numerator == BigInt.zero;
         } else {
           final remainder = (value as num) % divisor;
-          matches =
-              remainder.abs() <= 1e-10 || (divisor - remainder).abs() <= 1e-10;
+          final tolerance = divisor < 1 ? divisor * 1e-10 : 1e-10;
+          matches = remainder.abs() <= tolerance ||
+              (divisor - remainder).abs() <= tolerance;
         }
         if (!matches) issue('invalid_number', divisor, value);
       }
@@ -906,7 +973,13 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
 bool _format(String format, String value) {
   switch (format) {
     case 'email':
-      return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
+      final at = value.indexOf('@');
+      if (at <= 0 ||
+          at != value.lastIndexOf('@') ||
+          RegExp(r'\s').hasMatch(value)) return false;
+      final domain = value.substring(at + 1);
+      return domain.length >= 3 &&
+          domain.substring(1, domain.length - 1).contains('.');
     case 'url':
       return RegExp(r'^https?://.+$').hasMatch(value);
     case 'uuid':
@@ -938,7 +1011,7 @@ bool _format(String format, String value) {
       return _format('date', value.substring(0, 10)) &&
           DateTime.tryParse(value) != null;
     default:
-      return RegExp(r'^[A-Za-z][A-Za-z0-9-]*$').hasMatch(format);
+      return false;
   }
 }
 

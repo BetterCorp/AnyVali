@@ -254,7 +254,7 @@ See the [SDK Authors Guide](sdk-authors-guide.md) for implementation requirement
 ```bash
 bash runner.sh ci dart
 cd sdk/dart
-dart test --platform node test/schema_test.dart
+dart test --platform node test/schema_test.dart test/robustness_test.dart
 dart pub publish --dry-run
 ```
 

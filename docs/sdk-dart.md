@@ -132,6 +132,6 @@ Normal parsing always validates plaintext.
 
 From the repository root, run `bash runner.sh ci dart`. The VM suite exercises
 both shared conformance corpora, including export/reimport and sensitive paths.
-Run `dart test --platform node test/schema_test.dart` within `sdk/dart` for web checks.
+Run `dart test --platform node test/schema_test.dart test/robustness_test.dart` within `sdk/dart` for web checks.
 
 For SDK installation, first publication, publisher ownership, and GitHub OIDC configuration, see the [Dart setup and publishing guide](https://docs.anyvali.com/docs/dart-setup-publishing/).
