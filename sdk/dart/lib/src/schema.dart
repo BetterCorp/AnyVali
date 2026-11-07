@@ -19,6 +19,8 @@ class ValidationIssue {
   final List<Object> path;
   final String? expected;
   final String? received;
+
+  /// Create an immutable issue at the supplied data path.
   ValidationIssue(this.code, this.message, List<Object> path,
       {this.expected, this.received})
       : path = List.unmodifiable(path);
@@ -36,8 +38,12 @@ class ValidationIssue {
 /// Thrown by parse and transform helpers when validation fails.
 class ValidationError implements Exception {
   final List<ValidationIssue> issues;
+
+  /// Snapshot the validation issues that caused the operation to fail.
   ValidationError(List<ValidationIssue> issues)
       : issues = List.unmodifiable(issues);
+
+  /// Include each failing path and diagnostic in the exception text.
   @override
   String toString() =>
       'ValidationError: ${issues.map((i) => '${i.path}: ${i.message}').join('; ')}';
@@ -48,6 +54,8 @@ class ParseResult<T> {
   final bool success;
   final T? data;
   final List<ValidationIssue> issues;
+
+  /// Snapshot a successful value or the issues from a failed parse.
   ParseResult._(this.success, this.data, List<ValidationIssue> issues)
       : issues = List.unmodifiable(issues);
 }
@@ -69,6 +77,7 @@ class Schema<T> {
         _extensions = _clone(extensions),
         _decode = decode ?? ((v) => v as T);
 
+  /// Validate one modifier and return a new immutable schema snapshot.
   Schema<T> _set(String key, dynamic value) {
     final node = {..._node, key: value};
     _checkNode(node, _definitions, 0);
@@ -626,6 +635,8 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
   if (node.containsKey('pattern')) RegExp(node['pattern']);
   if (node.containsKey('coerce'))
     _coercions(node['coerce'], _coercionKind(node, definitions));
+
+  /// Validate one structural child using the shared definition context.
   void child(dynamic value) => _checkNode(value, definitions, depth + 1);
   switch (node['kind']) {
     case 'ref':
@@ -804,21 +815,27 @@ String _text(dynamic v) => v is int
 
 /// Resolve transparent nodes when validating conversion targets, bounding cycles.
 String _coercionKind(JsonMap node, JsonMap definitions, [int depth = 0]) {
-  if (depth > 200) return node['kind'];
+  if (depth > 200) throw FormatException('Coercion target nesting too deep');
+  if (node['kind'] is! String || !_kinds.contains(node['kind'])) {
+    throw FormatException('Invalid coercion target kind');
+  }
   node = _aliases(node);
   if (node['kind'] == 'ref') {
     final ref = node['ref'];
     final target = ref is String && ref.startsWith('#/definitions/')
         ? definitions[ref.substring(14)]
         : null;
-    if (target is Map)
-      return _coercionKind(
-          Map<String, dynamic>.from(target), definitions, depth + 1);
-  }
-  if ((node['kind'] == 'optional' || node['kind'] == 'nullable') &&
-      node['schema'] is Map) {
+    if (!_stringMap(target))
+      throw FormatException('Invalid coercion ref target');
     return _coercionKind(
-        Map<String, dynamic>.from(node['schema']), definitions, depth + 1);
+        Map<String, dynamic>.from(target), definitions, depth + 1);
+  }
+  if (node['kind'] == 'optional' || node['kind'] == 'nullable') {
+    final inner = node['schema'];
+    if (!_stringMap(inner))
+      throw FormatException('Invalid coercion wrapper target');
+    return _coercionKind(
+        Map<String, dynamic>.from(inner), definitions, depth + 1);
   }
   return node['kind'];
 }
@@ -876,7 +893,9 @@ List<String> _coercions(dynamic config, String kind) {
           : kind == 'bool'
               ? 'string->bool'
               : null;
-  if (conversions.length > 1 ||
+  if ((kind != 'string' &&
+          tokens.any((token) => ['trim', 'lower', 'upper'].contains(token))) ||
+      conversions.length > 1 ||
       (conversions.isNotEmpty && conversions.single != expected)) {
     throw FormatException('Coercion target does not match schema kind $kind');
   }
@@ -919,9 +938,14 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   final sourceNode = node;
   node = _aliases(node);
   final kind = node['kind'] as String;
-  final unknownKeys = kind == 'object'
-      ? inheritedUnknownKeys ?? node['unknownKeys'] ?? 'strip'
-      : inheritedUnknownKeys;
+  final localUnknownKeys = node['unknownKeys'] ?? 'strip';
+  final unknownKeys = kind != 'object'
+      ? inheritedUnknownKeys
+      : localUnknownKeys == 'reject' || inheritedUnknownKeys == 'reject'
+          ? 'reject'
+          : localUnknownKeys == 'strip' || inheritedUnknownKeys == 'strip'
+              ? 'strip'
+              : 'allow';
   var value = input;
   final encryptedSensitive =
       encrypted && (node['metadata'] as Map?)?['sensitive'] == true;

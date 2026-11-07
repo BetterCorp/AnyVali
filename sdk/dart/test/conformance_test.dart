@@ -25,6 +25,8 @@ void main() {
         var schema = av.importSchema(Map<String, dynamic>.from(c['schema']));
         final input = c['input'] == '__ABSENT__' ? av.absent : c['input'];
         if (c['nativeParent'] == true) schema = av.object({'payload': schema});
+
+        /// Compare portable results and required diagnostics for this corpus case.
         void verify(av.Schema s) {
           final result = s.safeParse(input);
           expect(result.success, c['valid'],

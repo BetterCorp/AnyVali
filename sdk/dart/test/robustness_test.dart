@@ -4,6 +4,60 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('malformed coercion targets report schema import errors', () {
+    final base = av.any().exportSchema();
+    for (final target in [
+      {},
+      {'kind': 1},
+      {1: 'int'},
+      null,
+      'int'
+    ]) {
+      expect(
+          () => av.importSchema({
+                ...base,
+                'root': {
+                  'kind': 'ref',
+                  'ref': '#/definitions/Value',
+                  'coerce': 'string->int'
+                },
+                'definitions': {'Value': target}
+              }),
+          throwsFormatException);
+      expect(
+          () => av.importSchema({
+                ...base,
+                'root': {
+                  'kind': 'optional',
+                  'schema': target,
+                  'coerce': 'string->int'
+                }
+              }),
+          throwsFormatException);
+    }
+  });
+  test('nested unknown-key policies retain the stricter restriction', () {
+    final input = {
+      'child': {'name': 'Alice', 'admin': true}
+    };
+    for (final parent in ['allow', 'strip', 'reject']) {
+      for (final child in ['allow', 'strip', 'reject']) {
+        final schema = av.object({
+          'child': av.object({'name': av.string()}).unknownKeys(child)
+        }).unknownKeys(parent);
+        final result = schema.safeParse(input);
+        if (parent == 'reject' || child == 'reject') {
+          expect(result.success, isFalse);
+          expect(result.issues.single.code, 'unknown_key');
+          expect(result.issues.single.path, ['child', 'admin']);
+        } else {
+          expect(result.success, isTrue);
+          expect((result.data!['child'] as Map).containsKey('admin'),
+              parent == 'allow' && child == 'allow');
+        }
+      }
+    }
+  });
   test('reference defaults and coercions follow each node pipeline', () {
     final base = av.any().exportSchema();
     final schema = av.importSchema({
@@ -81,6 +135,9 @@ void main() {
   test('coercions must match their primitive schema target', () {
     final base = av.string().exportSchema();
     for (final root in [
+      for (final transform in ['trim', 'lower', 'upper'])
+        for (final kind in ['int', 'number', 'bool', 'any'])
+          {'kind': kind, 'coerce': transform},
       {'kind': 'bool', 'coerce': 'string->int'},
       {'kind': 'int', 'coerce': 'string->number'},
       {'kind': 'string', 'coerce': 'string->bool'},
