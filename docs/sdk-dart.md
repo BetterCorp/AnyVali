@@ -116,8 +116,8 @@ Validate numeric tokens before decoding when exact bounds matter.
 `BigInt` is not directly JSON serializable. Exchange wide integer data using an
 explicit string transport contract and coercion, rather than JSON numeric tokens
 that a host parser may already have rounded. Schema defaults and literal/enum
-values must be JSON-compatible for export. `float32` rounds to IEEE 754 binary32
-and rejects overflow; `number` and `float64` require finite numeric values.
+values must be JSON-compatible for export. `float32` checks the IEEE 754 binary32 range
+and rejects overflow without rounding the parsed value; `number` and `float64` require finite numeric values.
 
 ## Sensitive data
 

@@ -3,6 +3,13 @@ import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
 void main() {
+  test('float32 preserves the original value for constraints and output', () {
+    expect(av.float32().max(0.3).parse(0.3), 0.3);
+    expect(av.float32().multipleOf(0.1).parse(0.3), 0.3);
+    expect(av.float32().parse(1 / 3), 1 / 3);
+    expect(av.float32().safeParse(1e40).issues.single.code, 'invalid_number');
+  });
+
   test('parent unknown-key restrictions apply through arrays and composition',
       () {
     final child = av.object({'name': av.string()}).unknownKeys('allow');

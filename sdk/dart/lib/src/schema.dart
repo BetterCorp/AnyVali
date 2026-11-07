@@ -230,7 +230,7 @@ Schema<Never> never() => Schema._({'kind': 'never'});
 /// Build a finite numeric schema using the float64 alias.
 Schema<num> number() => Schema._({'kind': 'number'});
 
-/// Build a finite numeric schema that rounds to IEEE 754 binary32.
+/// Build a finite numeric schema restricted to the IEEE 754 binary32 range.
 Schema<num> float32() => Schema._({'kind': 'float32'});
 
 /// Build a finite numeric schema for the float64 kind.
@@ -978,7 +978,6 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
           issue('invalid_number', 'float32', value);
           return null;
         }
-        value = rounded;
       }
       int compare(num limit) {
         if (value is! BigInt) return (value as num).compareTo(limit);
