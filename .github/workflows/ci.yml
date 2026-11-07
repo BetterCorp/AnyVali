@@ -339,6 +339,27 @@ jobs:
       - run: chmod +x runner.sh
       - run: ./runner.sh ci cpp
 
+  dart:
+    needs: check
+    if: needs.check.outputs.should_run == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    strategy:
+      matrix:
+        sdk: ['3.4.4', stable]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+      - run: bash runner.sh ci dart
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Test JavaScript target
+        run: cd sdk/dart && dart test --platform node test/schema_test.dart
+      - name: Validate package contents
+        run: cd sdk/dart && dart pub publish --dry-run
+
   cli:
     needs: check
     if: needs.check.outputs.should_run == 'true'
@@ -366,7 +387,7 @@ jobs:
 
   conformance:
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, cli]
+    needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, dart, cli]
     if: always() && needs.check.outputs.should_run == 'true'
     defaults:
       run:
@@ -391,7 +412,7 @@ jobs:
   ci-success:
     name: CI success
     runs-on: ubuntu-latest
-    needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, cli, conformance]
+    needs: [check, js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, dart, cli, conformance]
     if: always()
     steps:
       - name: Require successful SDK jobs

@@ -26,3 +26,6 @@ DUPLICATES.md
 MISSING.md
 # Copied READMEs (originals live at repo root, copied at pack/publish time)
 sdk/*/README.md
+
+# Dart maintains its package-specific usage and Flutter guide.
+!sdk/dart/README.md

@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACTION="${1:-help}"
 TARGET="${2:-all}"
 
-ALL_TARGETS=(js python go java rust php ruby kotlin csharp cpp)
+ALL_TARGETS=(js python go java rust php ruby kotlin csharp cpp dart)
 
 # ---------------------------------------------------------------------------
 # Color helpers
@@ -137,6 +137,7 @@ check_prerequisites() {
     "cmake:cpp"
     "ctest:cpp"
     "gcc:cpp"
+    "dart:dart"
   )
 
   for entry in "${tools[@]}"; do
@@ -499,6 +500,25 @@ run_kotlin() {
   esac
 }
 
+run_dart() {
+  local action="$1"
+  need_cmd dart
+  case "$action" in
+    install) (cd "$ROOT_DIR/sdk/dart" && dart pub get) ;;
+    build) (cd "$ROOT_DIR/sdk/dart" && dart analyze --fatal-infos) ;;
+    test) (cd "$ROOT_DIR/sdk/dart" && dart test) ;;
+    lint) (cd "$ROOT_DIR/sdk/dart" && dart format --output=none --set-exit-if-changed . && dart analyze --fatal-infos) ;;
+    coverage) (cd "$ROOT_DIR/sdk/dart" && dart test --coverage=coverage) ;;
+    ci)
+      run_dart install || return $?
+      run_dart build || return $?
+      run_dart lint || return $?
+      run_dart test
+      ;;
+    *) die "unsupported action for dart: $action" ;;
+  esac
+}
+
 run_cpp() {
   local action="$1"
   local build_dir="$ROOT_DIR/sdk/cpp/build"
@@ -587,6 +607,7 @@ sdk_primary_cmd() {
     ruby)    echo "ruby" ;;
     kotlin)  echo "gradle" ;;
     cpp)     echo "cmake" ;;
+    dart)    echo "dart" ;;
     *)       echo "false" ;;
   esac
 }
@@ -603,6 +624,7 @@ clean_all() {
   rm -rf "$ROOT_DIR/sdk/ruby/.bundle" "$ROOT_DIR/sdk/ruby/pkg"
   rm -rf "$ROOT_DIR/sdk/kotlin/build" "$ROOT_DIR/sdk/kotlin/.gradle"
   rm -rf "$ROOT_DIR/sdk/cpp/build"
+  rm -rf "$ROOT_DIR/sdk/dart/.dart_tool" "$ROOT_DIR/sdk/dart/build" "$ROOT_DIR/sdk/dart/coverage"
   log "clean" "done"
 }
 
@@ -635,7 +657,7 @@ ${BOLD}Commands:${NC}
   ${CYAN}help${NC}                Show this message
 
 ${BOLD}Targets:${NC}
-  all (default), js, python, go, java, csharp, rust, php, ruby, kotlin, cpp
+  all (default), js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, dart
 
 ${BOLD}Examples:${NC}
   ./runner.sh test              # Run all SDK tests
