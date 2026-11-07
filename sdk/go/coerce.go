@@ -51,9 +51,11 @@ func applyCoercion(value any, coercion CoercionType) (any, error) {
 	switch coercion {
 	case CoerceToInt:
 		return coerceToInt(value)
-	case CoerceToNumber:
+	case "string->int":
+		return coerceToPortableInt(value)
+	case CoerceToNumber, "string->number":
 		return coerceToNumber(value)
-	case CoerceToBool:
+	case CoerceToBool, "string->bool":
 		return coerceToBool(value)
 	case CoerceTrim:
 		return coerceTrimString(value)
@@ -81,6 +83,24 @@ func coerceToInt(value any) (any, error) {
 	default:
 		return nil, fmt.Errorf("cannot coerce %T to int", value)
 	}
+}
+
+// coerceToPortableInt preserves the unsigned half of the portable uint64 range
+// until the target schema applies its signedness, width, and constraint checks.
+func coerceToPortableInt(value any) (any, error) {
+	parsed, err := coerceToInt(value)
+	if err == nil {
+		return parsed, nil
+	}
+	if text, ok := value.(string); ok {
+		trimmed := strings.TrimSpace(text)
+		if decimalIntRe.MatchString(trimmed) {
+			if unsigned, unsignedErr := strconv.ParseUint(trimmed, 10, 64); unsignedErr == nil {
+				return unsigned, nil
+			}
+		}
+	}
+	return nil, err
 }
 
 func coerceToNumber(value any) (any, error) {

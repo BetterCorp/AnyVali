@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACTION="${1:-help}"
 TARGET="${2:-all}"
 
-ALL_TARGETS=(js python go java rust php ruby kotlin csharp cpp)
+ALL_TARGETS=(js python go java rust php ruby kotlin csharp cpp dart)
 
 # ---------------------------------------------------------------------------
 # Color helpers
@@ -116,6 +116,7 @@ print_summary() {
 # ---------------------------------------------------------------------------
 # Prerequisites check
 # ---------------------------------------------------------------------------
+# Report the availability of each SDK toolchain used by the runner.
 check_prerequisites() {
   log_header "Checking prerequisites"
 
@@ -137,6 +138,7 @@ check_prerequisites() {
     "cmake:cpp"
     "ctest:cpp"
     "gcc:cpp"
+    "dart:dart"
   )
 
   for entry in "${tools[@]}"; do
@@ -499,6 +501,31 @@ run_kotlin() {
   esac
 }
 
+# Run Dart package actions, reporting an unavailable toolchain as skipped.
+# The CI action installs dependencies, checks analysis/formatting, and runs tests.
+run_dart() {
+  local action="$1"
+  if ! has_cmd dart; then
+    log_skip "dart" "dart not found"
+    RESULTS[dart]=skip
+    return 0
+  fi
+  case "$action" in
+    install) (cd "$ROOT_DIR/sdk/dart" && dart pub get) ;;
+    build) (cd "$ROOT_DIR/sdk/dart" && dart analyze --fatal-infos) ;;
+    test) (cd "$ROOT_DIR/sdk/dart" && dart test) ;;
+    lint) (cd "$ROOT_DIR/sdk/dart" && dart format --output=none --set-exit-if-changed . && dart analyze --fatal-infos) ;;
+    coverage) (cd "$ROOT_DIR/sdk/dart" && dart test --coverage=coverage) ;;
+    ci)
+      run_dart install || return $?
+      run_dart build || return $?
+      run_dart lint || return $?
+      run_dart test
+      ;;
+    *) die "unsupported action for dart: $action" ;;
+  esac
+}
+
 run_cpp() {
   local action="$1"
   local build_dir="$ROOT_DIR/sdk/cpp/build"
@@ -547,12 +574,13 @@ run_cpp() {
 # ---------------------------------------------------------------------------
 # Dispatch & top-level commands
 # ---------------------------------------------------------------------------
+# Dispatch one SDK action and preserve explicit skip markers in the summary.
 dispatch() {
   local action="$1"
   local target="$2"
   log_header "$target — $action"
   if "run_$target" "$action"; then
-    RESULTS[$target]=pass
+    if [[ "${RESULTS[$target]:-}" != skip ]]; then RESULTS[$target]=pass; fi
   else
     RESULTS[$target]=fail
   fi
@@ -575,6 +603,7 @@ run_conformance() {
   fi
 }
 
+# Return the primary command used to detect whether an SDK is available.
 sdk_primary_cmd() {
   case "$1" in
     js)      echo "npm" ;;
@@ -587,10 +616,12 @@ sdk_primary_cmd() {
     ruby)    echo "ruby" ;;
     kotlin)  echo "gradle" ;;
     cpp)     echo "cmake" ;;
+    dart)    echo "dart" ;;
     *)       echo "false" ;;
   esac
 }
 
+# Remove generated build, dependency, and coverage directories for every SDK.
 clean_all() {
   log_header "Cleaning build artifacts"
   rm -rf "$ROOT_DIR/sdk/js/node_modules" "$ROOT_DIR/sdk/js/dist" "$ROOT_DIR/sdk/js/coverage"
@@ -603,6 +634,7 @@ clean_all() {
   rm -rf "$ROOT_DIR/sdk/ruby/.bundle" "$ROOT_DIR/sdk/ruby/pkg"
   rm -rf "$ROOT_DIR/sdk/kotlin/build" "$ROOT_DIR/sdk/kotlin/.gradle"
   rm -rf "$ROOT_DIR/sdk/cpp/build"
+  rm -rf "$ROOT_DIR/sdk/dart/.dart_tool" "$ROOT_DIR/sdk/dart/build" "$ROOT_DIR/sdk/dart/coverage"
   log "clean" "done"
 }
 
@@ -635,7 +667,7 @@ ${BOLD}Commands:${NC}
   ${CYAN}help${NC}                Show this message
 
 ${BOLD}Targets:${NC}
-  all (default), js, python, go, java, csharp, rust, php, ruby, kotlin, cpp
+  all (default), js, python, go, java, csharp, rust, php, ruby, kotlin, cpp, dart
 
 ${BOLD}Examples:${NC}
   ./runner.sh test              # Run all SDK tests
