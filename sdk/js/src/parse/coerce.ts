@@ -17,7 +17,10 @@ const ALIASES: Record<string, string> = { int: "string->int", number: "string->n
 /** Retain interchange operation order while keeping native flag configs supported. */
 export function normalizeCoercionConfig(raw: unknown): CoercionConfig {
   if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) return raw as CoercionConfig;
-  const items = (Array.isArray(raw) ? raw : [raw]).map(item => ALIASES[String(item)] ?? String(item));
+  if (typeof raw !== "string" && (!Array.isArray(raw) || raw.some(item => typeof item !== "string"))) {
+    throw new Error("Coercion identifiers must be strings");
+  }
+  const items = (Array.isArray(raw) ? raw : [raw]).map(item => ALIASES[item] ?? item);
   if (items.some(item => !["string->int", "string->number", "string->bool", "trim", "lower", "upper"].includes(item))) {
     throw new Error("Unknown coercion identifier");
   }

@@ -46,9 +46,36 @@ describe("canonical portable interoperability", () => {
     expect(unsupported.export("extended").root.coerce).toEqual({ trim: true });
     expect(() => string().coerce({ from: "number" }).export()).toThrow("Unsupported portable coercion source");
     expect(() => string().coerce({ unknown: true } as any).export()).toThrow("Unknown portable coercion flag");
-    const invalid = importSchema({ anyvaliVersion: "1.0", schemaVersion: "1.1",
-      root: { kind: "bool", coerce: ["string->int"] }, definitions: {}, extensions: {} });
-    expect(() => invalid.export()).toThrow("does not match");
+    expect(() => importSchema({ anyvaliVersion: "1.0", schemaVersion: "1.1",
+      root: { kind: "bool", coerce: ["string->int"] }, definitions: {}, extensions: {} })).toThrow("does not match");
+  });
+  it("rejects incompatible ordered contracts during import, including definitions", () => {
+    const doc = (root: any, definitions: any = {}): AnyValiDocument => ({
+      anyvaliVersion: "1.0", schemaVersion: "1.1", root, definitions, extensions: {},
+    });
+    for (const root of [
+      { kind: "any", coerce: ["string->int"] },
+      { kind: "union", variants: [{ kind: "int" }], coerce: ["string->int"] },
+      { kind: "array", items: { kind: "int" }, coerce: ["string->int"] },
+      { kind: "int", coerce: ["string->int", "trim"] },
+      { kind: "int", coerce: ["trim"] },
+      { kind: "nullable", schema: { kind: "any" }, coerce: ["string->int"] },
+      { kind: "ref", ref: "#/definitions/Any", coerce: ["string->int"] },
+      { kind: "ref", ref: "#/definitions/Missing", coerce: ["string->int"] },
+      { kind: "ref", ref: "#/definitions/Cycle", coerce: ["string->int"] },
+      { kind: "string", coerce: [["trim"]] },
+    ]) {
+      expect(() => importSchema(doc(root, { Any: { kind: "any" }, Cycle: { kind: "ref", ref: "#/definitions/Cycle" } }))).toThrow();
+    }
+    expect(() => importSchema(doc({ kind: "string" }, {
+      Invalid: { kind: "any", coerce: ["string->int"] },
+    }))).toThrow("does not match");
+    const schema = importSchema(doc({ kind: "nullable", schema: {
+      kind: "ref", ref: "#/definitions/Int",
+    }, coerce: ["trim", "string->int"] }, { Int: { kind: "int" } }));
+    expect(schema.parse(" 7 ")).toBe(7);
+    expect(schema.parse(null)).toBe(null);
+    expect(importSchema(doc({ kind: "any", coerce: [] })).parse("7")).toBe("7");
   });
   it("retains imported coercion operation order through export and reimport", () => {
     const operations = ["upper", "lower", "upper", "lower"];

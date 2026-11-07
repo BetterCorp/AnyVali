@@ -38,7 +38,8 @@ import { IntersectionSchema } from "../schemas/intersection.js";
 import { OptionalSchema } from "../schemas/optional.js";
 import { NullableSchema } from "../schemas/nullable.js";
 import { RefSchema } from "../schemas/ref.js";
-import { normalizeCoercionConfig } from "../parse/coerce.js";
+import { normalizeCoercionConfig, orderedCoercions, portableCoercionTokens } from "../parse/coerce.js";
+import { coercionTargetKind } from "./portable-node.js";
 import type { StringFormat, UnknownKeyMode } from "../types.js";
 
 /**
@@ -283,6 +284,9 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
     // Apply coercion config - handle both string and object formats
     if (node.coerce !== undefined) {
       const config = normalizeCoercionConfig(node.coerce);
+      if (orderedCoercions(config) !== undefined) {
+        portableCoercionTokens(config, coercionTargetKind(node, definitions, MAX_IMPORT_DEPTH));
+      }
       schema = schema.coerce(config);
     }
 
@@ -296,6 +300,11 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
     return schema;
   }
 
+  // Validate definition contracts during import, including ordered coercions.
+  // Ref constructors remain lazy, so recursive definitions need no expansion.
+  for (const [name, node] of Object.entries(definitions)) {
+    resolvedDefs.set(name, importNode(node));
+  }
   const root = importNode(doc.root);
   root._importedDefinitions = definitions;
   root._importedExtensions = structuredClone(extensions);
