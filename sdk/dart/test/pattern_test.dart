@@ -49,6 +49,23 @@ void main() {
       r'^(a+)+$',
       r'^(a|a)+$',
       r'a*a*a*b',
+      r'^(a)\1$',
+      r'^(a*)*\1$',
+      r'^(a?)+\1$',
+      r'^(a?)*\1$',
+      r'^(a*)+\1$',
+      r'^(a?){2,4}\1$',
+      r'^(a)?b\1$',
+      r'^\1(a)$',
+      r'^(a|(b))*\2$',
+      r'^(?:(a)|b)+\1$',
+      r'^(?=(a+))a*b\1$',
+      r'^(?=(a+?))a*b\1$',
+      r'(?<=([ab]+)([bc]+))\1$',
+      r'^(?<letter>[ab])\k<letter>$',
+      r'^(?<\u0061>a)\k<a>$',
+      r'(?<=(?<x>a))\k<x>$',
+      r'^(😀)\1$',
       r'^(?=.*[A-Z]).+$',
       r'a(?=b)',
       r'a(?!b)',
@@ -71,6 +88,15 @@ void main() {
       'abc',
       'aaab',
       'aaaa!',
+      'aa',
+      'bb',
+      'aba',
+      'abb',
+      'abba',
+      'aaba',
+      'abca',
+      'abcab',
+      '😀😀',
       'bbbc',
       'a\nb',
       '\n',
@@ -176,8 +202,6 @@ void main() {
       () {
     final base = av.any().exportSchema();
     for (final pattern in [
-      r'^(a)\1$',
-      r'(?<name>a)',
       r'\p{L}',
       r'a{1001}',
       'a' * 1025,
@@ -236,6 +260,64 @@ void main() {
         isFalse);
     expect(() => av.string().pattern(r'(?=a{1000})(?=b{1000})(?=c{1000})'),
         throwsFormatException);
+  });
+
+  test('capture-aware backreferences are portable and remain bounded', () {
+    var inputs = [''];
+    var layer = [''];
+    for (var length = 1; length <= 4; length++) {
+      layer = [
+        for (final prefix in layer)
+          for (final letter in ['a', 'b']) '$prefix$letter'
+      ];
+      inputs.addAll(layer);
+    }
+    for (final body in [
+      'a',
+      'b',
+      '[ab]',
+      'a?',
+      'a+',
+      'a*',
+      'a|b',
+      '(?:ab|a)'
+    ]) {
+      for (final tail in [
+        r'\1',
+        r'(?:\1)?',
+        r'(?=\1)\1',
+        r'(?!\1)b',
+        r'(?<=\1)'
+      ]) {
+        final pattern = '^($body)$tail\$';
+        final schema = av.string().pattern(pattern);
+        final reference = RegExp(pattern);
+        for (final input in inputs) {
+          expect(schema.safeParse(input).success, reference.hasMatch(input),
+              reason: '$pattern on $input');
+        }
+      }
+    }
+    final document = av.string().exportSchema();
+    final repeated = av.importSchema({
+      ...document,
+      'root': {'kind': 'string', 'pattern': r'^(a)\1$'}
+    });
+    expect(repeated.parse('aa'), 'aa');
+    expect(repeated.safeParse('ab').success, isFalse);
+    expect(
+        av.string().pattern(r'(?<=([ab]+)([bc]+))\1$').parse('abca'), 'abca');
+    expect(av.string().pattern(r'^(?=(a+))a*b\1$').safeParse('aaba').success,
+        isFalse);
+    expect(av.string().pattern(r'^(?=(a+?))a*b\1$').parse('aaba'), 'aaba');
+    final attack =
+        av.string().pattern(r'^(a+)+\1$').safeParse('${'a' * 10000}!');
+    expect(attack.success, isFalse);
+    expect(attack.issues.single.message, contains('limit'));
+    expect(
+        () => av.string().pattern('${'(a)' * 65}\\1'), throwsFormatException);
+    expect(() => av.string().pattern(r'(a)\2'), throwsFormatException);
+    expect(() => av.string().pattern(r'(?<x>a)(?<x>b)'), throwsFormatException);
   });
 
   test('patterns survive interchange and bounded cache eviction', () {

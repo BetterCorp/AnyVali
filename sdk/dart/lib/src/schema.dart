@@ -364,18 +364,25 @@ Schema<List<Object?>> tuple(List<Schema> elements) {
 }
 
 /// Build an object, stripping unknown keys by default.
-Schema<Map<String, Object?>> object(Map<String, Schema> properties) =>
-    _composite({
-      'kind': 'object',
-      'properties': properties.map((k, v) => MapEntry(k, v._node)),
-      'required': properties.entries
-          .where((e) =>
-              e.value._node['kind'] != 'optional' &&
-              !e.value._node.containsKey('default'))
-          .map((e) => e.key)
-          .toList(),
-      'unknownKeys': 'strip'
-    }, properties.values, decode: (v) => Map<String, Object?>.from(v));
+Schema<Map<String, Object?>> object(Map<String, Schema> properties) {
+  final fields = Map<String, Schema>.unmodifiable(properties);
+  return _composite({
+    'kind': 'object',
+    'properties': fields.map((k, v) => MapEntry(k, v._node)),
+    'required': fields.entries
+        .where((e) =>
+            e.value._node['kind'] != 'optional' &&
+            !e.value._node.containsKey('default'))
+        .map((e) => e.key)
+        .toList(),
+    'unknownKeys': 'strip'
+  }, fields.values,
+      decode: (v) => (v as Map).map<String, Object?>((key, value) {
+            final field = fields[key];
+            return MapEntry(
+                key as String, field == null ? value : field._decode(value));
+          }));
+}
 
 /// Build a string-keyed record with typed homogeneous values.
 Schema<Map<String, T>> record<T>(Schema<T> values) =>

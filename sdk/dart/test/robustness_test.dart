@@ -4,6 +4,23 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('native objects decode children and snapshot the property schemas', () {
+    final fields = <String, av.Schema>{
+      'items': av.array(av.int_().optional()),
+      'nested': av.tuple([av.bool_().optional()])
+    };
+    final schema = av.object(fields).unknownKeys('allow');
+    fields.clear();
+    final parsed = schema.parse({
+      'items': [av.absent],
+      'nested': [av.absent],
+      'extra': 'keep'
+    });
+    expect(parsed['items'], <int?>[null]);
+    expect(parsed['items'], isA<List<int?>>());
+    expect(parsed['nested'], [null]);
+    expect(parsed['extra'], 'keep');
+  });
   test('native tuples decode child values and snapshot their element list', () {
     final slots = <av.Schema>[
       av.any(),

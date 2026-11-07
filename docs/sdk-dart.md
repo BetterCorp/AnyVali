@@ -127,13 +127,17 @@ Patterns use bounded state-machine matching and support literals, character
 classes, dot, anchors, word boundaries, ordinary and noncapturing groups,
 alternatives, positive and negative lookahead/lookbehind, and `*`, `+`, `?`,
 `{m,n}` repetitions (including lazy forms). Nested lookarounds share the same
-compilation and execution limits. Backreferences, named groups, octal escapes, and Unicode property
-escapes are rejected during construction or import with `FormatException`.
+compilation and execution limits. Numeric and named backreferences and named
+capturing groups are supported. Legacy octal escapes outside character classes
+and Unicode property escapes are rejected during construction or import with
+`FormatException`.
 Escape literal braces rather than relying on permissive regex parsing.
 
 Compilation allows at most 1,024 UTF-16 code units, 64 nested groups, repetition
 counts of 1,000, and 2,048 states. A match accepts at most 100,000 UTF-16 input
-code units and 2,000,000 state operations. Exceeding a match limit produces an
+code units and 2,000,000 matching operations. Backreference patterns additionally
+allow at most 64 capture groups and 16,384 explored capture states. Exceeding a
+match limit produces an
 `invalid_string` issue with an explicit limit diagnostic. These bounds apply to
 native and JavaScript targets.
 
