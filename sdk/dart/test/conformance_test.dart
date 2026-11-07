@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
+/// Exercise both repository conformance corpora, round trips, and sensitive paths.
 void main() {
   final roots = [
     Directory('../../spec/corpus'),

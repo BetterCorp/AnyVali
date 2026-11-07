@@ -276,6 +276,8 @@ Schema<T> enum_<T>(List<T> values) {
   return Schema._({'kind': 'enum', 'values': values});
 }
 
+/// Combine child schemas while retaining imported definitions and extensions.
+/// Conflicting imported names fail instead of changing reference semantics.
 Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
     {T Function(dynamic)? decode}) {
   final definitions = <String, dynamic>{};
@@ -376,6 +378,7 @@ Schema<Object?> importSchema(JsonMap document) {
       definitions: defs, extensions: document['extensions']);
 }
 
+/// Validate criticality and reject custom validators or unknown semantic rules.
 void _checkExtensions(dynamic extensions) {
   if (extensions is! Map) throw FormatException('Invalid extensions');
   for (final value in extensions.values) {
@@ -391,6 +394,7 @@ void _checkExtensions(dynamic extensions) {
   }
 }
 
+/// Raise a schema-import failure using a portable validation issue code.
 Never _importError(String code) =>
     throw ValidationError([ValidationIssue(code, code, [])]);
 
@@ -457,6 +461,9 @@ const _nodeProperties = {
   'nullable': {'schema', 'inner'},
   'ref': {'ref'},
 };
+
+/// Check a node against its kind-specific shape before constructing a schema.
+/// Recurse through structural children while refs resolve through definitions.
 void _checkNode(dynamic node, JsonMap definitions, int depth) {
   if (depth > 200) throw FormatException('Schema nesting too deep');
   if (node is! JsonMap || !_kinds.contains(node['kind']))
@@ -609,6 +616,7 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
   }
 }
 
+/// Expose canonical child keys for supported legacy interchange spellings.
 JsonMap _aliases(JsonMap node) => {
       ...node,
       if (!node.containsKey('schema') && node.containsKey('inner'))
@@ -631,9 +639,11 @@ JsonMap _aliases(JsonMap node) => {
         'allOf': node['schemas'],
     };
 
+/// Recognize finite JSON primitive values allowed in literals and enums.
 bool _primitive(dynamic v) =>
     v == null || v is String || v is bool || (v is num && v.isFinite);
 
+/// Recursively copy map and list containers used by schemas and defaults.
 dynamic _clone(dynamic value) {
   if (value is Map)
     return <String, dynamic>{
@@ -644,6 +654,7 @@ dynamic _clone(dynamic value) {
   return value;
 }
 
+/// Compare JSON structures with bounded recursion and shared-node shortcuts.
 bool _equal(dynamic a, dynamic b, [int depth = 0]) {
   if (identical(a, b)) return true;
   if (depth > 200) return false;
@@ -657,8 +668,8 @@ bool _equal(dynamic a, dynamic b, [int depth = 0]) {
   return a == b;
 }
 
-// Preserve values parsed by one intersection member when another member
-// passes the original key through unchanged.
+/// Preserve values parsed by one intersection member when another member
+/// passes the original key through unchanged.
 dynamic _mergeParsed(dynamic original, Map left, Map right, [int depth = 0]) {
   if (identical(left, right) || depth > 200) return left;
   return <String, dynamic>{
@@ -677,6 +688,7 @@ dynamic _mergeParsed(dynamic original, Map left, Map right, [int depth = 0]) {
   };
 }
 
+/// Describe a value using portable type names, including the absence sentinel.
 String _type(dynamic v) => identical(v, absent)
     ? 'undefined'
     : v == null
@@ -690,12 +702,15 @@ String _type(dynamic v) => identical(v, absent)
                     : v is List
                         ? 'array'
                         : 'object';
+
+/// Format scalar diagnostic values while preserving native integer precision.
 String _text(dynamic v) => v is int
     ? v.toString()
     : v is num && v.isFinite && v == v.truncateToDouble()
         ? v.toStringAsFixed(0)
         : '$v';
 
+/// Normalize string, list, or legacy flag coercions into ordered portable tokens.
 List<String> _coercions(dynamic config, String kind) {
   List<String> tokens;
   if (config is String) {
@@ -758,12 +773,16 @@ List<String> _coercions(dynamic config, String kind) {
   return (false, null);
 }
 
+/// Run presence, coercion, defaults, and validation for one schema node.
+/// Preserve inherited key policies and successful union selections, limit depth,
+/// and skip root coercion when a transparent wrapper materializes a default.
 dynamic _run(JsonMap node, dynamic input, List<Object> path,
     List<ValidationIssue> issues, JsonMap definitions, int depth,
     {bool encrypted = false,
     _UnionTrace? unions,
     String? inheritedUnknownKeys,
     bool skipCoercion = false}) {
+  /// Append an issue at this node without stopping sibling validation.
   void issue(String code, dynamic expected, dynamic received) =>
       issues.add(ValidationIssue(
           code, '$code: expected $expected, received $received', path,
@@ -839,18 +858,24 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   final usedDefault = identical(value, absent) && defaultInfo.$1;
   if (usedDefault) value = _clone(defaultInfo.$2);
   final start = issues.length;
+
+  /// Validate a child path, optionally using isolated union-branch state.
   dynamic child(JsonMap childNode, dynamic v, List<Object> p,
           [List<ValidationIssue>? into, _UnionTrace? selected]) =>
       _run(childNode, v, p, into ?? issues, definitions, depth + 1,
           encrypted: encrypted,
           unions: selected ?? unions,
           inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys);
+
+  /// Delegate a transparent wrapper while preserving default/coercion order.
   dynamic delegate(JsonMap inner) =>
       _run(inner, value, path, issues, definitions, depth + 1,
           encrypted: encrypted,
           unions: unions,
           inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys,
           skipCoercion: usedDefault || skipCoercion);
+
+  /// Validate the current value after presence, coercion, and default handling.
   dynamic validate() {
     if (encryptedSensitive && !identical(value, absent) && value != null) {
       if (value is! String) {
@@ -1003,6 +1028,8 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
           return null;
         }
       }
+
+      /// Compare finite bounds with ordinary numeric equality for signed zero.
       int compare(num limit) {
         if (value is! BigInt) {
           final numeric = value as num;
@@ -1137,6 +1164,7 @@ bool _multipleOf(dynamic value, num divisor, {required bool allowTolerance}) {
   return distance * epsilonScale <= epsilon * denominator * scale;
 }
 
+/// Validate a portable string format without changing the input.
 bool _format(String format, String value) {
   switch (format) {
     case 'email':
@@ -1191,6 +1219,8 @@ ParseResult<Object?> safeParseEncrypted(Schema schema,
   return ParseResult._(issues.isEmpty, issues.isEmpty ? value : null, issues);
 }
 
+/// Validate before and after walking sensitive nodes with caller-owned transforms.
+/// Retain original union selections and cache callback results by data path.
 Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     bool decrypting) {
   final unions = <JsonMap, Map<String, int>>{};
@@ -1200,6 +1230,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   if (issues.isNotEmpty) throw ValidationError(issues);
   // Reuse the branches selected from the original input. Parsed values may
   // match an earlier, non-sensitive variant after coercion or defaults.
+  /// Walk the validated shape using retained union selections and opaque secrets.
   dynamic walk(JsonMap node, dynamic value, List<Object> path, int depth) {
     final sourceNode = node;
     node = _aliases(node);

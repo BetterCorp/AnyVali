@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
+/// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
   test('optional inner defaults survive wrappers and round trips', () {
     final schema = av.object({

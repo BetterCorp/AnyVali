@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
+/// Check typed builders, parsing, Flutter validators, and interchange behavior.
 void main() {
   test('native signed integers keep exact values across the int64 range', () {
     for (final text in [
