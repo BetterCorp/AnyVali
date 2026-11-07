@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 /// An omitted value, distinct from an explicit null.
@@ -1000,32 +999,10 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       }
       if (node['multipleOf'] != null) {
         final divisor = node['multipleOf'] as num;
-        bool matches;
-        if (value is BigInt || value is int) {
-          final integer =
-              value is BigInt ? value as BigInt : BigInt.from(value);
-          final parts = divisor.toString().toLowerCase().split('e');
-          final decimal = parts.first.split('.');
-          final coefficient = BigInt.parse(decimal.join());
-          final exponent = (parts.length == 2 ? int.parse(parts[1]) : 0) -
-              (decimal.length == 2 ? decimal[1].length : 0);
-          final numerator = exponent >= 0
-              ? coefficient * BigInt.from(10).pow(exponent)
-              : coefficient;
-          final denominator =
-              exponent < 0 ? BigInt.from(10).pow(-exponent) : BigInt.one;
-          matches = (integer * denominator) % numerator == BigInt.zero;
-        } else {
-          final remainder = (value as num) % divisor;
-          // Bound roundoff by both the spec ceiling and a fraction of the
-          // divisor so tiny divisors never make every value a multiple.
-          final roundoff = (value as num).abs() * 2.220446049250313e-16;
-          final tolerance = math.min(1e-10,
-              math.min(divisor / 4, math.max(divisor * 1e-10, roundoff)));
-          matches = remainder.abs() <= tolerance ||
-              (divisor - remainder).abs() <= tolerance;
+        if (!_multipleOf(value, divisor,
+            allowTolerance: !_integerKinds.contains(kind))) {
+          issue('invalid_number', divisor, value);
         }
-        if (!matches) issue('invalid_number', divisor, value);
       }
     }
     if (kind == 'array' || kind == 'tuple') {
@@ -1097,6 +1074,36 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
     return null;
   }
   return result;
+}
+
+/// Convert a finite numeric value's shortest decimal spelling to an exact ratio.
+/// This avoids binary remainder error growing with the magnitude of the input.
+(BigInt, BigInt) _decimalRatio(dynamic value) {
+  if (value is BigInt) return (value, BigInt.one);
+  final parts = (value as num).toString().toLowerCase().split('e');
+  final decimal = parts.first.split('.');
+  final coefficient = BigInt.parse(decimal.join());
+  final exponent = (parts.length == 2 ? int.parse(parts[1]) : 0) -
+      (decimal.length == 2 ? decimal[1].length : 0);
+  return exponent >= 0
+      ? (coefficient * BigInt.from(10).pow(exponent), BigInt.one)
+      : (coefficient, BigInt.from(10).pow(-exponent));
+}
+
+/// Check decimal multiples exactly, with a bounded relative tolerance for floats.
+/// Tolerance never grows with the value and never exceeds the spec's 1e-10 cap.
+bool _multipleOf(dynamic value, num divisor, {required bool allowTolerance}) {
+  final (numerator, denominator) = _decimalRatio(value);
+  final (step, scale) = _decimalRatio(divisor);
+  final modulus = step * denominator;
+  final remainder = (numerator * scale) % modulus;
+  if (remainder == BigInt.zero) return true;
+  if (!allowTolerance) return false;
+  final tolerance = divisor < 1 ? divisor * 1e-10 : 1e-10;
+  final (epsilon, epsilonScale) = _decimalRatio(tolerance);
+  final distance =
+      remainder < modulus - remainder ? remainder : modulus - remainder;
+  return distance * epsilonScale <= epsilon * denominator * scale;
 }
 
 bool _format(String format, String value) {

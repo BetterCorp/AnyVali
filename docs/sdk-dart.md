@@ -108,8 +108,10 @@ inputs beyond ±(2^53−1) are rejected to prevent silently accepting rounded va
 `uint64()` accepts `BigInt` for the full unsigned range; string coercion can
 produce a `BigInt` when needed. Other integer schemas return `int` and reject
 values that cannot be represented exactly on the target platform. JavaScript
-targets also reject integer-schema constraints beyond the safe-integer range,
-so a JSON parser cannot silently round a wide bound before BigInt validation.
+targets also reject decoded integer-schema constraints outside the safe-integer
+range. This check runs after JSON decoding and cannot detect precision already
+lost in a numeric token, including fractional tokens rounded into the safe range.
+Validate numeric tokens before decoding when exact bounds matter.
 
 `BigInt` is not directly JSON serializable. Exchange wide integer data using an
 explicit string transport contract and coercion, rather than JSON numeric tokens
