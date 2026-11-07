@@ -9,8 +9,11 @@ class _Absent {
 }
 
 typedef JsonMap = Map<String, dynamic>;
+typedef _UnionTrace = Map<JsonMap, Map<String, int>>;
+
 typedef SensitiveTransform = Object? Function(List<Object> path, Object? value);
 
+/// A validation failure with an ordered object-key and array-index path.
 class ValidationIssue {
   final String code;
   final String message;
@@ -29,6 +32,7 @@ class ValidationIssue {
       };
 }
 
+/// Thrown by parse and transform helpers when validation fails.
 class ValidationError implements Exception {
   final List<ValidationIssue> issues;
   ValidationError(List<ValidationIssue> issues)
@@ -38,6 +42,7 @@ class ValidationError implements Exception {
       'ValidationError: ${issues.map((i) => '${i.path}: ${i.message}').join('; ')}';
 }
 
+/// A non-throwing validation result; inspect success before reading data.
 class ParseResult<T> {
   final bool success;
   final T? data;
@@ -68,36 +73,66 @@ class Schema<T> {
         definitions: _definitions, extensions: _extensions, decode: _decode);
   }
 
+  /// Require a numeric value greater than or equal to value.
   Schema<T> min(num value) => _set('min', value);
+
+  /// Require a numeric value less than or equal to value.
   Schema<T> max(num value) => _set('max', value);
+
+  /// Require a numeric value strictly greater than value.
   Schema<T> exclusiveMin(num value) => _set('exclusiveMin', value);
+
+  /// Require a numeric value strictly less than value.
   Schema<T> exclusiveMax(num value) => _set('exclusiveMax', value);
+
+  /// Require a numeric multiple of a positive finite divisor.
   Schema<T> multipleOf(num value) {
     if (!value.isFinite || value <= 0)
       throw ArgumentError.value(value, 'value');
     return _set('multipleOf', value);
   }
 
+  /// Set the minimum string length in Unicode code points.
   Schema<T> minLength(int value) => _set('minLength', value);
+
+  /// Set the maximum string length in Unicode code points.
   Schema<T> maxLength(int value) => _set('maxLength', value);
+
+  /// Set the minimum array length.
   Schema<T> minItems(int value) => _set('minItems', value);
+
+  /// Set the maximum array length.
   Schema<T> maxItems(int value) => _set('maxItems', value);
+
+  /// Require a string to match the supplied regular expression.
   Schema<T> pattern(String value) {
     RegExp(value);
     return _set('pattern', value);
   }
 
+  /// Require a string prefix.
   Schema<T> startsWith(String value) => _set('startsWith', value);
+
+  /// Require a string suffix.
   Schema<T> endsWith(String value) => _set('endsWith', value);
+
+  /// Require a string substring.
   Schema<T> includes(String value) => _set('includes', value);
+
+  /// Require one of the seven portable string formats.
   Schema<T> format(String value) => _set('format', value);
+
+  /// Configure strip, allow, or reject behavior for object extras.
   Schema<T> unknownKeys(String mode) {
     if (!['strip', 'allow', 'reject'].contains(mode))
       throw ArgumentError.value(mode);
     return _set('unknownKeys', mode);
   }
 
+  /// Materialize and validate a cloned default only when input is absent.
   Schema<T> defaultValue(T value) => _set('default', value);
+
+  /// Enable type coercion and optional trim, lower, or upper string transforms.
   Schema<T> coerce(
           {bool trim = false, bool lower = false, bool upper = false}) =>
       _set('coerce', {
@@ -105,6 +140,8 @@ class Schema<T> {
         if (lower) 'lower': true,
         if (upper) 'upper': true
       });
+
+  /// Attach a description and optional title or sensitive-data marker.
   Schema<T> describe(String description, {bool? sensitive, String? title}) =>
       _set('metadata', {
         ...?_node['metadata'] as Map?,
@@ -112,23 +149,31 @@ class Schema<T> {
         if (sensitive != null) 'sensitive': sensitive,
         if (title != null) 'title': title
       });
+
+  /// Merge metadata, validating reserved key types and relationships.
   Schema<T> metadata(JsonMap value) =>
       _set('metadata', {...?_node['metadata'] as Map?, ...value});
+
+  /// Accept absent input while retaining validation for present values.
   Schema<T?> optional() => Schema._({'kind': 'optional', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
       decode: (v) => v == null || identical(v, absent) ? null : _decode(v));
+
+  /// Accept an explicit null as well as the inner schema values.
   Schema<T?> nullable() => Schema._({'kind': 'nullable', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
       decode: (v) => v == null ? null : _decode(v));
 
+  /// Return typed parsed data or throw ValidationError with all issues.
   T parse([Object? input = absent]) {
     final result = safeParse(input);
     if (!result.success) throw ValidationError(result.issues);
     return result.data as T;
   }
 
+  /// Validate input without throwing for ordinary validation failures.
   ParseResult<T> safeParse([Object? input = absent]) {
     final issues = <ValidationIssue>[];
     final value = _run(_node, input, [], issues, _definitions, 0);
@@ -164,32 +209,68 @@ class Schema<T> {
   }
 }
 
+/// Build a string schema.
 Schema<String> string() => Schema._({'kind': 'string'});
+
+/// Build a boolean schema.
 Schema<bool> bool_() => Schema._({'kind': 'bool'});
+
+/// Build a schema accepting only null.
 Schema<Null> null_() => Schema._({'kind': 'null'});
+
+/// Build a schema accepting any value, including absence.
 Schema<Object?> any() => Schema._({'kind': 'any'});
+
+/// Build a schema accepting unknown values without constraints.
 Schema<Object?> unknown() => Schema._({'kind': 'unknown'});
+
+/// Build a schema rejecting every value.
 Schema<Never> never() => Schema._({'kind': 'never'});
+
+/// Build a finite numeric schema using the float64 alias.
 Schema<num> number() => Schema._({'kind': 'number'});
+
+/// Build a finite numeric schema that rounds to IEEE 754 binary32.
 Schema<num> float32() => Schema._({'kind': 'float32'});
+
+/// Build a finite numeric schema for the float64 kind.
 Schema<num> float64() => Schema._({'kind': 'float64'});
+
+/// Build a signed 64-bit integer schema.
 Schema<int> int_() => Schema._({'kind': 'int'});
+
+/// Build a signed 8-bit integer schema.
 Schema<int> int8() => Schema._({'kind': 'int8'});
+
+/// Build a signed 16-bit integer schema.
 Schema<int> int16() => Schema._({'kind': 'int16'});
+
+/// Build a signed 32-bit integer schema.
 Schema<int> int32() => Schema._({'kind': 'int32'});
+
+/// Build a signed 64-bit integer schema.
 Schema<int> int64() => Schema._({'kind': 'int64'});
+
+/// Build a unsigned 8-bit integer schema.
 Schema<int> uint8() => Schema._({'kind': 'uint8'});
+
+/// Build a unsigned 16-bit integer schema.
 Schema<int> uint16() => Schema._({'kind': 'uint16'});
+
+/// Build a unsigned 32-bit integer schema.
 Schema<int> uint32() => Schema._({'kind': 'uint32'});
 
 /// Accepts int or BigInt, allowing the full unsigned 64-bit range.
 Schema<Object> uint64() => Schema._({'kind': 'uint64'});
+
+/// Build a schema accepting exactly the given JSON primitive.
 Schema<T> literal<T>(T value) {
   if (!_primitive(value))
     throw ArgumentError('Literals must be JSON primitives');
   return Schema._({'kind': 'literal', 'value': value});
 }
 
+/// Build a schema accepting any of the supplied JSON primitives.
 Schema<T> enum_<T>(List<T> values) {
   if (values.isEmpty || !values.every(_primitive))
     throw ArgumentError('An enum needs JSON primitive values');
@@ -220,13 +301,18 @@ Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
       definitions: definitions, extensions: extensions, decode: decode);
 }
 
+/// Build a homogeneous array preserving the item output type.
 Schema<List<T>> array<T>(Schema<T> items) =>
     _composite({'kind': 'array', 'items': items._node}, [items],
         decode: (v) => (v as List).map(items._decode).toList());
+
+/// Build a fixed-length array with a schema for each position.
 Schema<List<Object?>> tuple(List<Schema> elements) => _composite({
       'kind': 'tuple',
       'elements': elements.map((s) => s._node).toList()
     }, elements, decode: (v) => List<Object?>.from(v));
+
+/// Build an object, stripping unknown keys by default.
 Schema<Map<String, Object?>> object(Map<String, Schema> properties) =>
     _composite({
       'kind': 'object',
@@ -239,10 +325,14 @@ Schema<Map<String, Object?>> object(Map<String, Schema> properties) =>
           .toList(),
       'unknownKeys': 'strip'
     }, properties.values, decode: (v) => Map<String, Object?>.from(v));
+
+/// Build a string-keyed record with typed homogeneous values.
 Schema<Map<String, T>> record<T>(Schema<T> values) =>
     _composite({'kind': 'record', 'values': values._node}, [values],
         decode: (v) => (v as Map)
             .map((k, value) => MapEntry(k as String, values._decode(value))));
+
+/// Try alternatives in order and return the first successful parsed value.
 Schema<Object?> union(List<Schema> variants) {
   if (variants.isEmpty)
     throw ArgumentError('A union needs at least one variant');
@@ -251,10 +341,12 @@ Schema<Object?> union(List<Schema> variants) {
       variants);
 }
 
+/// Require every member and merge their parsed results.
 Schema<Object?> intersection(List<Schema> schemas) => _composite(
     {'kind': 'intersection', 'allOf': schemas.map((s) => s._node).toList()},
     schemas);
 
+/// Validate a portable document and retain its definitions and metadata.
 Schema<Object?> importSchema(JsonMap document) {
   const keys = {
     'anyvaliVersion',
@@ -424,6 +516,9 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
       if (metadata.containsKey(key) && metadata[key] is! bool)
         throw FormatException('Invalid metadata $key');
     }
+    if (metadata.containsKey('deprecatedMessage') &&
+        metadata['deprecated'] != true)
+      throw FormatException('deprecatedMessage requires deprecated: true');
     if (metadata['readonly'] == true && metadata['writeonly'] == true)
       throw FormatException('Conflicting metadata access flags');
     if (metadata.containsKey('examples') && metadata['examples'] is! List)
@@ -441,6 +536,15 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
             !(node[key] as num).isFinite ||
             (key == 'multipleOf' && node[key] <= 0)))
       throw FormatException('Invalid $key');
+  }
+  if (identical(1, 1.0) && _integerKinds.contains(kind)) {
+    for (final key in _numericProperties) {
+      if (node.containsKey(key) &&
+          (node[key] as num).abs() > 9007199254740991) {
+        throw FormatException(
+            'Integer constraints beyond the JavaScript safe range cannot be imported exactly');
+      }
+    }
   }
   for (final key in ['minLength', 'maxLength', 'minItems', 'maxItems']) {
     if (node.containsKey(key) && (node[key] is! int || node[key] < 0))
@@ -471,8 +575,8 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
           node['required'] is! List ||
           !(node['required'] as List)
               .every((k) => k is String && node['properties'].containsKey(k)) ||
-          !['strip', 'allow', 'reject']
-              .contains(node['unknownKeys'] ?? 'strip'))
+          !['strip', 'allow', 'reject'].contains(
+              node.containsKey('unknownKeys') ? node['unknownKeys'] : 'strip'))
         throw FormatException('Invalid object schema');
       for (final value in (node['properties'] as Map).values) {
         child(value);
@@ -641,7 +745,9 @@ List<String> _coercions(dynamic config, String kind) {
 
 dynamic _run(JsonMap node, dynamic input, List<Object> path,
     List<ValidationIssue> issues, JsonMap definitions, int depth,
-    {bool encrypted = false}) {
+    {bool encrypted = false,
+    _UnionTrace? unions,
+    String? inheritedUnknownKeys}) {
   void issue(String code, dynamic expected, dynamic received) =>
       issues.add(ValidationIssue(
           code, '$code: expected $expected, received $received', path,
@@ -650,8 +756,12 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
     issue('too_deep', 'bounded nesting', 'too deep');
     return null;
   }
+  final sourceNode = node;
   node = _aliases(node);
   final kind = node['kind'] as String;
+  final unknownKeys = kind == 'object'
+      ? inheritedUnknownKeys ?? node['unknownKeys'] ?? 'strip'
+      : inheritedUnknownKeys;
   var value = input;
   final encryptedSensitive =
       encrypted && (node['metadata'] as Map?)?['sensitive'] == true;
@@ -711,9 +821,11 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   if (usedDefault) value = _clone(node['default']);
   final start = issues.length;
   dynamic child(JsonMap childNode, dynamic v, List<Object> p,
-          [List<ValidationIssue>? into]) =>
+          [List<ValidationIssue>? into, _UnionTrace? selected]) =>
       _run(childNode, v, p, into ?? issues, definitions, depth + 1,
-          encrypted: encrypted);
+          encrypted: encrypted,
+          unions: selected ?? unions,
+          inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys);
   dynamic validate() {
     if (encryptedSensitive && !identical(value, absent) && value != null) {
       if (value is! String) {
@@ -748,10 +860,22 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       return choices.firstWhere((v) => _equal(v, value), orElse: () => value);
     }
     if (kind == 'union') {
-      for (final variant in node['variants']) {
+      final variants = node['variants'] as List;
+      for (var index = 0; index < variants.length; index++) {
         final branchIssues = <ValidationIssue>[];
-        final result = child(variant, value, path, branchIssues);
-        if (branchIssues.isEmpty) return result;
+        final branchUnions =
+            unions == null ? null : <JsonMap, Map<String, int>>{};
+        final result =
+            child(variants[index], value, path, branchIssues, branchUnions);
+        if (branchIssues.isEmpty) {
+          if (unions != null) {
+            for (final entry in branchUnions!.entries) {
+              unions.putIfAbsent(entry.key, () => {}).addAll(entry.value);
+            }
+            unions.putIfAbsent(sourceNode, () => {})[jsonEncode(path)] = index;
+          }
+          return result;
+        }
       }
       issue(
           'invalid_union',
@@ -949,8 +1073,8 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         if (!identical(parsed, absent)) result[entry.key] = parsed;
       }
       for (final key in map.keys.where((k) => !props.containsKey(k))) {
-        if (node['unknownKeys'] == 'allow') result[key] = map[key];
-        if (node['unknownKeys'] == 'reject')
+        if (unknownKeys == 'allow') result[key] = map[key];
+        if (unknownKeys == 'reject')
           issues.add(ValidationIssue(
               'unknown_key', 'Unknown key $key', [...path, key],
               expected: 'undefined', received: key));
@@ -994,8 +1118,8 @@ bool _format(String format, String value) {
               int.parse(p) <= 255);
     case 'ipv6':
       try {
-        return Uri.parse('http://[$value]/').host.isNotEmpty &&
-            value.contains(':');
+        Uri.parseIPv6Address(value);
+        return value.contains(':');
       } on FormatException {
         return false;
       }
@@ -1015,6 +1139,7 @@ bool _format(String format, String value) {
   }
 }
 
+/// Validate encrypted storage without decrypting sensitive values.
 ParseResult<Object?> safeParseEncrypted(Schema schema,
     [Object? input = absent]) {
   final issues = <ValidationIssue>[];
@@ -1025,11 +1150,15 @@ ParseResult<Object?> safeParseEncrypted(Schema schema,
 
 Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     bool decrypting) {
-  final checked =
-      decrypting ? safeParseEncrypted(schema, input) : schema.safeParse(input);
-  if (!checked.success) throw ValidationError(checked.issues);
-  // Resolve unions against validated data before invoking user callbacks.
+  final unions = <JsonMap, Map<String, int>>{};
+  final issues = <ValidationIssue>[];
+  final checked = _run(schema._node, input, [], issues, schema._definitions, 0,
+      encrypted: decrypting, unions: unions);
+  if (issues.isNotEmpty) throw ValidationError(issues);
+  // Reuse the branches selected from the original input. Parsed values may
+  // match an earlier, non-sensitive variant after coercion or defaults.
   dynamic walk(JsonMap node, dynamic value, List<Object> path, int depth) {
+    final sourceNode = node;
     node = _aliases(node);
     if (depth > 200)
       throw ValidationError(
@@ -1044,12 +1173,9 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     if (kind == 'optional' || kind == 'nullable')
       return walk(node['schema'], value, path, depth + 1);
     if (kind == 'union') {
-      for (final branch in node['variants']) {
-        final issues = <ValidationIssue>[];
-        _run(branch, value, path, issues, schema._definitions, depth + 1,
-            encrypted: decrypting);
-        if (issues.isEmpty) return walk(branch, value, path, depth + 1);
-      }
+      final selected = unions[sourceNode]?[jsonEncode(path)];
+      if (selected == null) throw StateError('Missing validated union branch');
+      return walk(node['variants'][selected], value, path, depth + 1);
     }
     if (kind == 'intersection') {
       // Cache callback results by path so overlapping members transform once.
@@ -1083,7 +1209,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   final originalTransform = transform;
   transform = (path, value) =>
       cache.putIfAbsent(jsonEncode(path), () => originalTransform(path, value));
-  final output = walk(schema._node, checked.data, [], 0);
+  final output = walk(schema._node, checked, [], 0);
   final result = decrypting
       ? schema.safeParse(output)
       : safeParseEncrypted(schema, output);
@@ -1091,7 +1217,10 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   return result.data;
 }
 
+/// Parse plaintext, transform sensitive nodes, and validate encrypted storage.
 Object? encrypt(Schema schema, Object? input, SensitiveTransform transform) =>
     _transform(schema, input, transform, false);
+
+/// Validate encrypted storage, transform sensitive nodes, and parse plaintext.
 Object? decrypt(Schema schema, Object? input, SensitiveTransform transform) =>
     _transform(schema, input, transform, true);

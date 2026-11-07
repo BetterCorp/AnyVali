@@ -502,7 +502,11 @@ run_kotlin() {
 
 run_dart() {
   local action="$1"
-  need_cmd dart
+  if ! has_cmd dart; then
+    log_skip "dart" "dart not found"
+    RESULTS[dart]=skip
+    return 0
+  fi
   case "$action" in
     install) (cd "$ROOT_DIR/sdk/dart" && dart pub get) ;;
     build) (cd "$ROOT_DIR/sdk/dart" && dart analyze --fatal-infos) ;;
@@ -572,7 +576,7 @@ dispatch() {
   local target="$2"
   log_header "$target — $action"
   if "run_$target" "$action"; then
-    RESULTS[$target]=pass
+    if [[ "${RESULTS[$target]:-}" != skip ]]; then RESULTS[$target]=pass; fi
   else
     RESULTS[$target]=fail
   fi

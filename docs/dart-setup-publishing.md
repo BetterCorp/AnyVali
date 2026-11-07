@@ -139,7 +139,7 @@ manual workflow dispatch. See the [official automation guide](https://dart.dev/t
 
 After completing that configuration, the following can be saved as
 `.github/workflows/publish-dart.yml`. It uses the repository's unified `v*`
-release tags and pins the Dart team's reusable publishing workflow. The initial
+release tags, including prereleases such as `v1.2.3-rc.1` and pins the Dart team's reusable publishing workflow. The initial
 PR adds this example to documentation only.
 
 ```yaml
@@ -147,7 +147,7 @@ name: Publish Dart
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v*'
 permissions:
   contents: read
 jobs:

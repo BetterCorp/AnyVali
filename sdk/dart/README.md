@@ -78,6 +78,10 @@ on mobile, desktop, servers, and Flutter web.
   `.unknownKeys('strip' | 'allow' | 'reject')`.
 - Metadata: `.describe('Description', sensitive: true)`, `.metadata({...})`.
 
+A parent object using `strip` or `reject` applies that policy recursively to nested
+objects, including through arrays, wrappers, and references. A parent using
+`allow` leaves the nested object policy in effect.
+
 Dart keywords use a trailing underscore (`int_`, `bool_`, `null_`, `enum_`).
 `Schema<T>` carries primitive and collection output types; heterogeneous objects
 return `Map<String, Object?>`, and imported documents return `Schema<Object?>`.
@@ -103,7 +107,9 @@ Native Dart integers are signed 64-bit. On JavaScript targets, numeric integer
 inputs beyond ±(2^53−1) are rejected to prevent silently accepting rounded values.
 `uint64()` accepts `BigInt` for the full unsigned range; string coercion can
 produce a `BigInt` when needed. Other integer schemas return `int` and reject
-values that cannot be represented exactly on the target platform.
+values that cannot be represented exactly on the target platform. JavaScript
+targets also reject integer-schema constraints beyond the safe-integer range,
+so a JSON parser cannot silently round a wide bound before BigInt validation.
 
 `BigInt` is not directly JSON serializable. Exchange wide integer data using an
 explicit string transport contract and coercion, rather than JSON numeric tokens
