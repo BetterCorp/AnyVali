@@ -54,6 +54,9 @@ func (s *NullableSchema) safeParseAtDepth(input any, ctx parseContext) ParseResu
 			}
 			return parseAtDepth(s.inner, value, ctx.child())
 		}
+		if hasTransitiveDefault(s.inner, 0) {
+			return parseAtDepth(s.inner, input, ctx.child())
+		}
 		return ParseResult{Success: true, Data: nil}
 	}
 	if input == nil {

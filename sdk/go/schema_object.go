@@ -125,12 +125,7 @@ func (s *ObjectSchema) validateWithInherited(value any, inherited UnknownKeyMode
 	for key, schema := range s.properties {
 		val, exists := obj[key]
 		if !exists {
-			defaultInfo, canHaveDefault := schema.(interface{ defaultInfo() (any, bool) })
-			hasDefault := false
-			if canHaveDefault {
-				_, hasDefault = defaultInfo.defaultInfo()
-			}
-			if canHaveDefault && hasDefault {
+			if hasTransitiveDefault(schema, 0) {
 				result := safeParseChild(schema, absentValue, mode, propagate, ctx.child())
 				if ctx.budget.calls > maxValidationCalls {
 					return nil, result.Issues

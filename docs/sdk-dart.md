@@ -46,11 +46,9 @@ and `unknown` preserve the absence sentinel. The native `.optional()` decoder
 represents omitted values as null for its nullable Dart type; imported
 `Schema<Object?>` results retain the sentinel. Builders return new schemas.
 
-For matching defaulted object output in the current JavaScript and Go SDKs,
-put the default on the property's outer schema, for example
-`string().nullable().defaultValue('x')`. Dart also fills defaults found inside
-wrappers or references and exports those fields as non-required; the current
-JavaScript and Go importers accept omission but omit such nested defaults.
+Object properties with defaults inside transparent wrappers or references are
+omittable in portable exports. The JavaScript and Go importers resolve those
+defaults without moving them across their declaring node's coercion step.
 
 ## Flutter forms
 

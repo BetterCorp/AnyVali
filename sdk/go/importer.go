@@ -74,13 +74,21 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	case "bool":
 		return importBoolSchema(node)
 	case "null":
-		return Null(), nil
+		s := Null()
+		importDefault(&s.baseSchema, node)
+		return s, nil
 	case "any":
-		return Any(), nil
+		s := Any()
+		importDefault(&s.baseSchema, node)
+		return s, nil
 	case "unknown":
-		return Unknown(), nil
+		s := Unknown()
+		importDefault(&s.baseSchema, node)
+		return s, nil
 	case "never":
-		return Never(), nil
+		s := Never()
+		importDefault(&s.baseSchema, node)
+		return s, nil
 	case "literal":
 		return importLiteralSchema(node)
 	case "enum":

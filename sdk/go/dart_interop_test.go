@@ -2,6 +2,7 @@ package anyvali
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -81,6 +82,116 @@ func TestDartUint64CanonicalCoercionBoundaries(t *testing.T) {
 	for _, target := range []Schema{Int().Coerce("string->int"), Uint8().Coerce("string->int")} {
 		if result := target.SafeParse("18446744073709551615"); result.Success {
 			t.Fatal("target range check bypassed")
+		}
+	}
+}
+
+// TestDartTransitiveDefaults keeps declaring-node coercion/default order across
+// nullable/optional wrappers and resolved references, including false/null values.
+func TestDartTransitiveDefaults(t *testing.T) {
+	doc := []byte(`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"object","required":["text"],"properties":{
+ "text":{"kind":"nullable","schema":{"kind":"string","coerce":["trim"],"default":"  fallback  "}},
+ "flag":{"kind":"ref","ref":"#/definitions/Flag"},
+ "nil":{"kind":"nullable","schema":{"kind":"null","default":null}},
+ "bag":{"kind":"nullable","schema":{"kind":"any","default":{"value":"original"}}},
+ "empty":{"kind":"optional","schema":{"kind":"nullable","schema":{"kind":"array","items":{"kind":"string"},"default":[]}}}
+ }},"definitions":{"Flag":{"kind":"optional","schema":{"kind":"bool","default":false}}},"extensions":{}}`)
+	schema, err := ImportJSON(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string]any{"text": "  fallback  ", "flag": false, "nil": nil, "empty": []any{}, "bag": map[string]any{"value": "original"}}
+	parsed := schema.SafeParse(map[string]any{})
+	if !parsed.Success || !reflect.DeepEqual(parsed.Data, expected) {
+		t.Fatalf("default values: %+v", parsed)
+	}
+	parsed.Data.(map[string]any)["bag"].(map[string]any)["value"] = "changed"
+	if again := schema.SafeParse(map[string]any{}); !again.Success || !reflect.DeepEqual(again.Data, expected) {
+		t.Fatalf("shared defaults: %+v", again)
+	}
+	present := schema.SafeParse(map[string]any{"text": "  present  "})
+	if !present.Success || present.Data.(map[string]any)["text"] != "present" {
+		t.Fatalf("present coercion: %+v", present)
+	}
+	exported, err := ExportJSON(schema, Portable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := ImportJSON(exported)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if roundTrip := restored.SafeParse(map[string]any{}); !roundTrip.Success || !reflect.DeepEqual(roundTrip.Data, expected) {
+		t.Fatalf("roundtrip: %+v", roundTrip)
+	}
+}
+
+func TestDartTransitiveDefaultFailuresAndCycles(t *testing.T) {
+	for _, doc := range []string{
+		`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"object","properties":{"x":{"kind":"nullable","schema":{"kind":"string","default":42}}},"required":[]},"definitions":{},"extensions":{}}`,
+		`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"object","properties":{"x":{"kind":"ref","ref":"#/definitions/Cycle"}},"required":[]},"definitions":{"Cycle":{"kind":"ref","ref":"#/definitions/Cycle"}},"extensions":{}}`,
+	} {
+		schema, err := ImportJSON([]byte(doc))
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := schema.SafeParse(map[string]any{})
+		if _, cycle := schema.(*ObjectSchema).properties["x"].(*RefSchema); cycle {
+			if !result.Success {
+				t.Fatalf("cycle lookup: %+v", result)
+			}
+		} else if result.Success || len(result.Issues) != 1 || result.Issues[0].Code != IssueDefaultInvalid || !reflect.DeepEqual(result.Issues[0].Path, []any{"x"}) {
+			t.Fatalf("invalid default: %+v", result)
+		}
+	}
+}
+
+func TestDartCanonicalSignedOverflowDiagnostic(t *testing.T) {
+	for _, target := range []*IntSchema{Int(), Int64(), Int8()} {
+		result := target.Coerce("string->int").SafeParse("18446744073709551615")
+		if result.Success || len(result.Issues) != 1 || result.Issues[0].Code != IssueTooLarge || result.Issues[0].Received != "18446744073709551615" {
+			t.Fatalf("canonical overflow: %+v", result)
+		}
+	}
+	legacy := Int().Coerce().SafeParse("18446744073709551615")
+	if legacy.Success || legacy.Issues[0].Code != IssueCoercionFailed {
+		t.Fatalf("legacy coercion changed: %+v", legacy)
+	}
+}
+
+func TestDartPrimitiveDefaultRoundTrip(t *testing.T) {
+	for _, test := range []struct {
+		kind  string
+		value any
+	}{
+		{"null", nil}, {"any", map[string]any{"items": []any{"x"}}}, {"unknown", false}, {"never", 42},
+	} {
+		doc := map[string]any{"anyvaliVersion": "1.0", "schemaVersion": "1.1", "root": map[string]any{"kind": test.kind, "default": test.value}, "definitions": map[string]any{}, "extensions": map[string]any{}}
+		input, err := json.Marshal(doc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		schema, err := ImportJSON(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		exported, err := ExportJSON(schema, Portable)
+		if err != nil {
+			t.Fatal(err)
+		}
+		restored, err := ImportJSON(exported)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, candidate := range []Schema{schema, restored} {
+			result := candidate.SafeParse(absentValue)
+			if test.kind == "never" {
+				if result.Success || result.Issues[0].Code != IssueDefaultInvalid {
+					t.Fatalf("never default: %+v", result)
+				}
+			} else if !result.Success || !reflect.DeepEqual(result.Data, test.value) {
+				t.Fatalf("%s default: %+v", test.kind, result)
+			}
 		}
 	}
 }

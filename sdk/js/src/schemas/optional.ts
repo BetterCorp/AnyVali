@@ -1,5 +1,5 @@
 import type { ParseContext, SchemaNode } from "../types.js";
-import { BaseSchema, ABSENT } from "./base.js";
+import { BaseSchema, ABSENT, MAX_DEPTH } from "./base.js";
 
 export class OptionalSchema<
   T extends BaseSchema<any, any> = BaseSchema,
@@ -13,6 +13,12 @@ export class OptionalSchema<
     // Inherit defaults/coercion from inner
     this._defaultValue = inner._defaultValue as any;
     this._coercionConfig = inner._coercionConfig;
+  }
+
+  /** @internal Resolve presence without moving defaults across coercion steps. */
+  _hasDefault(depth = 0): boolean {
+    return this._defaultValue !== ABSENT ||
+      (depth < MAX_DEPTH && this._inner._hasDefault(depth + 1));
   }
 
   _validate(input: unknown, ctx: ParseContext): unknown {
@@ -36,7 +42,9 @@ export class OptionalSchema<
     }
 
     if (isAbsent) {
-      return undefined;
+      return this._inner._hasDefault()
+        ? this._inner._runPipeline(input, ctx)
+        : undefined;
     }
 
     // Delegate to inner's pipeline for coercion etc.

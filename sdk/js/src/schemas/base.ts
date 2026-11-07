@@ -59,6 +59,9 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   /** @internal */ _importedDefinitions: Record<string, SchemaNode> = {};
   /** @internal */ _importedExtensions: AnyValiDocument["extensions"] = {};
 
+  /** @internal Presence of a default through transparent wrappers/references. */
+  _hasDefault(_depth = 0): boolean { return this._defaultValue !== ABSENT; }
+
   // ---------- public API ----------
 
   parse(input: unknown, options?: ParseOptions): TOutput {

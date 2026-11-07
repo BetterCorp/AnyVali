@@ -122,7 +122,7 @@ export class ObjectSchema<
 
       if (!hasKey) {
         // Check if required
-        if (prop.required && prop.schema._defaultValue === ABSENT) {
+        if (prop.required && !prop.schema._hasDefault()) {
           const expectedKind = prop.schema._toNode().kind;
           ctx.issues.push({
             code: ISSUE_CODES.REQUIRED,
