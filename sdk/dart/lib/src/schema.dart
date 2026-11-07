@@ -22,6 +22,8 @@ class ValidationIssue {
   ValidationIssue(this.code, this.message, List<Object> path,
       {this.expected, this.received})
       : path = List.unmodifiable(path);
+
+  /// Encode portable issue fields, omitting unavailable diagnostics.
   JsonMap toJson() => {
         'code': code,
         'message': message,
@@ -56,6 +58,8 @@ class Schema<T> {
   final JsonMap _definitions;
   final JsonMap _extensions;
   final T Function(dynamic) _decode;
+
+  /// Snapshot node context and retain the typed output decoder.
   Schema._(JsonMap node,
       {JsonMap definitions = const {},
       JsonMap extensions = const {},
@@ -195,8 +199,11 @@ class Schema<T> {
     final document = _clone({
       'anyvaliVersion': '1.0',
       'schemaVersion': '1.1',
-      'root': _node,
-      'definitions': _definitions,
+      'root': mode == 'portable' ? _portableNode(_node) : _node,
+      'definitions': mode == 'portable'
+          ? _definitions
+              .map((key, value) => MapEntry(key, _portableNode(value)))
+          : _definitions,
       'extensions': mode == 'extended' ? _extensions : <String, dynamic>{}
     });
     try {
@@ -638,6 +645,41 @@ JsonMap _aliases(JsonMap node) => {
           node.containsKey('schemas'))
         'allOf': node['schemas'],
     };
+
+/// Remove informational extensions from schema nodes in portable mode.
+/// Traverse schema edges only; defaults and metadata remain unchanged as data.
+JsonMap _portableNode(JsonMap node, [int depth = 0]) {
+  if (depth > 200) throw FormatException('Schema nesting too deep');
+  final output = {...node}..remove('extensions');
+  switch (node['kind']) {
+    case 'object':
+      output['properties'] = (node['properties'] as Map)
+          .map((key, value) => MapEntry(key, _portableNode(value, depth + 1)));
+    case 'array' || 'record' || 'optional' || 'nullable':
+      final keys = switch (node['kind']) {
+        'array' => ['items'],
+        'record' => ['values', 'valueSchema'],
+        _ => ['schema', 'inner'],
+      };
+      for (final key in keys) {
+        if (node.containsKey(key))
+          output[key] = _portableNode(node[key], depth + 1);
+      }
+    case 'tuple' || 'union' || 'intersection':
+      final keys = switch (node['kind']) {
+        'tuple' => ['elements', 'items'],
+        'union' => ['variants', 'schemas'],
+        _ => ['allOf', 'schemas'],
+      };
+      for (final key in keys) {
+        if (node.containsKey(key))
+          output[key] = [
+            for (final child in node[key]) _portableNode(child, depth + 1)
+          ];
+      }
+  }
+  return output;
+}
 
 /// Recognize finite JSON primitive values allowed in literals and enums.
 bool _primitive(dynamic v) =>
@@ -1238,8 +1280,23 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
       throw ValidationError(
           [ValidationIssue('too_deep', 'Maximum depth exceeded', path)]);
     if (value == null || identical(value, absent)) return value;
-    if ((node['metadata'] as Map?)?['sensitive'] == true)
-      return transform(List.unmodifiable(path), value);
+    if ((node['metadata'] as Map?)?['sensitive'] == true) {
+      final transformed = transform(List.unmodifiable(path), value);
+      if (!decrypting &&
+          (transformed is! String ||
+              !transformed.startsWith('encrypted:') ||
+              transformed.length <= 10)) {
+        throw ValidationError([
+          ValidationIssue(
+              transformed is String ? 'invalid_string' : 'invalid_type',
+              'Sensitive encryption must return encrypted:<payload>',
+              path,
+              expected: 'encrypted:<value>',
+              received: _type(transformed))
+        ]);
+      }
+      return transformed;
+    }
     final kind = node['kind'];
     if (kind == 'ref')
       return walk(schema._definitions[(node['ref'] as String).substring(14)],

@@ -99,7 +99,8 @@ Use `jsonEncode`/`jsonDecode` from `dart:convert` to transmit documents.
 Definitions and metadata survive export and native composition. Conflicting
 imported definition names are rejected. Unknown semantic extensions and custom
 validator references are rejected. Informational extensions are retained in
-`exportSchema(mode: 'extended')`; portable exports omit document extensions.
+`exportSchema(mode: 'extended')`; portable exports remove extensions from the document and every schema node,
+while preserving defaults and metadata as data.
 
 ## Numeric limits
 

@@ -4,6 +4,105 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('present sensitive encryption cannot return null or absence', () {
+    final schemas = [
+      av.string().optional().describe('Secret', sensitive: true),
+      av.string().nullable().describe('Secret', sensitive: true)
+    ];
+    for (final schema in schemas) {
+      for (final lost in [null, av.absent]) {
+        expect(() => av.encrypt(schema, 'secret', (p, v) => lost),
+            throwsA(isA<av.ValidationError>()));
+      }
+      expect(av.encrypt(schema, 'secret', (p, v) => 'encrypted:$v'),
+          'encrypted:secret');
+    }
+    var calls = 0;
+    expect(
+        av.encrypt(schemas[1], null, (p, v) {
+          calls++;
+          return null;
+        }),
+        null);
+    expect(
+        identical(
+            av.encrypt(schemas[0], av.absent, (p, v) {
+              calls++;
+              return null;
+            }),
+            av.absent),
+        isTrue);
+    expect(calls, 0);
+    final object = av.object({'secret': schemas[1]});
+    expect(
+        () => av.encrypt(object, {'secret': 'value'}, (p, v) => null),
+        throwsA(predicate((e) =>
+            e is av.ValidationError &&
+            e.issues.single.path.single == 'secret')));
+  });
+  test('portable export strips schema extensions without changing default data',
+      () {
+    final base = av.any().exportSchema();
+    final extensions = {
+      'dart': {'_criticality': 'informational', 'hint': 'example'}
+    };
+    final document = {
+      ...base,
+      'root': {
+        'kind': 'object',
+        'properties': {
+          'value': {
+            'kind': 'optional',
+            'inner': {
+              'kind': 'ref',
+              'ref': '#/definitions/Value',
+              'extensions': extensions
+            },
+            'extensions': extensions
+          },
+          'data': {
+            'kind': 'any',
+            'default': {
+              'extensions': {'app': 'keep'}
+            },
+            'extensions': extensions
+          },
+        },
+        'required': <String>[],
+        'extensions': extensions,
+        'metadata': {
+          'custom': {'extensions': 'keep'}
+        }
+      },
+      'definitions': {
+        'Value': {'kind': 'string', 'extensions': extensions},
+      }
+    };
+    final schema = av.importSchema(document);
+    final portable = schema.exportSchema();
+    expect((portable['root'] as Map).containsKey('extensions'), isFalse);
+    expect(
+        (portable['root']['properties']['value'] as Map)
+            .containsKey('extensions'),
+        isFalse);
+    expect(
+        (portable['root']['properties']['value']['inner'] as Map)
+            .containsKey('extensions'),
+        isFalse);
+    expect((portable['definitions']['Value'] as Map).containsKey('extensions'),
+        isFalse);
+    expect(portable['root']['metadata']['custom']['extensions'], 'keep');
+    expect(av.importSchema(portable).parse({'value': 'ok'}), {
+      'value': 'ok',
+      'data': {
+        'extensions': {'app': 'keep'}
+      }
+    });
+    final extended = schema.exportSchema(mode: 'extended');
+    expect(extended['root']['extensions'], extensions);
+    expect(extended['definitions']['Value']['extensions'], extensions);
+  });
+
   test('optional inner defaults survive wrappers and round trips', () {
     final schema = av.object({
       'count': av.int_().defaultValue(0).optional(),
