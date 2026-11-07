@@ -79,6 +79,7 @@ class Schema<T> {
 
   /// Validate one modifier and return a new immutable schema snapshot.
   Schema<T> _set(String key, dynamic value) {
+    _checkJson(value);
     final node = {..._node, key: value};
     _checkNode(node, _definitions, 0);
     return Schema._(node,
@@ -235,7 +236,7 @@ class Schema<T> {
   JsonMap exportSchema({String mode = 'portable'}) {
     if (!['portable', 'extended'].contains(mode))
       throw ArgumentError.value(mode);
-    final document = _clone({
+    final document = {
       'anyvaliVersion': '1.0',
       'schemaVersion': '1.1',
       'root': mode == 'portable' ? _portableNode(_node) : _node,
@@ -244,13 +245,9 @@ class Schema<T> {
               .map((key, value) => MapEntry(key, _portableNode(value)))
           : _definitions,
       'extensions': mode == 'extended' ? _extensions : <String, dynamic>{}
-    });
-    try {
-      jsonEncode(document);
-    } on JsonUnsupportedObjectError {
-      throw FormatException('Schema values must be JSON-compatible');
-    }
-    return document;
+    };
+    _checkJson(document);
+    return _clone(document);
   }
 }
 
@@ -395,6 +392,7 @@ Schema<Object?> intersection(List<Schema> schemas) => _composite(
 
 /// Validate a portable document and retain its definitions and metadata.
 Schema<Object?> importSchema(JsonMap document) {
+  _checkJson(document);
   const keys = {
     'anyvaliVersion',
     'schemaVersion',
@@ -423,6 +421,36 @@ Schema<Object?> importSchema(JsonMap document) {
   }
   return Schema._(Map<String, dynamic>.from(document['root']),
       definitions: defs, extensions: extensions);
+}
+
+/// Reject non-JSON schema data, cycles, and excessive nesting before cloning.
+/// Do not invoke arbitrary toJson methods on values supplied by callers.
+void _checkJson(dynamic value, [int depth = 0, Set<Object>? ancestors]) {
+  if (value == null ||
+      value is String ||
+      value is bool ||
+      (value is num && value.isFinite)) return;
+  if (depth > 1000 || (value is! Map && value is! List)) {
+    throw FormatException(
+        'Schema values must be JSON-compatible with bounded nesting');
+  }
+  ancestors ??= Set<Object>.identity();
+  if (!ancestors.add(value)) throw FormatException('Cyclic schema value');
+  try {
+    if (value is Map) {
+      if (!_stringMap(value))
+        throw FormatException('Schema object keys must be strings');
+      for (final child in value.values) {
+        _checkJson(child, depth + 1, ancestors);
+      }
+    } else {
+      for (final child in value as List) {
+        _checkJson(child, depth + 1, ancestors);
+      }
+    }
+  } finally {
+    ancestors.remove(value);
+  }
 }
 
 /// Accept JSON objects by their string keys rather than Dart generic arguments.

@@ -98,6 +98,9 @@ final imported = av.importSchema(document);
 ```
 
 Use `jsonEncode`/`jsonDecode` from `dart:convert` to transmit documents.
+Schema defaults, metadata, and extensions must contain JSON values: finite
+numbers, strings, booleans, null, lists, and maps with string keys. Cycles and
+custom Dart objects are rejected; custom `toJson()` methods are not invoked.
 `exportSchema` avoids Dart's reserved `export` keyword. Documents use schemaVersion
 `1.1`; imports also accept the existing `1` and `1.0` forms and legacy node aliases.
 Definitions and metadata survive export and native composition. Conflicting

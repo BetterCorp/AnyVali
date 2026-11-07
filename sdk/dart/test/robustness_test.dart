@@ -4,6 +4,62 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('schema data must contain actual JSON values', () {
+    final base = av.any().exportSchema();
+    final cycle = <String, dynamic>{};
+    cycle['self'] = cycle;
+    for (final value in [
+      DateTime.utc(2026),
+      BigInt.one,
+      double.nan,
+      double.infinity,
+      av.absent,
+      () => 1,
+      {1, 2},
+      {1: 'bad key'},
+      cycle,
+      _EncodableValue()
+    ]) {
+      for (final document in [
+        {
+          ...base,
+          'root': {'kind': 'any', 'default': value}
+        },
+        {
+          ...base,
+          'root': {
+            'kind': 'any',
+            'metadata': {
+              'custom': {'value': value}
+            }
+          }
+        },
+        {
+          ...base,
+          'extensions': {
+            'dart': {'_criticality': 'informational', 'value': value}
+          }
+        }
+      ]) {
+        expect(() => av.importSchema(document), throwsFormatException);
+      }
+      expect(() => av.any().defaultValue(value), throwsFormatException);
+      expect(() => av.any().metadata({'custom': value}), throwsFormatException);
+    }
+    final shared = <String, dynamic>{
+      'value': [null, false, 0, 'text']
+    };
+    final schema = av.importSchema({
+      ...base,
+      'root': {
+        'kind': 'any',
+        'default': [shared, shared]
+      }
+    });
+    expect(schema.parse(), [shared, shared]);
+    expect(jsonDecode(jsonEncode(schema.exportSchema()))['root']['default'],
+        [shared, shared]);
+  });
   test('malformed coercion targets report schema import errors', () {
     final base = av.any().exportSchema();
     for (final target in [
@@ -755,4 +811,10 @@ void main() {
     expect(a, [null, 1]);
     expect(b, {'a': null});
   });
+}
+
+/// Represent an encodable Dart object that is not itself a JSON value.
+class _EncodableValue {
+  /// Exercise rejection without calling user serialization hooks.
+  Object toJson() => throw StateError('Must not be invoked');
 }
