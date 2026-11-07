@@ -4,6 +4,33 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('ordered string preprocessing can precede a typed conversion', () {
+    final base = av.any().exportSchema();
+    final cases = [
+      ('int', ['trim', 'string->int'], ' 42 ', 42),
+      ('number', ['upper', 'string->number'], ' 2.5e1 ', 25.0),
+      ('bool', ['upper', 'string->bool'], 'falſe', false),
+    ];
+    for (final (kind, operations, input, expected) in cases) {
+      final schema = av.importSchema({
+        ...base,
+        'root': {'kind': kind, 'coerce': operations}
+      });
+      expect(schema.parse(input), expected);
+      expect(schema.parse(expected), expected);
+      expect(av.importSchema(schema.exportSchema()).parse(input), expected);
+    }
+    expect(
+        () => av.importSchema({
+              ...base,
+              'root': {
+                'kind': 'int',
+                'coerce': ['string->int', 'trim']
+              }
+            }),
+        throwsFormatException);
+    expect(() => av.int_().coerce(trim: true), throwsFormatException);
+  });
   test('native object export excludes defaults through transparent nodes', () {
     final base = av.any().exportSchema();
     final referenced = av.importSchema({

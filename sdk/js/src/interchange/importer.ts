@@ -199,7 +199,7 @@ export function importSchema(doc: AnyValiDocument): BaseSchema {
           node.properties ?? {}
         )) {
           let propSchema = importNode(propNode, d);
-          if (!requiredSet.has(key)) {
+          if (!requiredSet.has(key) && !(propSchema as any)._isOptionalWrapper) {
             propSchema = new OptionalSchema(propSchema);
           }
           // Use defineProperty to safely handle __proto__ and other special keys

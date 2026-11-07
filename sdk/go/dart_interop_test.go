@@ -1,7 +1,9 @@
 package anyvali
 
 import (
+	"bytes"
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -242,5 +244,109 @@ func TestDartRefOccurrenceModifiers(t *testing.T) {
 	present := schema.SafeParse(map[string]any{"c": "9", "d": int64(10), "chain": " y "})
 	if !present.Success || present.Data.(map[string]any)["chain"] != "Y" {
 		t.Fatalf("ref coercion order: %+v", present)
+	}
+}
+
+// TestDartCanonicalCoercionTypedInput applies string conversions only to their
+// declared source and leaves target validators responsible for other types.
+func TestDartCanonicalCoercionTypedInput(t *testing.T) {
+	for _, test := range []struct {
+		schema   Schema
+		input    any
+		expected any
+	}{
+		{Int().Coerce("string->int"), int64(42), int64(42)},
+		{Number().Coerce("string->number"), float64(2.5), float64(2.5)},
+		{Bool().Coerce("string->bool"), true, true},
+	} {
+		result := test.schema.SafeParse(test.input)
+		if !result.Success || !reflect.DeepEqual(result.Data, test.expected) {
+			t.Fatalf("typed canonical input: %+v", result)
+		}
+		invalid := test.schema.SafeParse(map[string]any{})
+		if invalid.Success || invalid.Issues[0].Code != IssueInvalidType {
+			t.Fatalf("non-string invalid input bypassed validation: %+v", invalid)
+		}
+	}
+	legacy := Int().Coerce().SafeParse(int64(42))
+	if legacy.Success || legacy.Issues[0].Code != IssueCoercionFailed {
+		t.Fatalf("legacy coercion changed: %+v", legacy)
+	}
+}
+
+// TestDartStringPreprocessingTypedTargets leaves non-string sources to validation
+// while retaining ordered preprocessing for incoming strings.
+func TestDartStringPreprocessingTypedTargets(t *testing.T) {
+	for _, operation := range []CoercionType{CoerceTrim, CoerceLower, CoerceUpper} {
+		value, err := applyCoercion(int64(42), operation)
+		if err != nil || value != int64(42) {
+			t.Fatalf("string-source bypass: %v %v", value, err)
+		}
+		result := String().Coerce(operation).SafeParse(int64(42))
+		if result.Success || result.Issues[0].Code != IssueInvalidType {
+			t.Fatalf("target validation: %+v", result)
+		}
+	}
+	integer := Int().Coerce(CoerceTrim, "string->int")
+	if r := integer.SafeParse(int64(42)); !r.Success || r.Data != int64(42) {
+		t.Fatalf("typed preprocessing: %+v", r)
+	}
+	boolean := Bool().Coerce(CoerceUpper, "string->bool")
+	if r := boolean.SafeParse("falſe"); !r.Success || r.Data != false {
+		t.Fatalf("ordered bool preprocessing: %+v", r)
+	}
+}
+
+// TestJavaScriptPortableCoercionFixture consumes a document generated and asserted
+// by the JS SDK, including nested schema edges and data keys named coerce.
+func TestJavaScriptPortableCoercionFixture(t *testing.T) {
+	data, err := os.ReadFile("testdata/js-ref-coercions.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Schema json.RawMessage
+		Input  any
+		Output any
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatal(err)
+	}
+	schema, err := ImportJSON(fixture.Schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := schema.SafeParse(fixture.Input)
+	if !result.Success {
+		t.Fatalf("JS export: %+v", result)
+	}
+	got, err := json.Marshal(result.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(fixture.Output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("JS/Go output differs: %s != %s", got, want)
+	}
+	encoded, err := ExportJSON(schema, Portable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := ImportJSON(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again := restored.SafeParse(fixture.Input)
+	if !again.Success {
+		t.Fatalf("reimport: %+v", again)
+	}
+	roundTrip, err := json.Marshal(again.Data)
+	if err != nil || !bytes.Equal(roundTrip, want) {
+		t.Fatalf("roundtrip output: %s (%v)", roundTrip, err)
 	}
 }

@@ -8,6 +8,17 @@ import 'package:test/test.dart';
 
 /// Exercise both repository conformance corpora, round trips, and sensitive paths.
 void main() {
+  test(
+      'JavaScript portable fixture retains ref coercions, schema edges and defaults',
+      () {
+    final fixture = jsonDecode(
+        File('../go/testdata/js-ref-coercions.json').readAsStringSync()) as Map;
+    final schema =
+        av.importSchema(Map<String, dynamic>.from(fixture['schema']));
+    expect(schema.parse(fixture['input']), fixture['output']);
+    expect(av.importSchema(schema.exportSchema()).parse(fixture['input']),
+        fixture['output']);
+  });
   final roots = [
     Directory('../../spec/corpus'),
     Directory('../../spec/interchange-corpus')

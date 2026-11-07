@@ -48,6 +48,14 @@ func coercionForKind(kind string) CoercionType {
 
 // applyCoercion attempts to coerce the input value according to the given coercion type.
 func applyCoercion(value any, coercion CoercionType) (any, error) {
+	// Canonical conversions describe a string source. Other inputs must reach
+	// the target validator unchanged, including already-typed target values.
+	switch coercion {
+	case "string->int", "string->number", "string->bool", CoerceTrim, CoerceLower, CoerceUpper:
+		if _, isString := value.(string); !isString {
+			return value, nil
+		}
+	}
 	switch coercion {
 	case CoerceToInt:
 		return coerceToInt(value)

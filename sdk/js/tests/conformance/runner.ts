@@ -65,6 +65,7 @@ export function loadCorpus(corpusDir: string): CorpusFile[] {
 /**
  * Run a single corpus test case.
  */
+/** Check parsing, both export modes and sensitive paths for a shared corpus case. */
 export function runTestCase(tc: CorpusTestCase): CorpusTestResult {
   try {
     const input = tc.input === "__ABSENT__" ? ABSENT : tc.input;
@@ -77,8 +78,10 @@ export function runTestCase(tc: CorpusTestCase): CorpusTestResult {
       const original = schema.safeParse(input);
       assert.equal(original.success, tc.valid);
       if (original.success) assert.deepEqual(original.data, tc.output);
-      const exported = exportSchema(schema.describe("Imported contract"));
-      assert.deepEqual(exported.definitions, tc.schema.definitions);
+      const described = schema.describe("Imported contract");
+      assert.deepEqual(exportSchema(described, "extended").definitions, tc.schema.definitions);
+      const exported = exportSchema(described);
+      assert.deepEqual(Object.keys(exported.definitions).sort(), Object.keys(tc.schema.definitions).sort());
       schema = importSchema(JSON.parse(JSON.stringify(exported)));
     }
     if (tc.sensitivePaths) {

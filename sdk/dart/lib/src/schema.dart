@@ -1056,8 +1056,13 @@ List<String> _coercions(dynamic config, String kind) {
           : kind == 'bool'
               ? 'string->bool'
               : null;
-  if ((kind != 'string' &&
-          tokens.any((token) => ['trim', 'lower', 'upper'].contains(token))) ||
+  final conversionIndex =
+      tokens.indexWhere((token) => token.startsWith('string->'));
+  final misplacedTransform = kind != 'string' &&
+      tokens.asMap().entries.any((entry) =>
+          ['trim', 'lower', 'upper'].contains(entry.value) &&
+          (conversionIndex < 0 || entry.key > conversionIndex));
+  if (misplacedTransform ||
       conversions.length > 1 ||
       (conversions.isNotEmpty && conversions.single != expected)) {
     throw FormatException('Coercion target does not match schema kind $kind');

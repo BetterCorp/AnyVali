@@ -1,0 +1,160 @@
+{
+  "schema": {
+    "anyvaliVersion": "1.0",
+    "schemaVersion": "1.1",
+    "root": {
+      "kind": "object",
+      "properties": {
+        "name": {
+          "kind": "ref",
+          "ref": "#/definitions/Text",
+          "coerce": [
+            "trim",
+            "upper"
+          ]
+        },
+        "count": {
+          "kind": "ref",
+          "ref": "#/definitions/Value",
+          "coerce": [
+            "string->int"
+          ]
+        },
+        "flag": {
+          "kind": "ref",
+          "ref": "#/definitions/Flag",
+          "coerce": [
+            "upper",
+            "string->bool"
+          ]
+        },
+        "optional": {
+          "kind": "optional",
+          "schema": {
+            "kind": "nullable",
+            "default": " x ",
+            "schema": {
+              "kind": "string",
+              "startsWith": "x",
+              "coerce": [
+                "trim"
+              ]
+            }
+          }
+        },
+        "record": {
+          "kind": "record",
+          "values": {
+            "kind": "ref",
+            "ref": "#/definitions/Text",
+            "coerce": [
+              "trim"
+            ]
+          }
+        },
+        "tuple": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "nullable",
+              "schema": {
+                "kind": "ref",
+                "ref": "#/definitions/Value",
+                "coerce": [
+                  "string->int"
+                ]
+              }
+            },
+            {
+              "kind": "string",
+              "coerce": [
+                "lower"
+              ]
+            }
+          ]
+        },
+        "data": {
+          "kind": "any",
+          "default": {
+            "kind": "ref",
+            "coerce": {
+              "trim": true
+            },
+            "schema": {
+              "coerce": {
+                "lower": true
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "count",
+        "flag",
+        "record",
+        "tuple",
+        "data"
+      ],
+      "unknownKeys": "strip",
+      "metadata": {
+        "wireData": {
+          "coerce": {
+            "lower": true
+          }
+        }
+      }
+    },
+    "definitions": {
+      "Text": {
+        "kind": "string",
+        "coerce": [
+          "trim"
+        ]
+      },
+      "Value": {
+        "kind": "int"
+      },
+      "Flag": {
+        "kind": "bool"
+      }
+    },
+    "extensions": {}
+  },
+  "input": {
+    "name": " x ",
+    "count": "42",
+    "flag": "falſe",
+    "record": {
+      "key": " x "
+    },
+    "tuple": [
+      "7",
+      "LOWER"
+    ]
+  },
+  "output": {
+    "name": "X",
+    "count": 42,
+    "flag": false,
+    "optional": "x",
+    "record": {
+      "key": "x"
+    },
+    "tuple": [
+      7,
+      "lower"
+    ],
+    "data": {
+      "kind": "ref",
+      "coerce": {
+        "trim": true
+      },
+      "schema": {
+        "coerce": {
+          "lower": true
+        }
+      }
+    }
+  }
+}

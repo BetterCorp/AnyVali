@@ -720,6 +720,11 @@ You can also call `.export(mode?)` directly on a schema instance:
 const doc = schema.export("portable");
 ```
 
+Portable exports use canonical child keys (`schema`, `values`, and `elements`)
+and ordered coercion identifiers such as `["trim", "upper"]` or
+`["string->int"]`. Imported operation lists retain their order. Extended exports
+retain the native flag-object form and legacy child keys.
+
 The document structure:
 
 ```json

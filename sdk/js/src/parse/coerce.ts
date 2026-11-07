@@ -9,49 +9,78 @@ export type CoercionResult =
   | { success: true; value: unknown }
   | { success: false; message: string };
 
-/**
- * Normalize coercion config from the corpus/interchange format.
- * The corpus uses strings like "string->int", "trim", "lower", "upper"
- * or arrays like ["trim", "lower"]. The SDK API uses CoercionConfig objects.
- */
-export function normalizeCoercionConfig(
-  raw: unknown
-): CoercionConfig {
-  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
-    return raw as CoercionConfig;
+/** Private sequence retained when a schema clones its coercion configuration. */
+const ORDERED_COERCIONS = Symbol("anyvali.orderedCoercions");
+type OrderedConfig = CoercionConfig & { [ORDERED_COERCIONS]?: string[] };
+const ALIASES: Record<string, string> = { int: "string->int", number: "string->number", bool: "string->bool" };
+
+/** Retain interchange operation order while keeping native flag configs supported. */
+export function normalizeCoercionConfig(raw: unknown): CoercionConfig {
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) return raw as CoercionConfig;
+  const items = (Array.isArray(raw) ? raw : [raw]).map(item => ALIASES[String(item)] ?? String(item));
+  if (items.some(item => !["string->int", "string->number", "string->bool", "trim", "lower", "upper"].includes(item))) {
+    throw new Error("Unknown coercion identifier");
   }
-
-  const config: CoercionConfig = {};
-  const items: string[] = Array.isArray(raw) ? raw : [raw as string];
-
-  for (const item of items) {
-    switch (item) {
-      case "string->int":
-      case "string->number":
-      case "string->bool":
-        config.from = "string";
-        break;
-      case "trim":
-        config.trim = true;
-        break;
-      case "lower":
-        config.lower = true;
-        break;
-      case "upper":
-        config.upper = true;
-        break;
-    }
-  }
-
-  return config;
+  return { [ORDERED_COERCIONS]: items } as OrderedConfig;
 }
 
+/** Copy retained operations without exposing the private configuration symbol. */
+export function orderedCoercions(config: CoercionConfig): string[] | undefined {
+  return (config as OrderedConfig)[ORDERED_COERCIONS]?.slice();
+}
+
+/** Encode native flag configs in the order used by applyCoercion. */
+export function portableCoercionTokens(config: CoercionConfig, targetType: string): string[] {
+  const ordered = orderedCoercions(config);
+  const conversions: Record<string, string> = {
+    int: "string->int", int8: "string->int", int16: "string->int", int32: "string->int", int64: "string->int",
+    uint8: "string->int", uint16: "string->int", uint32: "string->int", uint64: "string->int",
+    number: "string->number", float32: "string->number", float64: "string->number", bool: "string->bool",
+  };
+  if (ordered) {
+    const firstConversion = ordered.findIndex(operation => operation.startsWith("string->"));
+    if (ordered.some(operation => operation.startsWith("string->") && operation !== conversions[targetType])) {
+      throw new Error("Coercion conversion does not match its target kind");
+    }
+    if (targetType !== "string" && ordered.some((operation, index) =>
+      ["trim", "lower", "upper"].includes(operation) && (firstConversion < 0 || index > firstConversion))) {
+      throw new Error("String preprocessing must precede a typed conversion");
+    }
+    return ordered;
+  }
+  if (Object.keys(config).some(key => !["from", "trim", "lower", "upper"].includes(key))) throw new Error("Unknown portable coercion flag");
+  if (config.from !== undefined && config.from !== "string") throw new Error("Unsupported portable coercion source");
+  const tokens: string[] = [];
+  for (const flag of ["trim", "lower", "upper"] as const) {
+    if (config[flag] !== undefined && typeof config[flag] !== "boolean") throw new Error("Invalid coercion flag");
+    if (config[flag]) tokens.push(flag);
+  }
+  if (tokens.length > 0 && targetType !== "string" && !conversions[targetType]) {
+    throw new Error("String preprocessing requires a string target or a typed conversion");
+  }
+  if (conversions[targetType]) tokens.push(conversions[targetType]);
+  return tokens;
+}
+
+/** Apply ordered portable operations or the native flag configuration. */
 export function applyCoercion(
   input: unknown,
   config: CoercionConfig,
   targetType: string
 ): CoercionResult {
   let value = input;
+  const ordered = orderedCoercions(config);
+  if (ordered) {
+    for (const operation of ordered) {
+      const target = operation === "string->int" ? "int" : operation === "string->number" ? "number" : "bool";
+      const step = operation.startsWith("string->")
+        ? applyCoercion(value, { from: "string" }, target)
+        : applyCoercion(value, { [operation]: true }, "string");
+      if (!step.success) return step;
+      value = step.value;
+    }
+    return { success: true, value };
+  }
 
   // String transformations (trim, lower, upper) apply when input is a string
   if (typeof value === "string") {
