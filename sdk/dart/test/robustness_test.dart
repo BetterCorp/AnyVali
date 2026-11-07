@@ -3,6 +3,84 @@ import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
 void main() {
+  test('optional inner defaults survive wrappers and round trips', () {
+    final schema = av.object({
+      'count': av.int_().defaultValue(0).optional(),
+      'text': av.string().coerce(trim: true).defaultValue(' keep ').optional(),
+      'tags': av.array(av.string()).defaultValue(['a']).optional(),
+      'nullable': av.string().nullable().defaultValue(null).optional(),
+    });
+    for (final s in [schema, av.importSchema(schema.exportSchema())]) {
+      final result = s.parse({}) as Map;
+      expect(result, {
+        'count': 0,
+        'text': ' keep ',
+        'tags': ['a'],
+        'nullable': null
+      });
+      (result['tags'] as List).add('changed');
+      expect((s.parse({}) as Map)['tags'], ['a']);
+    }
+    expect(
+        av
+            .int_()
+            .min(1)
+            .defaultValue(0)
+            .optional()
+            .safeParse()
+            .issues
+            .single
+            .code,
+        'default_invalid');
+    final secret = av
+        .string()
+        .defaultValue('plaintext')
+        .optional()
+        .describe('Secret', sensitive: true);
+    expect(av.safeParseEncrypted(secret).success, isFalse);
+    expect(av.encrypt(secret, av.absent, (p, v) => 'encrypted:$v'),
+        'encrypted:plaintext');
+  });
+  test('referenced defaults materialize missing required and optional fields',
+      () {
+    final base = av.string().exportSchema();
+    final document = {
+      ...base,
+      'root': {
+        'kind': 'object',
+        'properties': {
+          'required': {'kind': 'ref', 'ref': '#/definitions/Value'},
+          'other': {'kind': 'ref', 'ref': '#/definitions/Value'},
+        },
+        'required': ['required']
+      },
+      'definitions': {
+        'Value': {'kind': 'ref', 'ref': '#/definitions/Text'},
+        'Text': {'kind': 'string', 'coerce': 'trim', 'default': ' fallback '},
+      }
+    };
+    final schema = av.importSchema(document);
+    for (final s in [schema, av.importSchema(schema.exportSchema())]) {
+      expect(s.parse({}), {'required': ' fallback ', 'other': ' fallback '});
+      expect(s.parse({'required': ' value '}),
+          {'required': 'value', 'other': ' fallback '});
+    }
+    final loop = {
+      ...base,
+      'root': {
+        'kind': 'object',
+        'properties': {
+          'x': {'kind': 'ref', 'ref': '#/definitions/Loop'}
+        },
+        'required': ['x']
+      },
+      'definitions': {
+        'Loop': {'kind': 'ref', 'ref': '#/definitions/Loop'}
+      }
+    };
+    expect(av.importSchema(loop).safeParse({}).issues.single.code, 'required');
+  });
+
   test('required keys take precedence over imported optional wrappers', () {
     final base = av.string().exportSchema();
     final document = {

@@ -742,11 +742,28 @@ List<String> _coercions(dynamic config, String kind) {
   return tokens;
 }
 
+/// Find a default through transparent wrappers and references without looping.
+(bool, dynamic) _defaultFor(JsonMap node, JsonMap definitions,
+    [int depth = 0]) {
+  if (depth > 200) return (false, null);
+  if (node.containsKey('default')) return (true, node['default']);
+  node = _aliases(node);
+  if (node['kind'] == 'optional' || node['kind'] == 'nullable') {
+    return _defaultFor(node['schema'], definitions, depth + 1);
+  }
+  if (node['kind'] == 'ref') {
+    final target = definitions[(node['ref'] as String).substring(14)];
+    if (target != null) return _defaultFor(target, definitions, depth + 1);
+  }
+  return (false, null);
+}
+
 dynamic _run(JsonMap node, dynamic input, List<Object> path,
     List<ValidationIssue> issues, JsonMap definitions, int depth,
     {bool encrypted = false,
     _UnionTrace? unions,
-    String? inheritedUnknownKeys}) {
+    String? inheritedUnknownKeys,
+    bool skipCoercion = false}) {
   void issue(String code, dynamic expected, dynamic received) =>
       issues.add(ValidationIssue(
           code, '$code: expected $expected, received $received', path,
@@ -764,7 +781,8 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   var value = input;
   final encryptedSensitive =
       encrypted && (node['metadata'] as Map?)?['sensitive'] == true;
-  if (!identical(value, absent) &&
+  if (!skipCoercion &&
+      !identical(value, absent) &&
       !(encryptedSensitive && value != null) &&
       node.containsKey('coerce')) {
     for (final token in _coercions(node['coerce'], kind)) {
@@ -816,8 +834,10 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       }
     }
   }
-  final usedDefault = identical(value, absent) && node.containsKey('default');
-  if (usedDefault) value = _clone(node['default']);
+  final defaultInfo =
+      identical(value, absent) ? _defaultFor(node, definitions) : (false, null);
+  final usedDefault = identical(value, absent) && defaultInfo.$1;
+  if (usedDefault) value = _clone(defaultInfo.$2);
   final start = issues.length;
   dynamic child(JsonMap childNode, dynamic v, List<Object> p,
           [List<ValidationIssue>? into, _UnionTrace? selected]) =>
@@ -825,6 +845,12 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
           encrypted: encrypted,
           unions: selected ?? unions,
           inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys);
+  dynamic delegate(JsonMap inner) =>
+      _run(inner, value, path, issues, definitions, depth + 1,
+          encrypted: encrypted,
+          unions: unions,
+          inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys,
+          skipCoercion: usedDefault || skipCoercion);
   dynamic validate() {
     if (encryptedSensitive && !identical(value, absent) && value != null) {
       if (value is! String) {
@@ -835,12 +861,11 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       return value;
     }
     if (kind == 'ref')
-      return child(
-          definitions[(node['ref'] as String).substring(14)], value, path);
+      return delegate(definitions[(node['ref'] as String).substring(14)]);
     if (kind == 'optional' && identical(value, absent)) return absent;
     if (kind == 'nullable' && value == null) return null;
     if (kind == 'optional' || kind == 'nullable')
-      return child(node['schema'], value, path);
+      return delegate(node['schema']);
     if (kind == 'any' || kind == 'unknown') return value;
     if (kind == 'never') {
       issue('invalid_type', 'never', _type(value));
@@ -1047,7 +1072,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         final field = entry.value as JsonMap;
         final present =
             map.containsKey(entry.key) && !identical(map[entry.key], absent);
-        if (!present && !field.containsKey('default')) {
+        if (!present && !_defaultFor(field, definitions).$1) {
           if (required.contains(entry.key)) {
             issues.add(ValidationIssue('required',
                 'Required field ${entry.key} is missing', [...path, entry.key],
