@@ -27,6 +27,7 @@ SOURCE_FILES = [
     Path("docs/sdk-ruby.md"),
     Path("docs/sdk-cpp.md"),
     Path("docs/sdk-dart.md"),
+    Path("docs/dart-setup-publishing.md"),
     Path("spec/spec.md"),
     Path("spec/json-format.md"),
     Path("spec/corpus/README.md"),

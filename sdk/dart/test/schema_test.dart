@@ -3,6 +3,33 @@ import 'package:anyvali/anyvali.dart' as av;
 import 'package:test/test.dart';
 
 void main() {
+  test('native signed integers keep exact values across the int64 range', () {
+    for (final text in [
+      '9007199254740993',
+      '9223372036854775807',
+      '-9223372036854775808'
+    ]) {
+      final exact = BigInt.parse(text);
+      final parsed = av.int_().coerce().safeParse(text);
+      if (identical(1, 1.0)) {
+        expect(parsed.success, isFalse);
+      } else {
+        final input = exact.toInt();
+        expect(av.int64().parse(input), input);
+        expect(parsed.data, input);
+        expect(
+            av.object({'id': av.int_()}).parse({'id': input}), {'id': input});
+      }
+    }
+  });
+  test(
+      'empty intersections preserve input and portable URLs use the spec grammar',
+      () {
+    expect(av.intersection([]).parse({'keep': 'value'}), {'keep': 'value'});
+    expect(av.string().format('url').parse('https://example/path with spaces'),
+        'https://example/path with spaces');
+    expect(() => av.string().format('bad format'), throwsFormatException);
+  });
   test('numeric precision, decimal multiples and web boundaries', () {
     expect(av.number().multipleOf(0.1).safeParse(0.3).success, isTrue);
     expect(av.number().multipleOf(0.1).safeParse(0.35).success, isFalse);

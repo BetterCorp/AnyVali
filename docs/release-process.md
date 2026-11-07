@@ -30,6 +30,7 @@ Choose the version based on the public changes: `fix:` normally means a patch, `
 | Ruby | RubyGems: `anyvali` |
 | PHP | [Pinned Composer path installation](sdk-php.md#installation) from source |
 | C++ | Repository source |
+| Dart / Flutter | Source package; [pub.dev setup](dart-setup-publishing.md) is required before automated releases |
 | CLI | GitHub release binaries for Linux, macOS, and Windows, with SHA-256 checksums |
 
 The Go SDK is a nested module under `sdk/go`. The current release job verifies the module but does not create `sdk/go/v<version>` tags. A unified root tag therefore does not publish the same semantic Go module version. Pin the release commit with `go get github.com/BetterCorp/AnyVali/sdk/go@<commit>`; Go records its pseudo-version in `go.mod`. A future semantic module release would require the directory-prefixed tag described in [Go's module version mapping](https://go.dev/ref/mod#vcs-version).

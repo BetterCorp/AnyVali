@@ -338,6 +338,10 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
   if (node is! JsonMap || !_kinds.contains(node['kind']))
     _importError('unsupported_schema_kind');
   node = _aliases(node);
+  if (node.containsKey('format') &&
+      node['format'] is String &&
+      !RegExp(r'^[A-Za-z][A-Za-z0-9-]*$').hasMatch(node['format']))
+    throw FormatException('Invalid format name');
   if (node.containsKey('extensions')) _checkExtensions(node['extensions']);
   if (node.containsKey('customValidator') ||
       node.containsKey('customValidators'))
@@ -690,7 +694,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       return null;
     }
     if (kind == 'intersection') {
-      dynamic result;
+      dynamic result = value;
       for (final member in node['allOf']) {
         final parsed = child(member, value, path);
         if (result is Map && parsed is Map) {
@@ -711,7 +715,8 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         value is Map && value.keys.every((k) => k is String),
       _ => _integerKinds.contains(kind)
           ? value is BigInt ||
-              (value is num &&
+              value is int ||
+              (value is double &&
                   value.isFinite &&
                   value == value.truncateToDouble())
           : value is num,
@@ -903,11 +908,7 @@ bool _format(String format, String value) {
     case 'email':
       return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
     case 'url':
-      final uri = Uri.tryParse(value);
-      return uri != null &&
-          ['http', 'https'].contains(uri.scheme) &&
-          uri.host.isNotEmpty &&
-          !RegExp(r'\s').hasMatch(value);
+      return RegExp(r'^https?://.+$').hasMatch(value);
     case 'uuid':
       return RegExp(
               r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
