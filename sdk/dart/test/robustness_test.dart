@@ -4,6 +4,92 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('native object export excludes defaults through transparent nodes', () {
+    final base = av.any().exportSchema();
+    final referenced = av.importSchema({
+      ...base,
+      'root': {'kind': 'ref', 'ref': '#/definitions/Value'},
+      'definitions': {
+        'Value': {
+          'kind': 'nullable',
+          'schema': {'kind': 'bool', 'default': false}
+        }
+      }
+    });
+    final schema = av.object({
+      'text': av.string().defaultValue('x').nullable(),
+      'false': referenced,
+      'null': av.null_().defaultValue(null).nullable(),
+      'empty': av.array(av.string()).defaultValue([]).nullable(),
+    });
+    final expected = {'text': 'x', 'false': false, 'null': null, 'empty': []};
+    expect(schema.parse({}), expected);
+    final portable = schema.exportSchema();
+    expect(portable['root']['required'], isEmpty);
+    expect(av.importSchema(portable).parse({}), expected);
+  });
+  test('email validates local characters and complete domain labels', () {
+    final schema = av.string().format('email');
+    for (final value in [
+      'a@b.c',
+      'user.name+tag@domain.co.uk',
+      "a!#\$%&'*+/=?^_`{|}~-@a-b.example",
+      'a@${'b' * 63}.c'
+    ]) {
+      expect(schema.safeParse(value).success, isTrue, reason: value);
+    }
+    for (final value in [
+      'a@b..c',
+      'a@b!.c',
+      'a@.b.c',
+      'a@b.c.',
+      'a@-b.c',
+      'a@b-.c',
+      'a@b_c.d',
+      'a@${'b' * 64}.c',
+      'a(quote)@b.c',
+      'a@b.c\n',
+      'a@b.c d',
+      'é@b.c',
+      'a@é.c'
+    ]) {
+      final result = schema.safeParse(value);
+      expect(result.success, isFalse, reason: value);
+      expect(result.issues.single.code, 'invalid_string');
+    }
+  });
+  test('HTTP URL formats require a parseable nonempty host', () {
+    final schema = av.string().format('url');
+    for (final value in [
+      'http://a',
+      'https://localhost',
+      'https://example.com/path?q=1#f',
+      'http://user:pass@example.com:8080/path',
+      'http://[::1]:80/'
+    ]) {
+      expect(schema.safeParse(value).success, isTrue, reason: value);
+    }
+    for (final value in [
+      'http://?',
+      'http://#',
+      'http:///',
+      'http://:80',
+      'https://user@?query',
+      'http://bad host/',
+      'http://bad%20host/',
+      'http://bad%2Fhost/',
+      'http://bad%ZZhost/',
+      'http://exa^mple/',
+      'http://example.com:invalid',
+      'http://example.com:65536',
+      'ftp://example.com',
+      'example.com'
+    ]) {
+      final result = schema.safeParse(value);
+      expect(result.success, isFalse, reason: value);
+      expect(result.issues.single.code, 'invalid_string');
+    }
+  });
   test(
       'native object presence follows imported optional references and wrappers',
       () {

@@ -422,7 +422,7 @@ Schema<Map<String, Object?>> object(Map<String, Schema> properties) {
     'required': fields.entries
         .where((e) =>
             !_optionalThrough(e.value._node, e.value._definitions) &&
-            !e.value._node.containsKey('default'))
+            !_defaultFor(e.value._node, e.value._definitions).$1)
         .map((e) => e.key)
         .toList(),
     'unknownKeys': 'strip'
@@ -1512,11 +1512,35 @@ bool _format(String format, String value) {
       if (at <= 0 ||
           at != value.lastIndexOf('@') ||
           RegExp(r'\s').hasMatch(value)) return false;
-      final domain = value.substring(at + 1);
-      return domain.length >= 3 &&
-          domain.substring(1, domain.length - 1).contains('.');
+      final local = value.substring(0, at);
+      if (!RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$").hasMatch(local))
+        return false;
+      final labels = value.substring(at + 1).split('.');
+      final labelPattern =
+          RegExp(r'^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$');
+      return labels.length >= 2 && labels.every(labelPattern.hasMatch);
     case 'url':
-      return RegExp(r'^https?://.+$').hasMatch(value);
+      if (!value.startsWith('http://') && !value.startsWith('https://'))
+        return false;
+      try {
+        final uri = Uri.parse(value);
+        final start = value.indexOf('://') + 3;
+        final rest = value.substring(start);
+        final end = rest.indexOf(RegExp(r'[/?#]'));
+        final authority = end < 0 ? rest : rest.substring(0, end);
+        final host = authority.substring(authority.lastIndexOf('@') + 1);
+        final decodedHost = Uri.decodeComponent(uri.host);
+        final validHost = uri.host.contains(':')
+            ? Uri.parseIPv6Address(decodedHost).isNotEmpty
+            : !RegExp(r'[\x00-\x20\x7f%/#?:@\[\]\\^|<>]').hasMatch(decodedHost);
+        return validHost &&
+            uri.hasAuthority &&
+            uri.host.isNotEmpty &&
+            !RegExp(r'[\s\\]').hasMatch(host) &&
+            (!uri.hasPort || uri.port <= 65535);
+      } on FormatException {
+        return false;
+      }
     case 'uuid':
       return RegExp(
               r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
