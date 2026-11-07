@@ -624,7 +624,8 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
       throw FormatException('Invalid $key');
   }
   if (node.containsKey('pattern')) RegExp(node['pattern']);
-  if (node.containsKey('coerce')) _coercions(node['coerce'], node['kind']);
+  if (node.containsKey('coerce'))
+    _coercions(node['coerce'], _coercionKind(node, definitions));
   void child(dynamic value) => _checkNode(value, definitions, depth + 1);
   switch (node['kind']) {
     case 'ref':
@@ -700,33 +701,32 @@ JsonMap _aliases(JsonMap node) => {
 /// Traverse schema edges only; defaults and metadata remain unchanged as data.
 JsonMap _portableNode(JsonMap node, [int depth = 0]) {
   if (depth > 200) throw FormatException('Schema nesting too deep');
+  node = _aliases(node);
   final output = {...node}..remove('extensions');
+  for (final alias in ['inner', 'valueSchema', 'schemas']) {
+    output.remove(alias);
+  }
+  if (node['kind'] == 'tuple') output.remove('items');
   switch (node['kind']) {
     case 'object':
       output['properties'] = (node['properties'] as Map)
           .map((key, value) => MapEntry(key, _portableNode(value, depth + 1)));
     case 'array' || 'record' || 'optional' || 'nullable':
-      final keys = switch (node['kind']) {
-        'array' => ['items'],
-        'record' => ['values', 'valueSchema'],
-        _ => ['schema', 'inner'],
+      final key = switch (node['kind']) {
+        'array' => 'items',
+        'record' => 'values',
+        _ => 'schema',
       };
-      for (final key in keys) {
-        if (node.containsKey(key))
-          output[key] = _portableNode(node[key], depth + 1);
-      }
+      output[key] = _portableNode(node[key], depth + 1);
     case 'tuple' || 'union' || 'intersection':
-      final keys = switch (node['kind']) {
-        'tuple' => ['elements', 'items'],
-        'union' => ['variants', 'schemas'],
-        _ => ['allOf', 'schemas'],
+      final key = switch (node['kind']) {
+        'tuple' => 'elements',
+        'union' => 'variants',
+        _ => 'allOf',
       };
-      for (final key in keys) {
-        if (node.containsKey(key))
-          output[key] = [
-            for (final child in node[key]) _portableNode(child, depth + 1)
-          ];
-      }
+      output[key] = [
+        for (final child in node[key]) _portableNode(child, depth + 1)
+      ];
   }
   return output;
 }
@@ -801,6 +801,27 @@ String _text(dynamic v) => v is int
     : v is num && v.isFinite && v == v.truncateToDouble()
         ? v.toStringAsFixed(0)
         : '$v';
+
+/// Resolve transparent nodes when validating conversion targets, bounding cycles.
+String _coercionKind(JsonMap node, JsonMap definitions, [int depth = 0]) {
+  if (depth > 200) return node['kind'];
+  node = _aliases(node);
+  if (node['kind'] == 'ref') {
+    final ref = node['ref'];
+    final target = ref is String && ref.startsWith('#/definitions/')
+        ? definitions[ref.substring(14)]
+        : null;
+    if (target is Map)
+      return _coercionKind(
+          Map<String, dynamic>.from(target), definitions, depth + 1);
+  }
+  if ((node['kind'] == 'optional' || node['kind'] == 'nullable') &&
+      node['schema'] is Map) {
+    return _coercionKind(
+        Map<String, dynamic>.from(node['schema']), definitions, depth + 1);
+  }
+  return node['kind'];
+}
 
 /// Normalize string, list, or legacy flag coercions into ordered portable tokens.
 List<String> _coercions(dynamic config, String kind) {
@@ -880,13 +901,12 @@ List<String> _coercions(dynamic config, String kind) {
 
 /// Run presence, coercion, defaults, and validation for one schema node.
 /// Preserve inherited key policies and successful union selections, limit depth,
-/// and skip root coercion when a transparent wrapper materializes a default.
+/// and materialize defaults only at the node that declares them.
 dynamic _run(JsonMap node, dynamic input, List<Object> path,
     List<ValidationIssue> issues, JsonMap definitions, int depth,
     {bool encrypted = false,
     _UnionTrace? unions,
-    String? inheritedUnknownKeys,
-    bool skipCoercion = false}) {
+    String? inheritedUnknownKeys}) {
   /// Append an issue at this node without stopping sibling validation.
   void issue(String code, dynamic expected, dynamic received) =>
       issues.add(ValidationIssue(
@@ -905,11 +925,11 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
   var value = input;
   final encryptedSensitive =
       encrypted && (node['metadata'] as Map?)?['sensitive'] == true;
-  if (!skipCoercion &&
-      !identical(value, absent) &&
+  if (!identical(value, absent) &&
       !(encryptedSensitive && value != null) &&
       node.containsKey('coerce')) {
-    for (final token in _coercions(node['coerce'], kind)) {
+    for (final token
+        in _coercions(node['coerce'], _coercionKind(node, definitions))) {
       if (value is! String) continue;
       final original = value;
       final trimmed = value.trim();
@@ -958,8 +978,9 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       }
     }
   }
-  final defaultInfo =
-      identical(value, absent) ? _defaultFor(node, definitions) : (false, null);
+  final defaultInfo = encryptedSensitive && identical(value, absent)
+      ? _defaultFor(node, definitions)
+      : (node.containsKey('default'), node['default']);
   final usedDefault = identical(value, absent) && defaultInfo.$1;
   if (usedDefault) value = _clone(defaultInfo.$2);
   final start = issues.length;
@@ -977,8 +998,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       _run(inner, value, path, issues, definitions, depth + 1,
           encrypted: encrypted,
           unions: unions,
-          inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys,
-          skipCoercion: usedDefault || skipCoercion);
+          inheritedUnknownKeys: unknownKeys == 'allow' ? null : unknownKeys);
 
   /// Validate the current value after presence, coercion, and default handling.
   dynamic validate() {
@@ -992,7 +1012,9 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
     }
     if (kind == 'ref')
       return delegate(definitions[(node['ref'] as String).substring(14)]);
-    if (kind == 'optional' && identical(value, absent)) return absent;
+    if (kind == 'optional' &&
+        identical(value, absent) &&
+        !_defaultFor(node['schema'], definitions).$1) return absent;
     if (kind == 'nullable' && value == null) return null;
     if (kind == 'optional' || kind == 'nullable')
       return delegate(node['schema']);
@@ -1332,8 +1354,10 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   final issues = <ValidationIssue>[];
   final checked = _run(schema._node, input, [], issues, schema._definitions, 0,
       encrypted: decrypting, unions: unions);
-  final sensitiveUnions = <JsonMap, Map<String, int>>{};
-  final activeUnions = <(JsonMap, String, int)>[];
+  var currentUnions = unions;
+  var inspectOnly = false;
+  final encryptedPaths = <String>{};
+  final storagePaths = <String>{};
   if (issues.isNotEmpty) throw ValidationError(issues);
   // Reuse the branches selected from the original input. Parsed values may
   // match an earlier, non-sensitive variant after coercion or defaults.
@@ -1346,11 +1370,11 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
           [ValidationIssue('too_deep', 'Maximum depth exceeded', path)]);
     if (value == null || identical(value, absent)) return value;
     if ((node['metadata'] as Map?)?['sensitive'] == true) {
-      if (!decrypting)
-        for (final active in activeUnions) {
-          sensitiveUnions.putIfAbsent(active.$1, () => {})[active.$2] =
-              active.$3;
-        }
+      if (inspectOnly) {
+        storagePaths.add(jsonEncode(path));
+        return value;
+      }
+      if (!decrypting) encryptedPaths.add(jsonEncode(path));
       final transformed = transform(List.unmodifiable(path), value);
       if (!decrypting &&
           (transformed is! String ||
@@ -1374,14 +1398,9 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     if (kind == 'optional' || kind == 'nullable')
       return walk(node['schema'], value, path, depth + 1);
     if (kind == 'union') {
-      final selected = unions[sourceNode]?[jsonEncode(path)];
+      final selected = currentUnions[sourceNode]?[jsonEncode(path)];
       if (selected == null) throw StateError('Missing validated union branch');
-      activeUnions.add((sourceNode, jsonEncode(path), selected));
-      try {
-        return walk(node['variants'][selected], value, path, depth + 1);
-      } finally {
-        activeUnions.removeLast();
-      }
+      return walk(node['variants'][selected], value, path, depth + 1);
     }
     if (kind == 'intersection') {
       // Cache callback results by path so overlapping members transform once.
@@ -1423,18 +1442,30 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
       schema._node, output, [], encryptedIssues, schema._definitions, 0,
       encrypted: true, unions: encryptedUnions);
   if (encryptedIssues.isNotEmpty) throw ValidationError(encryptedIssues);
-  for (final entry in sensitiveUnions.entries) {
-    for (final selection in entry.value.entries) {
-      if (encryptedUnions[entry.key]?[selection.key] != selection.value) {
-        throw ValidationError([
-          ValidationIssue(
-              'invalid_union',
-              'Encrypted output changes union branch; use a discriminator or mark the union sensitive',
-              List<Object>.from(jsonDecode(selection.key)),
-              expected: 'stable union branch')
-        ]);
-      }
-    }
+  // Inspect the encrypted branch choices without invoking caller callbacks.
+  // Opaque values stop traversal, so nested decisions inside them are irrelevant.
+  final readbackUnions = <JsonMap, Map<String, int>>{};
+  final readbackIssues = <ValidationIssue>[];
+  final readback = _run(
+      schema._node, stored, [], readbackIssues, schema._definitions, 0,
+      encrypted: true, unions: readbackUnions);
+  if (readbackIssues.isNotEmpty) throw ValidationError(readbackIssues);
+  currentUnions = readbackUnions;
+  inspectOnly = true;
+  walk(schema._node, readback, [], 0);
+  if (encryptedPaths.length != storagePaths.length ||
+      !encryptedPaths.containsAll(storagePaths)) {
+    final drift = {
+      ...encryptedPaths.difference(storagePaths),
+      ...storagePaths.difference(encryptedPaths)
+    }.first;
+    throw ValidationError([
+      ValidationIssue(
+          'invalid_union',
+          'Encrypted output changes sensitive paths; use a discriminator or mark the union sensitive',
+          List<Object>.from(jsonDecode(drift)),
+          expected: 'stable sensitive paths')
+    ]);
   }
   return stored;
 }

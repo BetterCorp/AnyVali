@@ -50,7 +50,9 @@ void main() {
 
         verify(schema);
         final document = schema.describe('Imported contract').exportSchema();
-        expect(document['definitions'], c['schema']['definitions']);
+        // Extended mode preserves imported spellings; portable mode canonicalizes them.
+        expect(schema.exportSchema(mode: 'extended')['definitions'],
+            c['schema']['definitions']);
         final roundtrip = av.importSchema(jsonDecode(jsonEncode(document)));
         verify(roundtrip);
         if (c.containsKey('sensitivePaths')) {

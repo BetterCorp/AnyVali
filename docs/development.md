@@ -23,7 +23,8 @@ The full repository spans multiple toolchains. Install what you need:
 
 Install the toolchains you need. The runner reports unavailable SDK toolchains as
 `SKIP` and can return success without running that SDK. Confirm the target's
-summary reports `PASS` before considering its checks complete.
+summary reports `PASS`, and check for action-level `SKIP` messages before
+considering its checks complete (for example, Ruby tests need Bundler as well as Ruby).
 
 ## Using the Runner
 

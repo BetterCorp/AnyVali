@@ -4,6 +4,80 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('reference defaults and coercions follow each node pipeline', () {
+    final base = av.any().exportSchema();
+    final schema = av.importSchema({
+      ...base,
+      'root': {
+        'kind': 'object',
+        'properties': {
+          'count': {
+            'kind': 'ref',
+            'ref': '#/definitions/Count',
+            'default': '42'
+          },
+          'wrapped': {
+            'kind': 'ref',
+            'ref': '#/definitions/Count',
+            'coerce': 'string->int'
+          }
+        },
+        'required': ['count', 'wrapped']
+      },
+      'definitions': {
+        'Count': {'kind': 'int', 'coerce': 'string->int'}
+      }
+    });
+    expect(schema.parse({'wrapped': '7'}), {'count': 42, 'wrapped': 7});
+  });
+  test('portable exports canonicalize every legacy child key', () {
+    final base = av.any().exportSchema();
+    for (final entry in {
+      'optional': ('inner', 'schema', {'kind': 'int'}),
+      'nullable': ('inner', 'schema', {'kind': 'int'}),
+      'record': ('valueSchema', 'values', {'kind': 'int'}),
+      'tuple': (
+        'items',
+        'elements',
+        [
+          {'kind': 'int'}
+        ]
+      ),
+      'union': (
+        'schemas',
+        'variants',
+        [
+          {'kind': 'int'}
+        ]
+      ),
+      'intersection': (
+        'schemas',
+        'allOf',
+        [
+          {'kind': 'int'}
+        ]
+      )
+    }.entries) {
+      final root = av.importSchema({
+        ...base,
+        'root': {'kind': entry.key, entry.value.$1: entry.value.$3}
+      }).exportSchema()['root'] as Map;
+      expect(root.containsKey(entry.value.$1), isFalse);
+      expect(root.containsKey(entry.value.$2), isTrue);
+    }
+  });
+  test('encrypted union storage is checked after normalization', () {
+    final schema = av.union([
+      av.object({'type': av.literal('x'), 'secret': av.string()}),
+      av.object({
+        'type': av.string().coerce(trim: true).defaultValue(' x '),
+        'secret': av.string().describe('Secret', sensitive: true)
+      })
+    ]);
+    expect(
+        () => av.encrypt(schema, {'secret': 'value'}, (p, v) => 'encrypted:$v'),
+        throwsA(isA<av.ValidationError>()));
+  });
   test('coercions must match their primitive schema target', () {
     final base = av.string().exportSchema();
     for (final root in [
@@ -38,6 +112,22 @@ void main() {
   test(
       'encryption rejects ambiguous union storage while preserving opaque nodes',
       () {
+    final both = av.union([
+      av.string().describe('Text', sensitive: true),
+      av.int_().describe('PIN', sensitive: true)
+    ]);
+    final bothStored = av.encrypt(both, 1234, (p, v) => 'encrypted:$v');
+    expect(
+        av.decrypt(
+            both, bothStored, (p, v) => int.parse((v as String).substring(10))),
+        1234);
+    final markerLikePlaintext =
+        av.union([av.int_().describe('PIN', sensitive: true), av.string()]);
+    expect(
+        () => av.encrypt(markerLikePlaintext, 'encrypted:1234',
+            (p, v) => throw StateError('Plain branch')),
+        throwsA(isA<av.ValidationError>()));
+
     final plain = av.union([av.int_(), av.int_().coerce()]);
     expect(
         av.encrypt(
@@ -247,7 +337,7 @@ void main() {
             .containsKey('extensions'),
         isFalse);
     expect(
-        (portable['root']['properties']['value']['inner'] as Map)
+        (portable['root']['properties']['value']['schema'] as Map)
             .containsKey('extensions'),
         isFalse);
     expect((portable['definitions']['Value'] as Map).containsKey('extensions'),
