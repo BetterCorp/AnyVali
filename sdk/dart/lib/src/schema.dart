@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'pattern.dart';
 
 /// An omitted value, distinct from an explicit null.
 const absent = _Absent();
@@ -117,11 +118,8 @@ class Schema<T> {
   /// Set the maximum array length.
   Schema<T> maxItems(int value) => _set('maxItems', value);
 
-  /// Require a string to match the supplied regular expression.
-  Schema<T> pattern(String value) {
-    RegExp(value);
-    return _set('pattern', value);
-  }
+  /// Match a bounded regular expression; unsupported syntax fails construction.
+  Schema<T> pattern(String value) => _set('pattern', value);
 
   /// Require a string prefix.
   Schema<T> startsWith(String value) => _set('startsWith', value);
@@ -660,7 +658,7 @@ void _checkNode(dynamic node, JsonMap definitions, int depth) {
     if (node.containsKey(key) && node[key] is! String)
       throw FormatException('Invalid $key');
   }
-  if (node.containsKey('pattern')) RegExp(node['pattern']);
+  if (node.containsKey('pattern')) compilePattern(node['pattern']);
   if (node.containsKey('coerce'))
     _coercions(node['coerce'], _coercionKind(node, definitions));
 
@@ -1149,8 +1147,17 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
         issue('too_small', node['minLength'], s.runes.length);
       if (node['maxLength'] != null && s.runes.length > node['maxLength'])
         issue('too_large', node['maxLength'], s.runes.length);
-      if (node['pattern'] != null && !RegExp(node['pattern']).hasMatch(s))
-        issue('invalid_string', node['pattern'], s);
+      if (node['pattern'] != null) {
+        try {
+          if (!compilePattern(node['pattern']).hasMatch(s)) {
+            issue('invalid_string', node['pattern'], s);
+          }
+        } on PatternWorkLimit {
+          issues.add(ValidationIssue('invalid_string',
+              'Pattern matching exceeded its input or work limit', path,
+              expected: node['pattern'], received: s));
+        }
+      }
       if (node['startsWith'] != null && !s.startsWith(node['startsWith']))
         issue('invalid_string', node['startsWith'], s);
       if (node['endsWith'] != null && !s.endsWith(node['endsWith']))

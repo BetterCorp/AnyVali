@@ -109,6 +109,21 @@ validator references are rejected. Informational extensions are retained in
 `exportSchema(mode: 'extended')`; portable exports remove extensions from the document and every schema node,
 while preserving defaults and metadata as data.
 
+## Pattern limits
+
+Patterns use bounded state-machine matching and support literals, character
+classes, dot, anchors, word boundaries, ordinary and noncapturing groups,
+alternatives, and `*`, `+`, `?`, `{m,n}` repetitions (including lazy forms).
+Backreferences, lookaround, named groups, octal escapes, and Unicode property
+escapes are rejected during construction or import with `FormatException`.
+Escape literal braces rather than relying on permissive regex parsing.
+
+Compilation allows at most 1,024 UTF-16 code units, 64 nested groups, repetition
+counts of 1,000, and 2,048 states. A match accepts at most 100,000 UTF-16 input
+code units and 2,000,000 state operations. Exceeding a match limit produces an
+`invalid_string` issue with an explicit limit diagnostic. These bounds apply to
+native and JavaScript targets.
+
 ## Numeric limits
 
 Native Dart integers are signed 64-bit. On JavaScript targets, numeric integer
@@ -150,6 +165,6 @@ or mark the entire union sensitive when encrypted branches would be ambiguous.
 
 From the repository root, run `bash runner.sh ci dart`. The VM suite exercises
 both shared conformance corpora, including export/reimport and sensitive paths.
-Run `dart test --platform node test/schema_test.dart test/robustness_test.dart` within `sdk/dart` for web checks.
+Run `dart test --platform node test/schema_test.dart test/robustness_test.dart test/pattern_test.dart` within `sdk/dart` for web checks.
 
 For SDK installation, first publication, publisher ownership, and GitHub OIDC configuration, see the [Dart setup and publishing guide](https://docs.anyvali.com/docs/dart-setup-publishing/).
