@@ -41,7 +41,10 @@ if (result.success) {
 
 `schema.parse(input)` throws `ValidationError` on validation failure.
 `safeParse(input)` returns `ParseResult<T>`. Omit the argument or pass `av.absent`
-to represent absence; explicit null is a present value. Builders return new schemas.
+to represent absence; explicit null is a present value. At the top level, `any`
+and `unknown` preserve the absence sentinel. The native `.optional()` decoder
+represents omitted values as null for its nullable Dart type; imported
+`Schema<Object?>` results retain the sentinel. Builders return new schemas.
 
 ## Flutter forms
 

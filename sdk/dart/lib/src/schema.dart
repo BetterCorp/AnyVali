@@ -224,8 +224,7 @@ class Schema<T> {
     final issues = <ValidationIssue>[];
     final value = _run(_node, input, [], issues, _definitions, 0);
     return issues.isEmpty
-        ? ParseResult._(
-            true, _decode(identical(value, absent) ? null : value), [])
+        ? ParseResult._(true, _decode(value), [])
         : ParseResult._(false, null, issues);
   }
 

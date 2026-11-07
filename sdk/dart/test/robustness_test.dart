@@ -4,6 +4,27 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('permissive schemas preserve absence while native optionals decode null',
+      () {
+    for (final schema in [
+      av.any(),
+      av.unknown(),
+      av.any().nullable(),
+      av.unknown().nullable()
+    ]) {
+      for (final current in [schema, av.importSchema(schema.exportSchema())]) {
+        expect(identical(current.parse(), av.absent), isTrue);
+        expect(identical(current.parse(av.absent), av.absent), isTrue);
+        expect(identical(current.safeParse().data, av.absent), isTrue);
+        expect(current.parse(null), isNull);
+        expect(current.safeParse(null).data, isNull);
+      }
+    }
+    expect(av.string().optional().parse(), isNull);
+    expect(av.array(av.string()).optional().parse(), isNull);
+    expect(av.any().optional().parse(), isNull);
+    expect(av.any().defaultValue(null).parse(), isNull);
+  });
   test('empty intersections fail native construction and interchange import',
       () {
     expect(() => av.intersection([]), throwsArgumentError);
