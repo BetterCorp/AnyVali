@@ -14,6 +14,7 @@ void main() {
       r'^[a-z]+$',
       r'[^a-z]',
       r'[^]',
+      r'^[\\p]+$',
       r'[]',
       r'^.$',
       r'.*',
@@ -108,6 +109,8 @@ void main() {
       'wood',
       'word!',
       '[a]',
+      'p',
+      r'\',
       '^\$',
       '\x01',
       '😀',
@@ -203,6 +206,8 @@ void main() {
     final base = av.any().exportSchema();
     for (final pattern in [
       r'\p{L}',
+      r'[\p{L}]',
+      r'[\P{Nd}]',
       r'a{1001}',
       'a' * 1025,
       '${'(' * 65}a${')' * 65}',

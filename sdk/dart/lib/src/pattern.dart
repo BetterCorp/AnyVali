@@ -421,6 +421,8 @@ class _Parser {
         if (peek == '\\') {
           position++;
           if (peek.isEmpty) throw FormatException('Unclosed character class');
+          if (peek == 'p' || peek == 'P')
+            throw FormatException('Property escapes are not supported');
         }
         position++;
       }

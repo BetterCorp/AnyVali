@@ -9,7 +9,28 @@ class _Absent {
 }
 
 typedef JsonMap = Map<String, dynamic>;
-typedef _UnionTrace = Map<JsonMap, Map<String, int>>;
+typedef _ParseTrace = Map<JsonMap, Map<String, Object>>;
+typedef _Decoder<T> = T Function(dynamic, _DecodeContext);
+
+/// Carry the exact validated node and data path through native output decoding.
+class _DecodeContext {
+  final JsonMap node;
+  final _ParseTrace trace;
+  final List<Object> path;
+  JsonMap? _shape;
+  _DecodeContext(this.node, this.trace, this.path);
+  JsonMap get shape => _shape ??= _aliases(node);
+  _DecodeContext child(JsonMap childNode, [Object? segment]) => _DecodeContext(
+      childNode, trace, segment == null ? path : [...path, segment]);
+  Object? get selection => trace[node]?[jsonEncode(path)];
+}
+
+/// Keep member results so intersections can decode without validating again.
+class _IntersectionResult {
+  final dynamic input;
+  final List<dynamic> members;
+  _IntersectionResult(this.input, this.members);
+}
 
 /// Cache compiled patterns by immutable node identity without retaining schemas.
 final _compiledPatterns = Expando<BoundedPattern>();
@@ -69,17 +90,17 @@ class Schema<T> {
   final JsonMap _node;
   final JsonMap _definitions;
   final JsonMap _extensions;
-  final T Function(dynamic) _decode;
+  final _Decoder<T> _decode;
 
   /// Snapshot node context and retain the typed output decoder.
   Schema._(JsonMap node,
       {JsonMap definitions = const {},
       JsonMap extensions = const {},
-      T Function(dynamic)? decode})
+      _Decoder<T>? decode})
       : _node = _clone(node),
         _definitions = _clone(definitions),
         _extensions = _clone(extensions),
-        _decode = decode ?? ((v) => v as T);
+        _decode = decode ?? ((v, _) => v as T);
 
   /// Validate one modifier and return a new immutable schema snapshot.
   Schema<T> _set(String key, dynamic value) {
@@ -204,13 +225,17 @@ class Schema<T> {
   Schema<T?> optional() => Schema._({'kind': 'optional', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
-      decode: (v) => v == null || identical(v, absent) ? null : _decode(v));
+      decode: (v, context) => v == null || identical(v, absent)
+          ? null
+          : _decode(v, context.child(context.shape['schema'])));
 
   /// Accept an explicit null as well as the inner schema values.
   Schema<T?> nullable() => Schema._({'kind': 'nullable', 'schema': _node},
       definitions: _definitions,
       extensions: _extensions,
-      decode: (v) => v == null ? null : _decode(v));
+      decode: (v, context) => v == null
+          ? null
+          : _decode(v, context.child(context.shape['schema'])));
 
   /// Return typed parsed data or throw ValidationError with all issues.
   T parse([Object? input = absent]) {
@@ -222,9 +247,12 @@ class Schema<T> {
   /// Validate input without throwing for ordinary validation failures.
   ParseResult<T> safeParse([Object? input = absent]) {
     final issues = <ValidationIssue>[];
-    final value = _run(_node, input, [], issues, _definitions, 0);
+    final trace = <JsonMap, Map<String, Object>>{};
+    final value =
+        _run(_node, input, [], issues, _definitions, 0, unions: trace);
     return issues.isEmpty
-        ? ParseResult._(true, _decode(value), [])
+        ? ParseResult._(
+            true, _decode(value, _DecodeContext(_node, trace, const [])), [])
         : ParseResult._(false, null, issues);
   }
 
@@ -324,7 +352,7 @@ Schema<T> enum_<T>(List<T> values) {
 /// Combine child schemas while retaining imported definitions and extensions.
 /// Conflicting imported names fail instead of changing reference semantics.
 Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
-    {T Function(dynamic)? decode}) {
+    {_Decoder<T>? decode}) {
   final definitions = <String, dynamic>{};
   final extensions = <String, dynamic>{};
   for (final child in children) {
@@ -350,16 +378,21 @@ Schema<T> _composite<T>(JsonMap node, Iterable<Schema> children,
 /// Build a homogeneous array preserving the item output type.
 Schema<List<T>> array<T>(Schema<T> items) =>
     _composite({'kind': 'array', 'items': items._node}, [items],
-        decode: (v) => (v as List).map(items._decode).toList());
+        decode: (v, context) => <T>[
+              for (var index = 0; index < (v as List).length; index++)
+                items._decode(
+                    v[index], context.child(context.shape['items'], index))
+            ]);
 
 /// Build a fixed-length array with a schema for each position.
 Schema<List<Object?>> tuple(List<Schema> elements) {
   final slots = List<Schema>.unmodifiable(elements);
   return _composite(
       {'kind': 'tuple', 'elements': slots.map((s) => s._node).toList()}, slots,
-      decode: (v) => <Object?>[
+      decode: (v, context) => <Object?>[
             for (var index = 0; index < slots.length; index++)
-              slots[index]._decode((v as List)[index])
+              slots[index]._decode((v as List)[index],
+                  context.child(context.shape['elements'][index], index))
           ]);
 }
 
@@ -377,35 +410,60 @@ Schema<Map<String, Object?>> object(Map<String, Schema> properties) {
         .toList(),
     'unknownKeys': 'strip'
   }, fields.values,
-      decode: (v) => (v as Map).map<String, Object?>((key, value) {
+      decode: (v, context) => (v as Map).map<String, Object?>((key, value) {
             final field = fields[key];
             return MapEntry(
-                key as String, field == null ? value : field._decode(value));
+                key as String,
+                field == null
+                    ? value
+                    : field._decode(value,
+                        context.child(context.shape['properties'][key], key)));
           }));
 }
 
 /// Build a string-keyed record with typed homogeneous values.
 Schema<Map<String, T>> record<T>(Schema<T> values) =>
     _composite({'kind': 'record', 'values': values._node}, [values],
-        decode: (v) => (v as Map)
-            .map((k, value) => MapEntry(k as String, values._decode(value))));
+        decode: (v, context) => (v as Map).map((k, value) => MapEntry(
+            k as String,
+            values._decode(value, context.child(context.shape['values'], k)))));
 
 /// Try alternatives in order and return the first successful parsed value.
 Schema<Object?> union(List<Schema> variants) {
   if (variants.isEmpty)
     throw ArgumentError('A union needs at least one variant');
+  final choices = List<Schema>.unmodifiable(variants);
   return _composite(
-      {'kind': 'union', 'variants': variants.map((s) => s._node).toList()},
-      variants);
+      {'kind': 'union', 'variants': choices.map((s) => s._node).toList()},
+      choices, decode: (value, context) {
+    final selected = context.selection as int?;
+    if (selected == null) throw StateError('Missing validated union selection');
+    return choices[selected]
+        ._decode(value, context.child(context.shape['variants'][selected]));
+  });
 }
 
-/// Require every member and merge their parsed results.
+/// Require every member and merge their decoded results in validation order.
 Schema<Object?> intersection(List<Schema> schemas) {
   if (schemas.isEmpty)
     throw ArgumentError('An intersection needs at least one member');
+  final members = List<Schema>.unmodifiable(schemas);
   return _composite(
-      {'kind': 'intersection', 'allOf': schemas.map((s) => s._node).toList()},
-      schemas);
+      {'kind': 'intersection', 'allOf': members.map((s) => s._node).toList()},
+      members, decode: (value, context) {
+    final parsed = context.selection as _IntersectionResult?;
+    if (parsed == null)
+      throw StateError('Missing validated intersection results');
+    dynamic result = parsed.input;
+    for (var index = 0; index < members.length; index++) {
+      final decoded = members[index]._decode(
+          parsed.members[index], context.child(context.shape['allOf'][index]));
+      result = result is Map && decoded is Map
+          ? _mergeParsed(parsed.input, result, decoded)
+          : decoded;
+    }
+    return result;
+  });
 }
 
 /// Validate a portable document and retain its definitions and metadata.
@@ -982,7 +1040,7 @@ List<String> _coercions(dynamic config, String kind) {
 dynamic _run(JsonMap node, dynamic input, List<Object> path,
     List<ValidationIssue> issues, JsonMap definitions, int depth,
     {bool encrypted = false,
-    _UnionTrace? unions,
+    _ParseTrace? unions,
     String? inheritedUnknownKeys}) {
   /// Append an issue at this node without stopping sibling validation.
   void issue(String code, dynamic expected, dynamic received) =>
@@ -1065,7 +1123,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
 
   /// Validate a child path, optionally using isolated union-branch state.
   dynamic child(JsonMap childNode, dynamic v, List<Object> p,
-          [List<ValidationIssue>? into, _UnionTrace? selected]) =>
+          [List<ValidationIssue>? into, _ParseTrace? selected]) =>
       _run(childNode, v, p, into ?? issues, definitions, depth + 1,
           encrypted: encrypted,
           unions: selected ?? unions,
@@ -1118,7 +1176,7 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
       for (var index = 0; index < variants.length; index++) {
         final branchIssues = <ValidationIssue>[];
         final branchUnions =
-            unions == null ? null : <JsonMap, Map<String, int>>{};
+            unions == null ? null : <JsonMap, Map<String, Object>>{};
         final result =
             child(variants[index], value, path, branchIssues, branchUnions);
         if (branchIssues.isEmpty) {
@@ -1139,14 +1197,18 @@ dynamic _run(JsonMap node, dynamic input, List<Object> path,
     }
     if (kind == 'intersection') {
       dynamic result = value;
+      final members = <dynamic>[];
       for (final member in node['allOf']) {
         final parsed = child(member, value, path);
+        members.add(parsed);
         if (result is Map && parsed is Map) {
           result = _mergeParsed(value, result, parsed);
         } else {
           result = parsed;
         }
       }
+      unions?.putIfAbsent(sourceNode, () => {})[jsonEncode(path)] =
+          _IntersectionResult(value, members);
       return result;
     }
     final correct = switch (kind) {
@@ -1439,7 +1501,7 @@ ParseResult<Object?> safeParseEncrypted(Schema schema,
 /// Retain original union selections and cache callback results by data path.
 Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     bool decrypting) {
-  final unions = <JsonMap, Map<String, int>>{};
+  final unions = <JsonMap, Map<String, Object>>{};
   final issues = <ValidationIssue>[];
   final checked = _run(schema._node, input, [], issues, schema._definitions, 0,
       encrypted: decrypting, unions: unions);
@@ -1487,7 +1549,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
     if (kind == 'optional' || kind == 'nullable')
       return walk(node['schema'], value, path, depth + 1);
     if (kind == 'union') {
-      final selected = currentUnions[sourceNode]?[jsonEncode(path)];
+      final selected = currentUnions[sourceNode]?[jsonEncode(path)] as int?;
       if (selected == null) throw StateError('Missing validated union branch');
       return walk(node['variants'][selected], value, path, depth + 1);
     }
@@ -1525,7 +1587,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
       cache.putIfAbsent(jsonEncode(path), () => originalTransform(path, value));
   final output = walk(schema._node, checked, [], 0);
   if (decrypting) return schema.parse(output);
-  final encryptedUnions = <JsonMap, Map<String, int>>{};
+  final encryptedUnions = <JsonMap, Map<String, Object>>{};
   final encryptedIssues = <ValidationIssue>[];
   final stored = _run(
       schema._node, output, [], encryptedIssues, schema._definitions, 0,
@@ -1533,7 +1595,7 @@ Object? _transform(Schema schema, Object? input, SensitiveTransform transform,
   if (encryptedIssues.isNotEmpty) throw ValidationError(encryptedIssues);
   // Inspect the encrypted branch choices without invoking caller callbacks.
   // Opaque values stop traversal, so nested decisions inside them are irrelevant.
-  final readbackUnions = <JsonMap, Map<String, int>>{};
+  final readbackUnions = <JsonMap, Map<String, Object>>{};
   final readbackIssues = <ValidationIssue>[];
   final readback = _run(
       schema._node, stored, [], readbackIssues, schema._definitions, 0,

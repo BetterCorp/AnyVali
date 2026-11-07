@@ -4,6 +4,52 @@ import 'package:test/test.dart';
 
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
+  test('native unions decode the original selected branch at each data path',
+      () {
+    final plain =
+        av.object({'tag': av.literal('x'), 'items': av.array(av.any())});
+    final typed = av.object({
+      'tag': av.string().coerce(trim: true),
+      'items': av.array(av.int_().optional())
+    });
+    final variants = <av.Schema>[plain, typed];
+    final schema = av.union(variants);
+    variants.clear();
+    final decoded = schema.parse({
+      'tag': ' x ',
+      'items': [av.absent]
+    }) as Map;
+    expect(decoded['tag'], 'x');
+    expect(decoded['items'], <int?>[null]);
+    expect(decoded['items'], isA<List<int?>>());
+    final item = av.union([av.int_().optional(), av.string()]);
+    expect(av.array(item).parse([av.absent, 'x']), [null, 'x']);
+    expect(av.record(item).parse({'a': av.absent, 'b': 'x'}),
+        {'a': null, 'b': 'x'});
+    expect(
+        av.tuple([item.nullable(), item.optional()]).parse([null, av.absent]),
+        [null, null]);
+  });
+  test('native intersections decode retained member results before merging',
+      () {
+    final members = <av.Schema>[
+      av.object({'items': av.array(av.int_().optional())}),
+      av.object({'name': av.string()})
+    ];
+    final schema = av.intersection(members);
+    members.clear();
+    final decoded = schema.parse({
+      'items': [av.absent],
+      'name': 'Alice'
+    }) as Map;
+    expect(decoded['items'], <int?>[null]);
+    expect(decoded['items'], isA<List<int?>>());
+    expect(decoded['name'], 'Alice');
+    expect(
+        av.intersection([av.any(), av.array(av.int_().optional())]).parse(
+            [av.absent]),
+        <int?>[null]);
+  });
   test('native objects decode children and snapshot the property schemas', () {
     final fields = <String, av.Schema>{
       'items': av.array(av.int_().optional()),
