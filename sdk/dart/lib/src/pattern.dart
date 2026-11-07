@@ -16,7 +16,13 @@ class BoundedPattern {
   /// Search using deduplicated states at each UTF-16 input position.
   bool hasMatch(String input) {
     if (input.length > 100000) throw PatternWorkLimit();
-    var remaining = 2000000;
+    return _match(input, _start, _accept, 0, _Work(), search: true);
+  }
+
+  /// Evaluate assertions with the same budget as the enclosing search.
+  bool _match(String input, int start, int accept, int from, _Work work,
+      {required bool search, int? endAt}) {
+    final end = endAt ?? input.length;
     var active = <int>{};
     var visited = <int>{};
 
@@ -24,7 +30,7 @@ class BoundedPattern {
     void add(int start, int position, Set<int> output, Set<int> seen) {
       final pending = [start];
       while (pending.isNotEmpty) {
-        if (--remaining < 0) throw PatternWorkLimit();
+        work.step();
         final index = pending.removeLast();
         if (!seen.add(index)) continue;
         final state = _states[index];
@@ -37,21 +43,34 @@ class BoundedPattern {
             if (state.atom!.matchAsPrefix(input, position) != null) {
               pending.add(state.out);
             }
+          case 'look':
+            var matched = false;
+            if (!state.behind || position >= state.lookMinimum) {
+              final first = state.behind
+                  ? position - (state.lookMaximum ?? position)
+                  : position;
+              matched = _match(input, state.innerStart!, state.innerAccept!,
+                  first < 0 ? 0 : first, work,
+                  search: state.behind, endAt: state.behind ? position : null);
+            }
+            if (matched != state.negative) pending.add(state.out);
           default:
             output.add(index);
         }
       }
     }
 
-    for (var position = 0; position <= input.length; position++) {
-      add(_start, position, active, visited);
-      if (active.contains(_accept)) return true;
-      if (position == input.length) break;
+    for (var position = from; position <= end; position++) {
+      if (search || position == from) add(start, position, active, visited);
+      if (active.contains(accept) && (endAt == null || position == endAt))
+        return true;
+      if (position == end || (!search && active.isEmpty)) break;
       final next = <int>{};
       final nextVisited = <int>{};
       for (final index in active) {
-        if (--remaining < 0) throw PatternWorkLimit();
+        work.step();
         final state = _states[index];
+        if (state.kind == 'accept') continue;
         // Atoms are one character or a character class, never quantified.
         if (state.atom!.matchAsPrefix(input, position) != null) {
           add(state.out, position + 1, next, nextVisited);
@@ -61,6 +80,15 @@ class BoundedPattern {
       visited = nextVisited;
     }
     return false;
+  }
+}
+
+class _Work {
+  int remaining = 2000000;
+
+  /// Count nested assertion work against a single per-match allowance.
+  void step() {
+    if (--remaining < 0) throw PatternWorkLimit();
   }
 }
 
@@ -94,7 +122,22 @@ class _State {
   final RegExp? atom;
   int out;
   int other;
-  _State(this.kind, {this.atom, this.out = -1, this.other = -1});
+  final int? innerStart;
+  final int? innerAccept;
+  final bool negative;
+  final bool behind;
+  final int lookMinimum;
+  final int? lookMaximum;
+  _State(this.kind,
+      {this.atom,
+      this.out = -1,
+      this.other = -1,
+      this.innerStart,
+      this.innerAccept,
+      this.negative = false,
+      this.behind = false,
+      this.lookMinimum = 0,
+      this.lookMaximum});
 }
 
 class _Node {
@@ -105,6 +148,41 @@ class _Node {
   final int? maximum;
   _Node(this.kind,
       {this.atom, this.children = const [], this.minimum = 0, this.maximum});
+}
+
+/// Bound consumed widths at the maximum supported input length plus one.
+/// Assertions consume nothing even when their inner expressions inspect text.
+(int, int?) _width(_Node node) {
+  int bound(int value) => value > 100000 ? 100001 : value;
+  if (node.kind == 'atom') return (1, 1);
+  if (node.kind == 'assert' ||
+      node.kind.endsWith('Lookahead') ||
+      node.kind.endsWith('Lookbehind')) return (0, 0);
+  if (node.kind == 'repeat') {
+    final child = _width(node.children.single);
+    final maximum = node.maximum == 0 || child.$2 == 0
+        ? 0
+        : node.maximum == null || child.$2 == null
+            ? null
+            : bound(node.maximum! * child.$2!);
+    return (bound(node.minimum * child.$1), maximum);
+  }
+  final alternative = node.kind == 'alternatives';
+  var minimum = alternative ? 100001 : 0;
+  int? maximum = 0;
+  for (final child in node.children) {
+    final width = _width(child);
+    minimum = alternative
+        ? (minimum < width.$1 ? minimum : width.$1)
+        : bound(minimum + width.$1);
+    final childMax = width.$2;
+    maximum = maximum == null || childMax == null
+        ? null
+        : alternative
+            ? (maximum > childMax ? maximum : childMax)
+            : bound(maximum + childMax);
+  }
+  return (minimum, maximum);
 }
 
 class _Parser {
@@ -134,17 +212,31 @@ class _Parser {
     final start = position;
     final character = source[position++];
     if (character == '(') {
+      String? assertion;
       if (peek == '?') {
-        if (!source.startsWith('?:', position)) {
-          throw FormatException(
-              'Lookaround and named groups are not supported');
+        if (source.startsWith('?:', position)) {
+          position += 2;
+        } else {
+          for (final entry in const {
+            '?=': 'positiveLookahead',
+            '?!': 'negativeLookahead',
+            '?<=': 'positiveLookbehind',
+            '?<!': 'negativeLookbehind'
+          }.entries) {
+            if (source.startsWith(entry.key, position)) {
+              assertion = entry.value;
+              position += entry.key.length;
+              break;
+            }
+          }
+          if (assertion == null)
+            throw FormatException('Named groups are not supported');
         }
-        position += 2;
       }
       final inner = expression(depth + 1);
       if (peek != ')') throw FormatException('Unclosed pattern group');
       position++;
-      return inner;
+      return assertion == null ? inner : _Node(assertion, children: [inner]);
     }
     if (character == '[') {
       while (peek.isNotEmpty && peek != ']') {
@@ -194,7 +286,7 @@ class _Parser {
   /// Parse bounded repetitions, treating lazy order identically for existence.
   _Node repeated(_Node inner) {
     if (peek.isEmpty || !'*+?{'.contains(peek)) return inner;
-    if (inner.kind == 'assert')
+    if (inner.kind == 'assert' || inner.kind.endsWith('Lookbehind'))
       throw FormatException('Assertions cannot be repeated');
     final quantifier = source[position++];
     int minimum;
@@ -268,6 +360,20 @@ class _Compiler {
 
   /// Compile syntax into Thompson states with bounded repetition expansion.
   _Fragment compile(_Node node) {
+    if (node.kind.endsWith('Lookahead') || node.kind.endsWith('Lookbehind')) {
+      final inner = compile(node.children.single);
+      final accept = add(_State('accept'));
+      patch(inner.$2, accept);
+      final width = _width(node.children.single);
+      final index = add(_State('look',
+          innerStart: inner.$1,
+          innerAccept: accept,
+          negative: node.kind.startsWith('negative'),
+          behind: node.kind.endsWith('Lookbehind'),
+          lookMinimum: width.$1,
+          lookMaximum: width.$2));
+      return (index, [(index, false)]);
+    }
     if (node.kind == 'atom' || node.kind == 'assert') {
       final index = add(_State(node.kind, atom: RegExp(node.atom!)));
       return (index, [(index, false)]);

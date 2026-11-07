@@ -122,8 +122,9 @@ coercion names (`int`, `number`, and `bool`).
 
 Patterns use bounded state-machine matching and support literals, character
 classes, dot, anchors, word boundaries, ordinary and noncapturing groups,
-alternatives, and `*`, `+`, `?`, `{m,n}` repetitions (including lazy forms).
-Backreferences, lookaround, named groups, octal escapes, and Unicode property
+alternatives, positive and negative lookahead/lookbehind, and `*`, `+`, `?`,
+`{m,n}` repetitions (including lazy forms). Nested lookarounds share the same
+compilation and execution limits. Backreferences, named groups, octal escapes, and Unicode property
 escapes are rejected during construction or import with `FormatException`.
 Escape literal braces rather than relying on permissive regex parsing.
 

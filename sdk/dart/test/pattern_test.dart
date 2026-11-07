@@ -49,6 +49,18 @@ void main() {
       r'^(a+)+$',
       r'^(a|a)+$',
       r'a*a*a*b',
+      r'^(?=.*[A-Z]).+$',
+      r'a(?=b)',
+      r'a(?!b)',
+      r'(?<=a)b',
+      r'(?<!a)b',
+      r'(?<=a+)b',
+      r'(?<=(?:ab|a))b',
+      r'(?=(a+)+$)a+',
+      r'(?=(?=a)a)a',
+      r'(?!a*)b',
+      r'(?=)',
+      r'(?!)',
     ];
     final inputs = <String>[
       '',
@@ -94,13 +106,19 @@ void main() {
     String expression(int depth) {
       const atoms = ['a', 'b', '.', '[ab]', '[^a]', r'\d'];
       if (depth == 0) return atoms[random.nextInt(atoms.length)];
-      switch (random.nextInt(4)) {
+      switch (random.nextInt(7)) {
         case 0:
           return expression(0);
         case 1:
           return '(${expression(depth - 1)}|${expression(depth - 1)})';
         case 2:
           return '${expression(depth - 1)}${expression(depth - 1)}';
+        case 3:
+          return '(?=${expression(depth - 1)})${expression(depth - 1)}';
+        case 4:
+          return '(?!${expression(depth - 1)})${expression(depth - 1)}';
+        case 5:
+          return '(?<=${expression(depth - 1)})${expression(depth - 1)}';
         default:
           const quantifiers = [
             '*',
@@ -159,8 +177,6 @@ void main() {
     final base = av.any().exportSchema();
     for (final pattern in [
       r'^(a)\1$',
-      r'(?=a)',
-      r'(?<=a)b',
       r'(?<name>a)',
       r'\p{L}',
       r'a{1001}',
@@ -193,6 +209,33 @@ void main() {
     final expensive = av.string().pattern(r'a{1000}b').safeParse('a' * 3000);
     expect(expensive.success, isFalse);
     expect(expensive.issues.single.message, contains('work limit'));
+  });
+
+  test('portable lookarounds share compilation and execution limits', () {
+    final document = av.string().exportSchema();
+    final password = av.importSchema({
+      ...document,
+      'root': {'kind': 'string', 'pattern': r'^(?=.*[A-Z])(?=.*[0-9]).{8,}$'}
+    });
+    expect(password.parse('Password7'), 'Password7');
+    expect(av.string().pattern(r'(?<!a)b').parse('${'c' * 10000}b'),
+        '${'c' * 10000}b');
+    expect(av.string().pattern('${'(?=' * 64}a${')' * 64}').parse('a'), 'a');
+    expect(password.safeParse('password7').success, isFalse);
+    expect(password.safeParse('Password').success, isFalse);
+    final behind =
+        av.string().pattern(r'(?<=a+)b').safeParse('${'a' * 10000}!');
+    expect(behind.success, isFalse);
+    expect(behind.issues.single.message, contains('work limit'));
+    expect(
+        av
+            .string()
+            .pattern(r'(?=(a+)+$)a+')
+            .safeParse('${'a' * 10000}!')
+            .success,
+        isFalse);
+    expect(() => av.string().pattern(r'(?=a{1000})(?=b{1000})(?=c{1000})'),
+        throwsFormatException);
   });
 
   test('patterns survive interchange and bounded cache eviction', () {
