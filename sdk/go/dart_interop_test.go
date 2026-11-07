@@ -381,6 +381,8 @@ func TestDartWrapperCoercions(t *testing.T) {
 				t.Fatalf("nullable null: %+v", result)
 			}
 		}
+		// Go currently exports the same shape in both modes; this checks
+		// export/import consistency, not portable normalization.
 		encoded, err := ExportJSON(schema, Portable)
 		if err != nil {
 			t.Fatal(err)
@@ -405,5 +407,113 @@ func TestDartWrapperCoercions(t *testing.T) {
 		if result := importRoot(root).SafeParse(absentValue); !result.Success || result.Data != int64(7) {
 			t.Fatalf("default must enter target conversion: %+v", result)
 		}
+	}
+}
+
+// TestDartDefaultsForEveryGoKind ensures every built-in importer retains the same
+// common default and metadata fields, including container/composition defaults.
+func TestDartDefaultsForEveryGoKind(t *testing.T) {
+	cases := []struct {
+		node  map[string]any
+		value any
+	}{
+		{map[string]any{"kind": "string"}, "x"}, {map[string]any{"kind": "bool"}, false},
+		{map[string]any{"kind": "null"}, nil}, {map[string]any{"kind": "any"}, map[string]any{"value": "x"}},
+		{map[string]any{"kind": "unknown"}, false}, {map[string]any{"kind": "never"}, 42},
+		{map[string]any{"kind": "literal", "value": "x"}, "x"},
+		{map[string]any{"kind": "enum", "values": []any{"x"}}, "x"},
+		{map[string]any{"kind": "array", "items": map[string]any{"kind": "string"}}, []any{"x"}},
+		{map[string]any{"kind": "tuple", "elements": []any{map[string]any{"kind": "string"}}}, []any{"x"}},
+		{map[string]any{"kind": "record", "values": map[string]any{"kind": "string"}}, map[string]any{"key": "x"}},
+		{map[string]any{"kind": "object", "properties": map[string]any{"value": map[string]any{"kind": "string"}}, "required": []any{"value"}}, map[string]any{"value": "x"}},
+		{map[string]any{"kind": "union", "variants": []any{map[string]any{"kind": "string"}, map[string]any{"kind": "int"}}}, "x"},
+		{map[string]any{"kind": "intersection", "allOf": []any{map[string]any{"kind": "string"}, map[string]any{"kind": "string", "minLength": 1}}}, "x"},
+		{map[string]any{"kind": "optional", "schema": map[string]any{"kind": "string"}}, "x"},
+		{map[string]any{"kind": "nullable", "schema": map[string]any{"kind": "string"}}, nil},
+		{map[string]any{"kind": "ref", "ref": "#/definitions/Text"}, "x"},
+	}
+	for _, kind := range []string{"int", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "number", "float32", "float64"} {
+		cases = append(cases, struct {
+			node  map[string]any
+			value any
+		}{map[string]any{"kind": kind}, 7})
+	}
+	for _, test := range cases {
+		t.Run(test.node["kind"].(string), func(t *testing.T) {
+			metadata := map[string]any{"title": "Example", "custom": map[string]any{"scope": "dart"}}
+			test.node["default"] = test.value
+			test.node["metadata"] = metadata
+			doc := map[string]any{"anyvaliVersion": "1.0", "schemaVersion": "1.1", "root": test.node, "definitions": map[string]any{"Text": map[string]any{"kind": "string"}}, "extensions": map[string]any{}}
+			input, err := json.Marshal(doc)
+			if err != nil {
+				t.Fatal(err)
+			}
+			schema, err := ImportJSON(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := ExportJSON(schema, Portable)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var exported Document
+			if err := json.Unmarshal(encoded, &exported); err != nil {
+				t.Fatal(err)
+			}
+			if _, present := exported.Root["default"]; !present {
+				t.Fatalf("dropped default: %s", encoded)
+			}
+			if !reflect.DeepEqual(exported.Root["metadata"], metadata) {
+				t.Fatalf("dropped metadata: %s", encoded)
+			}
+			restored, err := ImportJSON(encoded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, candidate := range []Schema{schema, restored} {
+				result := candidate.SafeParse(absentValue)
+				if test.node["kind"] == "never" {
+					if result.Success || result.Issues[0].Code != IssueDefaultInvalid {
+						t.Fatalf("never default: %+v", result)
+					}
+				} else {
+					if !result.Success {
+						t.Fatalf("default: %+v", result)
+					}
+					got, err := json.Marshal(result.Data)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want, err := json.Marshal(test.value)
+					if err != nil || !bytes.Equal(got, want) {
+						t.Fatalf("default output: %s != %s (%v)", got, want, err)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestDartImportedSensitiveMetadata enables sensitive helpers on imported nodes.
+func TestDartImportedSensitiveMetadata(t *testing.T) {
+	schema, err := ImportJSON([]byte(`{"anyvaliVersion":"1.0","schemaVersion":"1.1","root":{"kind":"int","metadata":{"sensitive":true}},"definitions":{},"extensions":{}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := Encrypt(schema, int64(7), func(_ []any, value any) (any, error) {
+		if value != int64(7) {
+			t.Fatalf("unexpected plaintext: %v", value)
+		}
+		return "encrypted:7", nil
+	})
+	if err != nil || stored != "encrypted:7" {
+		t.Fatalf("imported sensitivity: %v %v", stored, err)
+	}
+	if result := SafeParseEncrypted(schema, stored); !result.Success {
+		t.Fatalf("encrypted validation: %+v", result)
+	}
+	plain, err := Decrypt(schema, stored, func(_ []any, _ any) (any, error) { return int64(7), nil })
+	if err != nil || plain != int64(7) {
+		t.Fatalf("decrypt: %v %v", plain, err)
 	}
 }

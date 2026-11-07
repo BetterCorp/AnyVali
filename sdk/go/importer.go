@@ -40,7 +40,15 @@ func ImportJSON(data []byte) (Schema, error) {
 }
 
 // importNode builds one schema using this document's reference-resolution context.
-func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (Schema, error) {
+func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (schema Schema, err error) {
+	// Apply common modifiers once for every kind, including reference occurrences.
+	defer func() {
+		if err == nil && schema != nil {
+			if target, ok := schema.(interface{ importNodeModifiers(map[string]any) }); ok {
+				target.importNodeModifiers(node)
+			}
+		}
+	}()
 	if node == nil {
 		return nil, fmt.Errorf("schema node is nil")
 	}
@@ -77,19 +85,15 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 		return importBoolSchema(node)
 	case "null":
 		s := Null()
-		importDefault(&s.baseSchema, node)
 		return s, nil
 	case "any":
 		s := Any()
-		importDefault(&s.baseSchema, node)
 		return s, nil
 	case "unknown":
 		s := Unknown()
-		importDefault(&s.baseSchema, node)
 		return s, nil
 	case "never":
 		s := Never()
-		importDefault(&s.baseSchema, node)
 		return s, nil
 	case "literal":
 		return importLiteralSchema(node)
@@ -145,8 +149,6 @@ func importStringSchema(node map[string]any) (*StringSchema, error) {
 	if v, ok := node["format"].(string); ok {
 		s.Format(v)
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -155,8 +157,6 @@ func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, erro
 	if err := importNumericConstraintsFloat(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -165,8 +165,6 @@ func importFloat32Schema(node map[string]any) (*Float32Schema, error) {
 	if err := importNumericConstraintsFloat(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -201,8 +199,6 @@ func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSch
 	if err := importNumericConstraintsInt(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -211,8 +207,6 @@ func importUintSchema(node map[string]any, kind string, low, high uint64) (*IntS
 	if err := importNumericConstraintsInt(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -236,8 +230,6 @@ func importNumericConstraintsInt(s *IntSchema, node map[string]any) error {
 
 func importBoolSchema(node map[string]any) (*BoolSchema, error) {
 	s := Bool()
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -277,7 +269,6 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 		}
 	}
 	s := Enum(values...)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -305,7 +296,6 @@ func (ctx *importContext) importArraySchema(node map[string]any, defs map[string
 	} else if ok {
 		s.MaxItems(v)
 	}
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -368,7 +358,6 @@ func (ctx *importContext) importObjectSchema(node map[string]any, defs map[strin
 		s.UnknownKeys(UnknownKeyMode(mode))
 	}
 
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -439,7 +428,7 @@ func (ctx *importContext) importIntersectionSchema(node map[string]any, defs map
 	return Intersection(schemas...), nil
 }
 
-// importOptionalSchema retains modifiers declared on the optional wrapper itself.
+// importOptionalSchema builds the child tree; importNode attaches wrapper modifiers.
 func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[string]map[string]any) (*OptionalSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -450,12 +439,10 @@ func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("optional inner: %w", err)
 	}
 	s := Optional(inner)
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
-// importNullableSchema retains modifiers declared on the nullable wrapper itself.
+// importNullableSchema builds the child tree; importNode attaches wrapper modifiers.
 func (ctx *importContext) importNullableSchema(node map[string]any, defs map[string]map[string]any) (*NullableSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -466,8 +453,6 @@ func (ctx *importContext) importNullableSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("nullable inner: %w", err)
 	}
 	s := Nullable(inner)
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -479,8 +464,6 @@ func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]m
 		return nil, fmt.Errorf("ref schema missing 'ref' field")
 	}
 	occurrence := newRefSchema(ref)
-	importCoercions(&occurrence.baseSchema, node)
-	importDefault(&occurrence.baseSchema, node)
 	if cached, ok := ctx.refs[ref]; ok {
 		if cached.resolved != nil {
 			occurrence.Resolve(cached.resolved)

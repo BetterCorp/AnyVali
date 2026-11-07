@@ -392,6 +392,11 @@ are OPTIONAL -- if not configured, no coercion is attempted.
 | `lower` | string | `string` | Convert to lowercase (Unicode-aware where feasible, ASCII minimum). |
 | `upper` | string | `string` | Convert to uppercase (Unicode-aware where feasible, ASCII minimum). |
 
+For `optional`, `nullable`, and `ref` nodes, the target kind is the kind reached
+through their wrapped schema or referenced definition. Each type conversion MUST
+match that resulting target kind. For example, `string->int` is valid on a
+`nullable` node wrapping an `int` node.
+
 ### 5.2 Coercion Node Shape
 
 ```json
