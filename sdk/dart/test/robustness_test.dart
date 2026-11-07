@@ -5,6 +5,57 @@ import 'package:test/test.dart';
 /// Cover portability, numeric boundaries, defaults, and sensitive-data regressions.
 void main() {
   test(
+      'native object presence follows imported optional references and wrappers',
+      () {
+    final base = av.any().exportSchema();
+    for (final root in [
+      {'kind': 'ref', 'ref': '#/definitions/Optional'},
+      {
+        'kind': 'nullable',
+        'schema': {'kind': 'ref', 'ref': '#/definitions/Optional'}
+      },
+      {'kind': 'ref', 'ref': '#/definitions/NullableOptional'},
+    ]) {
+      final imported = av.importSchema({
+        ...base,
+        'root': root,
+        'definitions': {
+          'Optional': {
+            'kind': 'optional',
+            'schema': {
+              'kind': 'int',
+              'coerce': ['string->int']
+            }
+          },
+          'NullableOptional': {
+            'kind': 'nullable',
+            'schema': {'kind': 'ref', 'ref': '#/definitions/Optional'}
+          }
+        }
+      });
+      final schema = av.object({'payload': imported});
+      expect(schema.parse({}), isEmpty);
+      expect(schema.parse({'payload': '42'}), {'payload': 42});
+      expect(schema.exportSchema()['root']['required'], isEmpty);
+      expect(av.importSchema(schema.exportSchema()).parse({}), isEmpty);
+      expect(schema.safeParse({'payload': 'invalid'}).success, isFalse);
+    }
+    final required = av.importSchema({
+      ...base,
+      'root': {'kind': 'ref', 'ref': '#/definitions/Value'},
+      'definitions': {
+        'Value': {
+          'kind': 'nullable',
+          'schema': {'kind': 'string'}
+        }
+      }
+    });
+    expect(av.object({'payload': required}).safeParse({}).issues.single.code,
+        'required');
+    expect(av.object({'payload': required}).parse({'payload': null}),
+        {'payload': null});
+  });
+  test(
       'wide integer constraints reject rounded doubles and preserve native ints',
       () {
     final document = av.uint64().exportSchema();

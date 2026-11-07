@@ -188,8 +188,11 @@ of a sensitive value. Add a literal discriminator
 or mark the entire union sensitive when encrypted branches would be ambiguous.
 Encrypted parsing and transform helpers reject ciphertext-changing sibling coercions;
 mark the whole intersection sensitive when its members normalize the same value.
-Encryption callbacks receive the final parsed value. Decryption parses the
-callback output normally, including coercion. Keep overlapping intersection
+Encryption callbacks receive the final validated value before Dart typed
+decoding. For example, a sensitive `array(string().optional())` can pass
+`[av.absent]` to the callback where `parse()` returns `[null]`. Normalize absence
+and other non-JSON values such as `BigInt` explicitly before JSON encoding.
+Decryption parses the callback output normally, including coercion. Keep overlapping intersection
 coercions idempotent when an exact round trip of parsed values is required.
 
 ## Development

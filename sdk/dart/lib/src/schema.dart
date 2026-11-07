@@ -421,7 +421,7 @@ Schema<Map<String, Object?>> object(Map<String, Schema> properties) {
     'properties': fields.map((k, v) => MapEntry(k, v._node)),
     'required': fields.entries
         .where((e) =>
-            e.value._node['kind'] != 'optional' &&
+            !_optionalThrough(e.value._node, e.value._definitions) &&
             !e.value._node.containsKey('default'))
         .map((e) => e.key)
         .toList(),
@@ -1063,6 +1063,21 @@ List<String> _coercions(dynamic config, String kind) {
     throw FormatException('Coercion target does not match schema kind $kind');
   }
   return tokens;
+}
+
+/// Preserve optional presence through transparent nullable wrappers and refs.
+bool _optionalThrough(JsonMap node, JsonMap definitions, [int depth = 0]) {
+  if (depth > 200) return false;
+  node = _aliases(node);
+  if (node['kind'] == 'optional') return true;
+  if (node['kind'] == 'nullable') {
+    return _optionalThrough(node['schema'], definitions, depth + 1);
+  }
+  if (node['kind'] == 'ref') {
+    final target = definitions[(node['ref'] as String).substring(14)];
+    return target != null && _optionalThrough(target, definitions, depth + 1);
+  }
+  return false;
 }
 
 /// Find a default through transparent wrappers and references without looping.
