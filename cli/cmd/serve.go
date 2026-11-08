@@ -33,10 +33,15 @@ func RunServe(args []string) int {
 	var schemasDir string
 	var cors bool
 	var help bool
+	defaultHost := os.Getenv("ANYVALI_HOST")
+	if defaultHost == "" {
+		defaultHost = "127.0.0.1"
+	}
 
 	fs.IntVar(&port, "p", 8080, "")
 	fs.IntVar(&port, "port", 8080, "")
-	fs.StringVar(&host, "host", "127.0.0.1", "")
+	fs.StringVar(&host, "host", defaultHost, "")
+	fs.StringVar(&schemasDir, "s", "", "")
 	fs.StringVar(&schemasDir, "schemas", "", "")
 	fs.BoolVar(&cors, "cors", false, "")
 	fs.BoolVar(&help, "h", false, "")
