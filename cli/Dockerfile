@@ -19,5 +19,6 @@ COPY --from=builder /anyvali /anyvali
 
 EXPOSE 8080
 
+ENV ANYVALI_HOST=0.0.0.0
 ENTRYPOINT ["/anyvali"]
-CMD ["serve", "--host", "0.0.0.0"]
+CMD ["serve"]
