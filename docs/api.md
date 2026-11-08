@@ -15,7 +15,7 @@ anyvali serve [flags]
 | Flag | Short | Default | Environment Variable | Description |
 |------|-------|---------|---------------------|-------------|
 | `--port` | `-p` | `8080` | `ANYVALI_PORT` | Port to listen on |
-| `--host` | | `0.0.0.0` | `ANYVALI_HOST` | Host/address to bind to |
+| `--host` | | `127.0.0.1` | `ANYVALI_HOST` | Host/address to bind to |
 | `--schemas` | `-s` | | `ANYVALI_SCHEMAS_DIR` | Directory of schema files to load at startup |
 | `--cors` | | `false` | `ANYVALI_CORS` | Enable CORS headers |
 | `--cors-origins` | | `*` | `ANYVALI_CORS_ORIGINS` | Allowed CORS origins (comma-separated) |
@@ -40,6 +40,8 @@ anyvali serve
 ## Authentication
 
 The AnyVali server does not include built-in authentication or authorization. For production deployments, place the server behind a reverse proxy that handles auth. See [Reverse Proxy for Auth](#reverse-proxy-for-auth) for Nginx and Caddy examples.
+
+The CLI binds to loopback by default so the unauthenticated API is not exposed accidentally. The official container explicitly binds to `0.0.0.0` for container networking; do not publish that port directly to an untrusted network without an authenticating proxy.
 
 ---
 
