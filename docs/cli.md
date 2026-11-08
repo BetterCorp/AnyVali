@@ -260,7 +260,7 @@ anyvali serve [flags]
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--port` | `-p` | `8080` | Port to listen on |
-| `--host` | | `0.0.0.0` | Host/address to bind to |
+| `--host` | | `127.0.0.1` | Host/address to bind to |
 | `--schemas` | `-s` | | Directory of schema files to load at startup |
 | `--cors` | | `false` | Enable CORS headers for browser access |
 | `--cors-origins` | | `*` | Allowed CORS origins (comma-separated) |
