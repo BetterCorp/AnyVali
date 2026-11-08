@@ -14,25 +14,19 @@ anyvali serve [flags]
 
 | Flag | Short | Default | Environment Variable | Description |
 |------|-------|---------|---------------------|-------------|
-| `--port` | `-p` | `8080` | `ANYVALI_PORT` | Port to listen on |
+| `--port` | `-p` | `8080` | | Port to listen on |
 | `--host` | | `127.0.0.1` | `ANYVALI_HOST` | Host/address to bind to |
-| `--schemas` | `-s` | | `ANYVALI_SCHEMAS_DIR` | Directory of schema files to load at startup |
-| `--cors` | | `false` | `ANYVALI_CORS` | Enable CORS headers |
-| `--cors-origins` | | `*` | `ANYVALI_CORS_ORIGINS` | Allowed CORS origins (comma-separated) |
-| `--read-timeout` | | `30s` | `ANYVALI_READ_TIMEOUT` | HTTP read timeout |
-| `--write-timeout` | | `30s` | `ANYVALI_WRITE_TIMEOUT` | HTTP write timeout |
-| `--max-body` | | `1MB` | `ANYVALI_MAX_BODY` | Maximum request body size |
+| `--schemas` | `-s` | | | Directory of schema files to load at startup |
+| `--cors` | | `false` | | Enable CORS headers |
 
-Environment variables take effect when the corresponding flag is not provided. Flags always take precedence.
+`ANYVALI_HOST` sets the bind-address default; an explicit `--host` takes precedence.
 
 ```bash
 # Using flags
 anyvali serve -s ./schemas -p 3000
 
-# Using environment variables
-export ANYVALI_SCHEMAS_DIR=./schemas
-export ANYVALI_PORT=3000
-anyvali serve
+# Using the host environment variable
+ANYVALI_HOST=0.0.0.0 anyvali serve --schemas ./schemas --port 3000
 ```
 
 ---
@@ -42,6 +36,7 @@ anyvali serve
 The AnyVali server does not include built-in authentication or authorization. For production deployments, place the server behind a reverse proxy that handles auth. See [Reverse Proxy for Auth](#reverse-proxy-for-auth) for Nginx and Caddy examples.
 
 The CLI binds to loopback by default so the unauthenticated API is not exposed accidentally. The official container explicitly binds to `0.0.0.0` for container networking; do not publish that port directly to an untrusted network without an authenticating proxy.
+The container sets this through `ANYVALI_HOST`, so custom `serve` arguments keep the container binding; pass `--host` to override it explicitly.
 
 ---
 
@@ -473,7 +468,7 @@ spec:
       containers:
         - name: anyvali
           image: anyvali/cli:latest
-          command: ["anyvali", "serve", "-s", "/schemas", "-p", "8080"]
+          args: ["serve", "-s", "/schemas", "-p", "8080"]
           ports:
             - containerPort: 8080
           volumeMounts:
