@@ -260,13 +260,11 @@ anyvali serve [flags]
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--port` | `-p` | `8080` | Port to listen on |
-| `--host` | | `0.0.0.0` | Host/address to bind to |
+| `--host` | | `127.0.0.1` | Host/address to bind to |
 | `--schemas` | `-s` | | Directory of schema files to load at startup |
 | `--cors` | | `false` | Enable CORS headers for browser access |
-| `--cors-origins` | | `*` | Allowed CORS origins (comma-separated) |
-| `--read-timeout` | | `30s` | HTTP read timeout |
-| `--write-timeout` | | `30s` | HTTP write timeout |
-| `--max-body` | | `1MB` | Maximum request body size |
+
+`ANYVALI_HOST` sets the default host when `--host` is omitted. The container image uses this to retain its `0.0.0.0` bind address even when `serve` arguments are customized.
 
 #### Starting with a schemas directory
 
@@ -325,17 +323,13 @@ curl http://localhost:8080/health
 
 #### CORS for browser access
 
-Enable CORS when calling the API from a browser:
-
-```bash
-anyvali serve -s schemas/ --cors --cors-origins "https://app.example.com,https://staging.example.com"
-```
-
-Allow all origins (development only):
+Enable wildcard CORS when calling the API from a browser during development:
 
 ```bash
 anyvali serve -s schemas/ --cors
 ```
+
+The built-in CORS option permits every origin. Use an authenticating reverse proxy when production deployments need a restricted origin policy.
 
 #### Using as a sidecar validation service
 

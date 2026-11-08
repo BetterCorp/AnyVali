@@ -17,7 +17,7 @@ Start an HTTP validation server.
 
 Flags:
   -p, --port     Port number (default 8080)
-      --host     Bind address (default "0.0.0.0")
+      --host     Bind address (default "127.0.0.1")
       --schemas  Directory to load schema files from (optional)
       --cors     Enable CORS headers (default false)
   -h, --help     Show help
@@ -33,10 +33,15 @@ func RunServe(args []string) int {
 	var schemasDir string
 	var cors bool
 	var help bool
+	defaultHost := os.Getenv("ANYVALI_HOST")
+	if defaultHost == "" {
+		defaultHost = "127.0.0.1"
+	}
 
 	fs.IntVar(&port, "p", 8080, "")
 	fs.IntVar(&port, "port", 8080, "")
-	fs.StringVar(&host, "host", "0.0.0.0", "")
+	fs.StringVar(&host, "host", defaultHost, "")
+	fs.StringVar(&schemasDir, "s", "", "")
 	fs.StringVar(&schemasDir, "schemas", "", "")
 	fs.BoolVar(&cors, "cors", false, "")
 	fs.BoolVar(&help, "h", false, "")
