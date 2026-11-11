@@ -45,21 +45,24 @@ func (s *NullableSchema) SafeParse(input any) ParseResult {
 	return parseAtDepth(s, input, newParseContext())
 }
 
+// safeParseAtDepth preserves null and materializes defaults at their declaring node.
 func (s *NullableSchema) safeParseAtDepth(input any, ctx parseContext) ParseResult {
-	if isAbsent(input) {
-		if s.hasDefault {
-			value := deepCopyDefault(s.defaultValue)
-			if value == nil {
-				return ParseResult{Success: true, Data: nil}
-			}
-			return parseAtDepth(s.inner, value, ctx.child())
+	if isAbsent(input) && !s.hasDefault {
+		if hasTransitiveDefault(s.inner, 0) {
+			return parseAtDepth(s.inner, input, ctx.child())
 		}
 		return ParseResult{Success: true, Data: nil}
 	}
 	if input == nil {
 		return ParseResult{Success: true, Data: nil}
 	}
-	return parseAtDepth(s.inner, input, ctx.child())
+	return s.runPipeline(input, func(value any) (any, []ValidationIssue) {
+		if value == nil {
+			return nil, nil
+		}
+		result := parseAtDepth(s.inner, value, ctx.child())
+		return result.Data, result.Issues
+	})
 }
 
 func (s *NullableSchema) ToNode() map[string]any {
@@ -67,6 +70,7 @@ func (s *NullableSchema) ToNode() map[string]any {
 		"kind":   "nullable",
 		"schema": s.inner.ToNode(),
 	}
+	s.addCoercionNode(node)
 	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node

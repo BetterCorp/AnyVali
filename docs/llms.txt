@@ -1,6 +1,6 @@
 # AnyVali
 
-> Native validation libraries for 10 languages, one portable schema model.
+> Native validation libraries for 11 languages, one portable schema model.
 
 ## What is AnyVali?
 
@@ -292,7 +292,7 @@ doc, _ := av.Export(userSchema, av.Portable)
 
 ## Type Inference
 
-All 10 SDKs provide static type inference so that `parse()` and `safeParse()` return correctly typed output.
+All 11 SDKs provide static type inference so that `parse()` and `safeParse()` return correctly typed output.
 
 - **TypeScript** -- Full Zod-style `Infer<T>` utility type. `ObjectSchema` is generic over its shape. Array, tuple, union, intersection, optional, nullable, record, and enum all thread types through. `schema.parse(input)` returns the inferred type, not `unknown`.
 - **Python** -- `BaseSchema(ABC, Generic[T])`, `ParseResult(Generic[T])`. `StringSchema(BaseSchema[str])`, etc. `parse()` returns `T`, `safe_parse()` returns `ParseResult[T]`.
@@ -353,3 +353,7 @@ docker run --rm -p 8080:8080 -v $(pwd)/schemas:/schemas anyvali/cli serve --sche
 - NuGet: https://www.nuget.org/packages/AnyVali
 - RubyGems: https://rubygems.org/gems/anyvali
 - Go: https://pkg.go.dev/github.com/BetterCorp/AnyVali/sdk/go
+
+## Dart / Flutter
+
+The pure Dart SDK is in sdk/dart (Dart 3.4+). It is available from source and has not yet been published to pub.dev. Use `Schema<T>`, `safeParse`, `exportSchema`, and `importSchema`. Flutter fields can use `schema.validator()`. See docs/sdk-dart.md.

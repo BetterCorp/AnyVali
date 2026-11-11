@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strings"
 )
 
 // importContext owns reference resolution for one document. Placeholders are
 // registered before descending so recursive references share the completed graph.
 type importContext struct {
-	refs map[string]*RefSchema
+	refs        map[string]*RefSchema
+	pendingRefs map[string][]*RefSchema
 }
 
 // Import converts a Document to a Schema.
@@ -19,7 +21,7 @@ func Import(doc *Document) (Schema, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("document is nil")
 	}
-	ctx := &importContext{refs: make(map[string]*RefSchema)}
+	ctx := &importContext{refs: make(map[string]*RefSchema), pendingRefs: make(map[string][]*RefSchema)}
 	return ctx.importNode(doc.Root, doc.Definitions)
 }
 
@@ -38,7 +40,16 @@ func ImportJSON(data []byte) (Schema, error) {
 	return Import(&doc)
 }
 
-func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (Schema, error) {
+// importNode builds one schema using this document's reference-resolution context.
+func (ctx *importContext) importNode(node map[string]any, defs map[string]map[string]any) (schema Schema, err error) {
+	// Apply common modifiers once for every kind, including reference occurrences.
+	defer func() {
+		if err == nil && schema != nil {
+			if target, ok := schema.(interface{ importNodeModifiers(map[string]any) }); ok {
+				target.importNodeModifiers(node)
+			}
+		}
+	}()
 	if node == nil {
 		return nil, fmt.Errorf("schema node is nil")
 	}
@@ -46,6 +57,9 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	kind, ok := node["kind"].(string)
 	if !ok {
 		return nil, fmt.Errorf("schema node missing 'kind' field")
+	}
+	if err := validateImportedCoercions(node, defs); err != nil {
+		return nil, err
 	}
 
 	switch kind {
@@ -74,13 +88,17 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	case "bool":
 		return importBoolSchema(node)
 	case "null":
-		return Null(), nil
+		s := Null()
+		return s, nil
 	case "any":
-		return Any(), nil
+		s := Any()
+		return s, nil
 	case "unknown":
-		return Unknown(), nil
+		s := Unknown()
+		return s, nil
 	case "never":
-		return Never(), nil
+		s := Never()
+		return s, nil
 	case "literal":
 		return importLiteralSchema(node)
 	case "enum":
@@ -108,6 +126,7 @@ func (ctx *importContext) importNode(node map[string]any, defs map[string]map[st
 	}
 }
 
+// importStringSchema build string constraints; importNode attaches common modifiers.
 func importStringSchema(node map[string]any) (*StringSchema, error) {
 	s := String()
 	if v, ok, err := getCountConstraint(node, "minLength"); err != nil {
@@ -135,28 +154,24 @@ func importStringSchema(node map[string]any) (*StringSchema, error) {
 	if v, ok := node["format"].(string); ok {
 		s.Format(v)
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importFloat64Schema build number/float64 constraints without changing the requested kind.
 func importFloat64Schema(node map[string]any, kind string) (*Float64Schema, error) {
 	s := newFloat64Schema(kind)
 	if err := importNumericConstraintsFloat(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importFloat32Schema build float32 constraints before shared modifier import.
 func importFloat32Schema(node map[string]any) (*Float32Schema, error) {
 	s := Float32()
 	if err := importNumericConstraintsFloat(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -186,23 +201,21 @@ func importNumericConstraintsFloat(s *Float64Schema, node map[string]any) error 
 	return nil
 }
 
+// importIntSchema preserve the signed target width while importing numeric constraints.
 func importIntSchema(node map[string]any, kind string, low, high int64) (*IntSchema, error) {
 	s := newIntSchema(kind, low, high)
 	if err := importNumericConstraintsInt(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importUintSchema preserve the unsigned target width while importing numeric constraints.
 func importUintSchema(node map[string]any, kind string, low, high uint64) (*IntSchema, error) {
 	s := newUintSchema(kind, low, high)
 	if err := importNumericConstraintsInt(s, node); err != nil {
 		return nil, err
 	}
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -224,10 +237,9 @@ func importNumericConstraintsInt(s *IntSchema, node map[string]any) error {
 	return nil
 }
 
+// importBoolSchema build the boolean validator before shared modifier import.
 func importBoolSchema(node map[string]any) (*BoolSchema, error) {
 	s := Bool()
-	importCoercions(&s.baseSchema, node)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -256,6 +268,7 @@ func validateImportedLiteral(value any) error {
 	return nil
 }
 
+// importEnumSchema validate the allowed values before constructing an enum.
 func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 	values, ok := node["values"].([]any)
 	if !ok {
@@ -267,10 +280,10 @@ func importEnumSchema(node map[string]any) (*EnumSchema, error) {
 		}
 	}
 	s := Enum(values...)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importArraySchema import the item schema and validate array length constraints.
 func (ctx *importContext) importArraySchema(node map[string]any, defs map[string]map[string]any) (*ArraySchema, error) {
 	// Accept both "item" and "items" keys for compatibility
 	itemNode, ok := node["item"].(map[string]any)
@@ -295,7 +308,6 @@ func (ctx *importContext) importArraySchema(node map[string]any, defs map[string
 	} else if ok {
 		s.MaxItems(v)
 	}
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -323,6 +335,7 @@ func (ctx *importContext) importTupleSchema(node map[string]any, defs map[string
 	return Tuple(items...), nil
 }
 
+// importObjectSchema import property schemas, required fields, and unknown-key behavior.
 func (ctx *importContext) importObjectSchema(node map[string]any, defs map[string]map[string]any) (*ObjectSchema, error) {
 	propsNode, ok := node["properties"].(map[string]any)
 	if !ok {
@@ -358,7 +371,6 @@ func (ctx *importContext) importObjectSchema(node map[string]any, defs map[strin
 		s.UnknownKeys(UnknownKeyMode(mode))
 	}
 
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
@@ -429,6 +441,7 @@ func (ctx *importContext) importIntersectionSchema(node map[string]any, defs map
 	return Intersection(schemas...), nil
 }
 
+// importOptionalSchema builds the child tree; importNode attaches wrapper modifiers.
 func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[string]map[string]any) (*OptionalSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -439,10 +452,10 @@ func (ctx *importContext) importOptionalSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("optional inner: %w", err)
 	}
 	s := Optional(inner)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importNullableSchema builds the child tree; importNode attaches wrapper modifiers.
 func (ctx *importContext) importNullableSchema(node map[string]any, defs map[string]map[string]any) (*NullableSchema, error) {
 	schemaNode, ok := node["schema"].(map[string]any)
 	if !ok {
@@ -453,20 +466,28 @@ func (ctx *importContext) importNullableSchema(node map[string]any, defs map[str
 		return nil, fmt.Errorf("nullable inner: %w", err)
 	}
 	s := Nullable(inner)
-	importDefault(&s.baseSchema, node)
 	return s, nil
 }
 
+// importRefSchema shares definition resolution while retaining modifiers per occurrence.
+// Pending wrappers bind to the completed target so recursive refs add no proxy depth.
 func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]map[string]any) (*RefSchema, error) {
 	ref, ok := node["ref"].(string)
 	if !ok {
 		return nil, fmt.Errorf("ref schema missing 'ref' field")
 	}
+	occurrence := newRefSchema(ref)
 	if cached, ok := ctx.refs[ref]; ok {
-		return cached, nil
+		if cached.resolved != nil {
+			occurrence.Resolve(cached.resolved)
+		} else {
+			ctx.pendingRefs[ref] = append(ctx.pendingRefs[ref], occurrence)
+		}
+		return occurrence, nil
 	}
-	s := newRefSchema(ref)
-	ctx.refs[ref] = s
+	placeholder := newRefSchema(ref)
+	ctx.refs[ref] = placeholder
+	ctx.pendingRefs[ref] = append(ctx.pendingRefs[ref], occurrence)
 	const defPrefix = "#/definitions/"
 	if len(ref) > len(defPrefix) && ref[:len(defPrefix)] == defPrefix {
 		if defNode, ok := defs[ref[len(defPrefix):]]; ok {
@@ -474,11 +495,14 @@ func (ctx *importContext) importRefSchema(node map[string]any, defs map[string]m
 			if err != nil {
 				return nil, fmt.Errorf("ref %q: %w", ref, err)
 			}
-			s.Resolve(resolved)
+			placeholder.Resolve(resolved)
+			for _, pending := range ctx.pendingRefs[ref] {
+				pending.Resolve(resolved)
+			}
+			delete(ctx.pendingRefs, ref)
 		}
 	}
-
-	return s, nil
+	return occurrence, nil
 }
 
 // Helper functions for extracting typed values from node maps.
@@ -508,9 +532,99 @@ func getCountConstraint(node map[string]any, key string) (int, bool, error) {
 	return int(n), true, nil
 }
 
+// validateImportedCoercions rejects incompatible targets and operation order before
+// attaching modifiers. Legacy short conversions retain their runtime semantics.
+func validateImportedCoercions(node map[string]any, defs map[string]map[string]any) error {
+	config, present := node["coerce"]
+	if !present {
+		return nil
+	}
+	var operations []any
+	switch value := config.(type) {
+	case string:
+		operations = []any{value}
+	case []any:
+		operations = value
+	default:
+		return fmt.Errorf("coerce must be an identifier or ordered list")
+	}
+	if len(operations) == 0 {
+		return nil
+	}
+	kind, err := importedCoercionTarget(node, defs, 0)
+	if err != nil {
+		return err
+	}
+	expected := ""
+	switch kind {
+	case "int", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64":
+		expected = "int"
+	case "number", "float32", "float64":
+		expected = "number"
+	case "bool":
+		expected = "bool"
+	}
+	converted, preprocessed := false, false
+	for _, operation := range operations {
+		token, ok := operation.(string)
+		if !ok {
+			return fmt.Errorf("coerce identifiers must be strings")
+		}
+		switch token {
+		case "trim", "lower", "upper":
+			if kind != "string" {
+				if converted {
+					return fmt.Errorf("string preprocessing must precede conversion for %s", kind)
+				}
+				preprocessed = true
+			}
+		case "int", "number", "bool", "string->int", "string->number", "string->bool":
+			if expected == "" || strings.TrimPrefix(token, "string->") != expected {
+				return fmt.Errorf("coercion %q does not match target kind %s", token, kind)
+			}
+			converted = true
+		default:
+			return fmt.Errorf("unknown coercion identifier %q", token)
+		}
+	}
+	if preprocessed && !converted {
+		return fmt.Errorf("string preprocessing requires a matching conversion for %s", kind)
+	}
+	return nil
+}
+
+// importedCoercionTarget follows transparent schema edges with a fixed depth bound.
+// Reading the document also handles recursive refs not yet bound in the Go graph.
+func importedCoercionTarget(node map[string]any, defs map[string]map[string]any, depth int) (string, error) {
+	if depth >= maxValidationDepth || node == nil {
+		return "", fmt.Errorf("unresolved or excessively nested coercion target")
+	}
+	kind, _ := node["kind"].(string)
+	switch kind {
+	case "optional", "nullable":
+		child, _ := node["schema"].(map[string]any)
+		return importedCoercionTarget(child, defs, depth+1)
+	case "ref":
+		ref, _ := node["ref"].(string)
+		const prefix = "#/definitions/"
+		if !strings.HasPrefix(ref, prefix) {
+			return "", fmt.Errorf("invalid coercion reference target")
+		}
+		return importedCoercionTarget(defs[strings.TrimPrefix(ref, prefix)], defs, depth+1)
+	default:
+		return kind, nil
+	}
+}
+
+// importCoercions accepts one identifier or an ordered list without moving node ownership.
 func importCoercions(b *baseSchema, node map[string]any) {
-	cs, ok := node["coerce"].([]any)
-	if !ok {
+	var cs []any
+	switch value := node["coerce"].(type) {
+	case string:
+		cs = []any{value}
+	case []any:
+		cs = value
+	default:
 		return
 	}
 	for _, c := range cs {

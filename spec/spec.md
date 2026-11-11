@@ -388,9 +388,14 @@ are OPTIONAL -- if not configured, no coercion is attempted.
 | `string->int` | string | any integer kind | Parse string as decimal integer. Leading/trailing whitespace is trimmed. Reject if non-numeric, fractional, or out of range. |
 | `string->number` | string | any float kind | Parse string as decimal floating-point. Leading/trailing whitespace is trimmed. Reject NaN, Infinity. |
 | `string->bool` | string | `bool` | `"true"`, `"1"` => `true`; `"false"`, `"0"` => `false` (case-insensitive). All other strings are rejected. |
-| `trim` | string | `string` | Remove leading and trailing whitespace. |
-| `lower` | string | `string` | Convert to lowercase (Unicode-aware where feasible, ASCII minimum). |
-| `upper` | string | `string` | Convert to uppercase (Unicode-aware where feasible, ASCII minimum). |
+| `trim` | string | `string`, or preprocessing before a typed conversion (§5.2) | Remove leading and trailing whitespace. |
+| `lower` | string | `string`, or preprocessing before a typed conversion (§5.2) | Convert to lowercase (Unicode-aware where feasible, ASCII minimum). |
+| `upper` | string | `string`, or preprocessing before a typed conversion (§5.2) | Convert to uppercase (Unicode-aware where feasible, ASCII minimum). |
+
+For `optional`, `nullable`, and `ref` nodes, the target kind is the kind reached
+through their wrapped schema or referenced definition. Each type conversion MUST
+match that resulting target kind. For example, `string->int` is valid on a
+`nullable` node wrapping an `int` node.
 
 ### 5.2 Coercion Node Shape
 
@@ -404,7 +409,22 @@ For string transforms that can be combined:
 { "kind": "string", "coerce": ["trim", "lower"] }
 ```
 
-When `coerce` is an array, transforms are applied left to right.
+When `coerce` is an array, transforms are applied left to right. An empty
+array performs no coercion.
+
+A portable coercion applies only when the current value matches its listed input type.
+Otherwise, the value is left unchanged for subsequent operations and normal
+schema validation. For example, `string->int` leaves an already-typed integer
+unchanged; a non-numeric object still fails the integer validator.
+
+For a numeric or `bool` schema, string preprocessing (`trim`, `lower`, `upper`)
+MAY precede the matching `string->int`, `string->number`, or `string->bool`
+conversion in an ordered list. The preprocessing operations act on the
+intermediate string. For example, a `bool` node can use
+`"coerce": ["upper", "string->bool"]`. On these non-string targets, preprocessing
+MUST precede the first type conversion; a string transform after that conversion
+is an invalid coercion configuration. Each type conversion MUST match the
+schema's target kind as listed in Section 5.1.
 
 ### 5.3 Coercion Failure
 

@@ -137,9 +137,17 @@ func (s *IntSchema) validate(value any) (any, []ValidationIssue) {
 	return s.validateSigned(value)
 }
 
+// validateSigned checks signed width and constraints, classifying exact uint64 overflow as a range error.
 func (s *IntSchema) validateSigned(value any) (any, []ValidationIssue) {
 	i, ok := toInt64(value)
 	if !ok {
+		// Canonical integer coercion retains uint64 values beyond MaxInt64.
+		// They are valid integers whose signed target range is exceeded.
+		if wide, unsigned := value.(uint64); unsigned && wide > math.MaxInt64 {
+			return nil, []ValidationIssue{{Code: IssueTooLarge,
+				Message:  fmt.Sprintf("value %d exceeds range for %s", wide, s.kind),
+				Expected: s.kind, Received: fmt.Sprintf("%d", wide)}}
+		}
 		return nil, []ValidationIssue{{
 			Code:     IssueInvalidType,
 			Message:  fmt.Sprintf("expected integer, received %s", typeName(value)),

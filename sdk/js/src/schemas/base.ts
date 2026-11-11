@@ -11,8 +11,10 @@ import type {
   DescribeOptions,
 } from "../types.js";
 import { ValidationError } from "../errors.js";
-import { applyCoercion } from "../parse/coerce.js";
+import { applyCoercion, orderedCoercions } from "../parse/coerce.js";
 import { ISSUE_CODES } from "../issue-codes.js";
+
+import { portableNode } from "../interchange/portable-node.js";
 
 const ANYVALI_VERSION = "1.0";
 const SCHEMA_VERSION = "1.1";
@@ -58,6 +60,9 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   /** @internal */ _metadata: Record<string, unknown> | undefined = undefined;
   /** @internal */ _importedDefinitions: Record<string, SchemaNode> = {};
   /** @internal */ _importedExtensions: AnyValiDocument["extensions"] = {};
+
+  /** @internal Presence of a default through transparent wrappers/references. */
+  _hasDefault(_depth = 0): boolean { return this._defaultValue !== ABSENT; }
 
   // ---------- public API ----------
 
@@ -228,7 +233,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
   }
 
   /** Override in subclasses to provide the coercion target type name */
-  _getCoercionTarget(): string {
+  _getCoercionTarget(_depth = 0): string {
     return "unknown";
   }
 
@@ -286,6 +291,7 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     return clone;
   }
 
+  /** Collect context and encode canonical portable or preserved extended nodes. */
   export(mode: ExportMode = "portable"): AnyValiDocument {
     if (mode === "portable" && !this._isPortable) {
       throw new Error(
@@ -324,8 +330,10 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     return {
       anyvaliVersion: ANYVALI_VERSION,
       schemaVersion: SCHEMA_VERSION,
-      root: node,
-      definitions: structuredClone(definitions),
+      root: mode === "portable" ? portableNode(node, definitions, MAX_DEPTH) : node,
+      definitions: structuredClone(mode === "portable"
+        ? Object.fromEntries(Object.entries(definitions).map(([key, value]) => [key, portableNode(value, definitions, MAX_DEPTH)]))
+        : definitions),
       extensions: structuredClone(extensions),
     };
   }
@@ -391,12 +399,13 @@ export abstract class BaseSchema<TInput = unknown, TOutput = TInput> {
     return clone as this;
   }
 
+  /** Attach this node's own default, coercions and metadata without moving stages. */
   protected _addDefault(node: SchemaNode): SchemaNode {
     if (this._defaultValue !== ABSENT) {
       node.default = this._defaultValue;
     }
     if (this._coercionConfig) {
-      node.coerce = { ...this._coercionConfig };
+      node.coerce = orderedCoercions(this._coercionConfig) ?? { ...this._coercionConfig };
     }
     if (this._metadata && Object.keys(this._metadata).length > 0) {
       node.metadata = { ...this._metadata };

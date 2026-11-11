@@ -5,44 +5,27 @@ import {
 } from "../../src/parse/coerce.js";
 
 describe("normalizeCoercionConfig", () => {
-  it("passes through object config as-is", () => {
+  it("passes native object config through unchanged", () => {
     const config = { from: "string", trim: true };
     expect(normalizeCoercionConfig(config)).toBe(config);
   });
-
-  it("converts single string 'trim' to config", () => {
-    expect(normalizeCoercionConfig("trim")).toEqual({ trim: true });
+  it.each([
+    ["trim", " x ", "x"], ["lower", "X", "x"], ["upper", "x", "X"],
+    ["string->int", "42", 42], ["string->number", "2.5", 2.5], ["string->bool", "true", true],
+  ])("executes the declared %s operation", (operation, input, value) => {
+    expect(applyCoercion(input, normalizeCoercionConfig(operation), "unknown")).toEqual({ success: true, value });
   });
-
-  it("converts single string 'lower' to config", () => {
-    expect(normalizeCoercionConfig("lower")).toEqual({ lower: true });
+  it("retains operation order and repeated operations", () => {
+    expect(applyCoercion(" X ", normalizeCoercionConfig(["trim", "upper", "lower"]), "string"))
+      .toEqual({ success: true, value: "x" });
+    expect(applyCoercion("x", normalizeCoercionConfig(["upper", "lower", "upper"]), "string"))
+      .toEqual({ success: true, value: "X" });
   });
-
-  it("converts single string 'upper' to config", () => {
-    expect(normalizeCoercionConfig("upper")).toEqual({ upper: true });
+  it("keeps an empty operation list as a no-op", () => {
+    expect(applyCoercion("7", normalizeCoercionConfig([]), "int")).toEqual({ success: true, value: "7" });
   });
-
-  it("converts 'string->int' to from config", () => {
-    expect(normalizeCoercionConfig("string->int")).toEqual({ from: "string" });
-  });
-
-  it("converts 'string->number' to from config", () => {
-    expect(normalizeCoercionConfig("string->number")).toEqual({
-      from: "string",
-    });
-  });
-
-  it("converts 'string->bool' to from config", () => {
-    expect(normalizeCoercionConfig("string->bool")).toEqual({
-      from: "string",
-    });
-  });
-
-  it("converts array of strings", () => {
-    expect(normalizeCoercionConfig(["trim", "lower"])).toEqual({
-      trim: true,
-      lower: true,
-    });
+  it("rejects unknown operations rather than silently dropping them", () => {
+    expect(() => normalizeCoercionConfig(["unknown-operation"])).toThrow();
   });
 });
 
