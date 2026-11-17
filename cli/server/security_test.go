@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // newTestServer creates a Server with optional test schemas loaded from a temp dir.
@@ -694,6 +695,24 @@ func TestCORSDisabledNoHeaders(t *testing.T) {
 
 	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "" {
 		t.Errorf("expected no CORS headers when disabled, got origin=%q", origin)
+	}
+}
+
+
+func TestRequestLogEscapesControlCharacters(t *testing.T) {
+	line := formatRequestLog(http.MethodGet, "/health\nFORGED \x1b[31m", http.StatusOK, 1500*time.Microsecond)
+
+	if strings.Count(line, "\n") != 1 {
+		t.Fatalf("request log must remain one physical line, got %q", line)
+	}
+	if strings.Contains(line, "\nFORGED") {
+		t.Fatalf("request path injected a forged log line: %q", line)
+	}
+	if strings.Contains(line, "\x1b") {
+		t.Fatalf("request path emitted a terminal escape byte: %q", line)
+	}
+	if !strings.Contains(line, `"/health\nFORGED \x1b[31m"`) {
+		t.Fatalf("request path was not quoted and escaped: %q", line)
 	}
 }
 
