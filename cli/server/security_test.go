@@ -698,9 +698,8 @@ func TestCORSDisabledNoHeaders(t *testing.T) {
 	}
 }
 
-
 func TestRequestLogEscapesControlCharacters(t *testing.T) {
-	line := formatRequestLog(http.MethodGet, "/health\nFORGED \x1b[31m", http.StatusOK, 1500*time.Microsecond)
+	line := formatRequestLog(http.MethodGet, "/health\nFORGED \x1b[31m", http.StatusOK, 1500 * time.Microsecond)
 
 	if strings.Count(line, "\n") != 1 {
 		t.Fatalf("request log must remain one physical line, got %q", line)
