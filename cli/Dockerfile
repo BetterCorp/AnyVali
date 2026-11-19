@@ -1,4 +1,4 @@
-FROM golang:1.26.10-alpine AS builder
+FROM golang:1.26.11-alpine AS builder
 
 WORKDIR /build
 
@@ -20,5 +20,6 @@ COPY --from=builder /anyvali /anyvali
 EXPOSE 8080
 
 ENV ANYVALI_HOST=0.0.0.0
+USER 65532:65532
 ENTRYPOINT ["/anyvali"]
 CMD ["serve"]
