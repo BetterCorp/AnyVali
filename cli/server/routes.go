@@ -47,8 +47,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		rw := &responseWriter{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rw, r)
 		duration := time.Since(start)
-		fmt.Printf("%s %s %d %s\n", r.Method, r.URL.Path, rw.status, duration.Round(time.Millisecond))
+		fmt.Print(formatRequestLog(r.Method, r.URL.Path, rw.status, duration))
 	})
+}
+
+func formatRequestLog(method, path string, status int, duration time.Duration) string {
+	return fmt.Sprintf("%s %q %d %s\n", method, path, status, duration.Round(time.Millisecond))
 }
 
 // recoveryMiddleware recovers from panics and returns a 500 error.
