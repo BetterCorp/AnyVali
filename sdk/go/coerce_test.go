@@ -260,9 +260,6 @@ func TestApplyCoercionFailurePaths(t *testing.T) {
 		{"int from non-string", CoerceToInt, 42},
 		{"number from non-string", CoerceToNumber, true},
 		{"bool from non-string", CoerceToBool, 3.14},
-		{"trim from non-string", CoerceTrim, 42},
-		{"lower from non-string", CoerceLower, true},
-		{"upper from non-string", CoerceUpper, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

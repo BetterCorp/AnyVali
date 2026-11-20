@@ -572,7 +572,9 @@ function resolveFieldSchema(
     }
 
     if (current.kind === "record" && typeof segment === "string") {
-      current = resolveRefNode(doc, current.valueSchema);
+      const valueNode = current.values ?? current.valueSchema;
+      if (!valueNode) return null;
+      current = resolveRefNode(doc, valueNode);
       continue;
     }
 
@@ -620,6 +622,7 @@ function resolveRefNode(doc: AnyValiDocument, node: SchemaNode): SchemaNode {
   return current;
 }
 
+/** Read canonical and legacy wrapper keys when deriving field metadata. */
 function unwrapNode(node: SchemaNode): UnwrappedNode {
   let current = node;
   let optional = false;
@@ -628,10 +631,14 @@ function unwrapNode(node: SchemaNode): UnwrappedNode {
   while (current.kind === "optional" || current.kind === "nullable") {
     if (current.kind === "optional") {
       optional = true;
-      current = current.inner;
+      const inner = current.schema ?? current.inner;
+      if (!inner) break;
+      current = inner;
     } else {
       nullable = true;
-      current = current.inner;
+      const inner = current.schema ?? current.inner;
+      if (!inner) break;
+      current = inner;
     }
   }
 

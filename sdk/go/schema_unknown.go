@@ -45,6 +45,7 @@ func (s *UnknownSchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *UnknownSchema) ToNode() map[string]any {
 	node := map[string]any{"kind": "unknown"}
+	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node
 }

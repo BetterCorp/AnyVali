@@ -52,6 +52,7 @@ func (s *NeverSchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *NeverSchema) ToNode() map[string]any {
 	node := map[string]any{"kind": "never"}
+	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node
 }

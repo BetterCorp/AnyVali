@@ -65,6 +65,16 @@ func deepCopyDefault(v any) any {
 	}
 }
 
+// importNodeModifiers attaches shared JSON fields without moving their pipeline stage.
+// Keeping this centralized prevents a schema-specific importer from dropping defaults.
+func (b *baseSchema) importNodeModifiers(node map[string]any) {
+	importDefault(b, node)
+	importCoercions(b, node)
+	if metadata, ok := node["metadata"].(map[string]any); ok {
+		b.metadata = deepCopyDefault(metadata).(map[string]any)
+	}
+}
+
 // SetDefault sets a default value for the schema.
 func (b *baseSchema) setDefault(value any) {
 	b.defaultValue = value

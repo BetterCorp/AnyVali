@@ -143,7 +143,8 @@ describe("Export", () => {
   it("exports coercion config", () => {
     const s = int().coerce({ from: "string" });
     const doc = exportSchema(s);
-    expect(doc.root.coerce).toEqual({ from: "string" });
+    expect(doc.root.coerce).toEqual(["string->int"]);
+    expect(exportSchema(s, "extended").root.coerce).toEqual({ from: "string" });
   });
 });
 

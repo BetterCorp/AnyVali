@@ -19,8 +19,12 @@ The full repository spans multiple toolchains. Install what you need:
 | Ruby | Ruby 3.0+ |
 | Kotlin | JDK 17+ and Gradle |
 | C++ | CMake 3.14+ and a C++17 compiler |
+| Dart / Flutter | Dart 3.4+ (standalone or bundled with Flutter) |
 
-You don't need all of them. The runner skips nothing implicitly -- if a toolchain is missing, it fails loudly.
+Install the toolchains you need. The runner reports unavailable SDK toolchains as
+`SKIP` and can return success without running that SDK. Confirm the target's
+summary reports `PASS`, and check for action-level `SKIP` messages before
+considering its checks complete (for example, Ruby tests need Bundler as well as Ruby).
 
 ## Using the Runner
 
@@ -241,9 +245,24 @@ chore: update CI node version               → no version bump
 1. Add the kind to `spec/spec.md`
 2. Add node shape to `spec/json-format.md`
 3. Add test cases to `spec/corpus/`
-4. Implement in all 10 SDKs
+4. Implement in all 11 SDKs
 5. Update docs
 
 ## Adding a New SDK
 
 See the [SDK Authors Guide](sdk-authors-guide.md) for implementation requirements.
+
+### Dart / Flutter
+
+```bash
+bash runner.sh ci dart
+cd sdk/dart
+dart test --platform node test/schema_test.dart test/robustness_test.dart test/pattern_test.dart
+dart pub publish --dry-run
+```
+
+The VM suite loads both shared corpora. The Node suite checks web compilation and runtime behavior without Flutter dependencies.
+
+For Dart, confirm that the runner summary reports `PASS` for `dart`. A `SKIP`
+result means Dart was unavailable and no Dart checks ran, even if the command
+returned success.

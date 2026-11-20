@@ -8,6 +8,8 @@ This guide gets you from zero to validating in minutes. For deeper topics, see t
 
 ## Install
 
+For Dart and Flutter, see the [Dart SDK installation and forms guide](sdk-dart.md).
+
 Pick your language. PHP uses a [pinned Composer source installation](sdk-php.md#installation).
 
 ```bash

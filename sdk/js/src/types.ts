@@ -130,10 +130,10 @@ export interface ArraySchemaNode extends SchemaNodeBase {
 }
 
 // Tuple node
-export interface TupleSchemaNode extends SchemaNodeBase {
-  kind: "tuple";
-  items: SchemaNode[];
-}
+export type TupleSchemaNode = SchemaNodeBase & { kind: "tuple" } & (
+  | { elements: SchemaNode[]; items?: SchemaNode[] }
+  | { elements?: SchemaNode[]; items: SchemaNode[] }
+);
 
 // Object node
 export interface ObjectSchemaNode extends SchemaNodeBase {
@@ -144,10 +144,10 @@ export interface ObjectSchemaNode extends SchemaNodeBase {
 }
 
 // Record node
-export interface RecordSchemaNode extends SchemaNodeBase {
-  kind: "record";
-  valueSchema: SchemaNode;
-}
+export type RecordSchemaNode = SchemaNodeBase & { kind: "record" } & (
+  | { values: SchemaNode; valueSchema?: SchemaNode }
+  | { values?: SchemaNode; valueSchema: SchemaNode }
+);
 
 // Union node
 export interface UnionSchemaNode extends SchemaNodeBase {
@@ -162,16 +162,16 @@ export interface IntersectionSchemaNode extends SchemaNodeBase {
 }
 
 // Optional node
-export interface OptionalSchemaNode extends SchemaNodeBase {
-  kind: "optional";
-  inner: SchemaNode;
-}
+export type OptionalSchemaNode = SchemaNodeBase & { kind: "optional" } & (
+  | { schema: SchemaNode; inner?: SchemaNode }
+  | { schema?: SchemaNode; inner: SchemaNode }
+);
 
 // Nullable node
-export interface NullableSchemaNode extends SchemaNodeBase {
-  kind: "nullable";
-  inner: SchemaNode;
-}
+export type NullableSchemaNode = SchemaNodeBase & { kind: "nullable" } & (
+  | { schema: SchemaNode; inner?: SchemaNode }
+  | { schema?: SchemaNode; inner: SchemaNode }
+);
 
 // Ref node
 export interface RefSchemaNode extends SchemaNodeBase {

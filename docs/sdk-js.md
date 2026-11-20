@@ -720,6 +720,28 @@ You can also call `.export(mode?)` directly on a schema instance:
 const doc = schema.export("portable");
 ```
 
+Portable exports use canonical child keys (`schema`, `values`, and `elements`)
+and ordered coercion identifiers such as `["trim", "upper"]` or
+`["string->int"]`. Imported operation lists retain their order. Extended exports retain flag
+objects for native flag configurations. Imported coercion lists such as
+`["upper", "lower"]` remain lists in extended exports.
+
+For schema nodes rebuilt by the SDK, the child keys are:
+
+| Schema kind | Portable export | Extended export |
+| --- | --- | --- |
+| `optional`, `nullable` | `schema` | `inner` |
+| `record` | `values` | `valueSchema` |
+| `tuple` | `elements` | `elements` |
+| `array` | `items` | `items` |
+| `object` | `properties` | `properties` |
+| `union` | `variants` | `variants` |
+| `intersection` | `allOf` | `allOf` |
+
+Definitions retained from an imported document keep their supplied child keys in
+extended mode, which can be canonical or legacy aliases. Portable mode normalizes
+those definitions as well as the root.
+
 The document structure:
 
 ```json

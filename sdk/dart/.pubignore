@@ -1,0 +1,8 @@
+# Match the generated files excluded from source control.
+.dart_tool/
+.packages
+pubspec.lock
+coverage/
+build/
+# Shared corpus fixtures live outside the package root; run this in the repo CI.
+test/conformance_test.dart

@@ -18,3 +18,25 @@ func applyDefault(value any, defaultValue any, hasDefault bool) any {
 	}
 	return value
 }
+
+// hasTransitiveDefault finds defaults through transparent wrappers and references
+// without materializing them early or changing the declaring node's coercion order.
+func hasTransitiveDefault(schema Schema, depth int) bool {
+	if schema == nil || depth >= maxValidationDepth {
+		return false
+	}
+	if defaults, ok := schema.(interface{ defaultInfo() (any, bool) }); ok {
+		if _, present := defaults.defaultInfo(); present {
+			return true
+		}
+	}
+	switch node := schema.(type) {
+	case *OptionalSchema:
+		return hasTransitiveDefault(node.inner, depth+1)
+	case *NullableSchema:
+		return hasTransitiveDefault(node.inner, depth+1)
+	case *RefSchema:
+		return hasTransitiveDefault(node.resolved, depth+1)
+	}
+	return false
+}

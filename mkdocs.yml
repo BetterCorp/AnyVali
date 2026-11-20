@@ -57,6 +57,8 @@ nav:
       - PHP: docs/sdk-php.md
       - Ruby: docs/sdk-ruby.md
       - "C++": docs/sdk-cpp.md
+      - Dart / Flutter: docs/sdk-dart.md
+      - Dart Setup and Publishing: docs/dart-setup-publishing.md
   - Specification:
       - Normative Spec: spec/spec.md
       - JSON Interchange Format: spec/json-format.md

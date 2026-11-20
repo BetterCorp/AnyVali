@@ -5,7 +5,7 @@
 <h1 align="center">AnyVali</h1>
 
 <p align="center">
-  <strong>Native validation libraries for 10 languages, one portable schema model.</strong>
+  <strong>Native validation libraries for 11 languages, one portable schema model.</strong>
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@
 
 ---
 
-AnyVali lets you write validation schemas in your language, then share them across any of 10 supported runtimes via a portable JSON format. Think Zod, but for every language.
+AnyVali lets you write validation schemas in your language, then share them across any of 11 supported runtimes via a portable JSON format. Think Zod, but for every language.
 
 ## Why AnyVali?
 
@@ -155,9 +155,28 @@ if !result.Success {
 ```
 </details>
 
+<details>
+<summary>Dart / Flutter example</summary>
+
+```dart
+import 'package:anyvali/anyvali.dart' as av;
+
+final user = av.object({
+  'name': av.string().minLength(1),
+  'email': av.string().format('email'),
+  'age': av.int_().min(0).optional(),
+});
+final result = user.safeParse(input);
+
+// TextFormField(validator: av.string().format('email').validator())
+```
+
+See the [Dart SDK guide](docs/sdk-dart.md) for installation and Flutter forms.
+</details>
+
 ## Type Inference
 
-All 10 SDKs now provide static type inference, so parsed values carry the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
+All 11 SDKs now provide static type inference, so parsed values carry the correct type without manual casts. The TypeScript SDK offers full Zod-style `Infer<T>`:
 
 ```typescript
 import { object, string, int, type Infer } from "anyvali";
@@ -176,6 +195,7 @@ const user = User.parse(input); // fully typed, no cast needed
 
 Other SDKs use the type inference mechanism native to each language:
 
+- **Dart** -- `Schema<T>` and `ParseResult<T>`; typed primitives, arrays, and records
 - **Python** -- `BaseSchema(Generic[T])`, `ParseResult(Generic[T])`; `parse()` returns `T`
 - **C# / Kotlin** -- `Schema<T>` generic base class, `ParseResult<T>`
 - **Java** -- `Schema<T>` generic base, `ParseResult<T>` record
@@ -302,6 +322,7 @@ The portable JSON format:
 | Ruby | [`anyvali`](https://rubygems.org/gems/anyvali) | v0.0.1 |
 | Kotlin | `com.anyvali:anyvali` | v0.0.1 |
 | C++ | `anyvali` (CMake) | v0.0.1 |
+| Dart / Flutter | [`anyvali` from source](docs/sdk-dart.md#installation) | Source package (not yet published) |
 
 ## CLI & HTTP API
 
@@ -369,7 +390,8 @@ See the [CLI Reference](https://docs.anyvali.com/docs/cli) and [HTTP API Referen
 │   ├── php/        PHP SDK
 │   ├── ruby/       Ruby SDK
 │   ├── kotlin/     Kotlin SDK
-│   └── cpp/        C++ SDK
+│   ├── cpp/        C++ SDK
+│   └── dart/       Dart / Flutter SDK
 ├── cli/            CLI binary and HTTP API server (Go)
 ├── runner.sh       Build/test/CI runner
 └── site/           anyvali.com source

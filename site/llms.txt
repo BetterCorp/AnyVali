@@ -1,8 +1,8 @@
 # AnyVali
 
-> Native validation libraries for 10 languages, one portable schema model.
+> Native validation libraries for 11 languages, one portable schema model.
 
-AnyVali is a family of native validation libraries that share a single portable schema model across 10 programming languages: JavaScript/TypeScript, Python, Go, Java, C#, Rust, PHP, Ruby, Kotlin, and C++.
+AnyVali is a family of native validation libraries that share a single portable schema model across 11 programming languages: JavaScript/TypeScript, Python, Go, Java, C#, Rust, PHP, Ruby, Kotlin, C++, and Dart/Flutter.
 
 Write schemas in your host language using idiomatic builder APIs, export them to a canonical JSON document, and import them in any other supported SDK. All SDKs pass a shared conformance test suite ensuring identical behavior.
 
@@ -40,7 +40,7 @@ PHP is source-only; the public Packagist package is unavailable. Use a pinned ch
 
 ## Type Inference
 
-All 10 SDKs provide static type inference. In TypeScript, use `Infer<T>` to extract the output type from a schema (similar to Zod's `z.infer`). Other SDKs use generics (`Schema<T>` in C#/Kotlin/Java, `Generic[T]` in Python), generic helpers (`TypedParse[T]()` in Go, `parse_as<T>()` in Rust/C++), or tooling annotations (`@template` phpDoc in PHP, RBS signatures in Ruby).
+All 11 SDKs provide static type inference. In TypeScript, use `Infer<T>` to extract the output type from a schema (similar to Zod's `z.infer`). Other SDKs use generics (`Schema<T>` in C#/Kotlin/Java, `Generic[T]` in Python), generic helpers (`TypedParse[T]()` in Go, `parse_as<T>()` in Rust/C++), or tooling annotations (`@template` phpDoc in PHP, RBS signatures in Ruby).
 
 ## Quick Example (TypeScript)
 
@@ -56,3 +56,7 @@ const result = User.safeParse({ id: 42, email: "team@anyvali.dev" });
 const doc = User.export(); // portable JSON
 const imported = importSchema(doc); // import in any SDK
 ```
+
+## Dart / Flutter
+
+The pure Dart SDK is in sdk/dart (Dart 3.4+). It is available from source and has not yet been published to pub.dev. Use `Schema<T>`, `safeParse`, `exportSchema`, and `importSchema`. Flutter fields can use `schema.validator()`. See docs/sdk-dart.md.

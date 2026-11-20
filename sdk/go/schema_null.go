@@ -55,6 +55,7 @@ func (s *NullSchema) validate(value any) (any, []ValidationIssue) {
 
 func (s *NullSchema) ToNode() map[string]any {
 	node := map[string]any{"kind": "null"}
+	s.addDefaultNode(node)
 	s.addMetadataNode(node)
 	return node
 }

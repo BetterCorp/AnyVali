@@ -104,7 +104,7 @@ describe("_toNode / export for all schema types", () => {
   it("record", () => {
     const doc = exportSchema(record(int()));
     expect(doc.root.kind).toBe("record");
-    expect((doc.root as any).valueSchema.kind).toBe("int");
+    expect((doc.root as any).values.kind).toBe("int");
   });
 
   it("record with default", () => {
@@ -141,7 +141,7 @@ describe("_toNode / export for all schema types", () => {
   it("optional", () => {
     const doc = exportSchema(optional(string()));
     expect(doc.root.kind).toBe("optional");
-    expect((doc.root as any).inner.kind).toBe("string");
+    expect((doc.root as any).schema.kind).toBe("string");
   });
 
   it("optional with default", () => {
@@ -152,7 +152,7 @@ describe("_toNode / export for all schema types", () => {
   it("nullable", () => {
     const doc = exportSchema(nullable(string()));
     expect(doc.root.kind).toBe("nullable");
-    expect((doc.root as any).inner.kind).toBe("string");
+    expect((doc.root as any).schema.kind).toBe("string");
   });
 
   it("nullable with default", () => {
