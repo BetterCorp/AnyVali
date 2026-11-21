@@ -147,6 +147,29 @@ func TestIntersectionSchemaMergesObjects(t *testing.T) {
 	}
 }
 
+func TestIntersectionSchemaDoesNotReintroduceStrippedObjectKeys(t *testing.T) {
+	s := Intersection(
+		Object(map[string]Schema{"name": String()}).Required("name").UnknownKeys(Strip),
+		Object(map[string]Schema{"age": Int()}).Required("age").UnknownKeys(Strip),
+	)
+
+	input := map[string]any{"name": "Alice", "age": 42, "isAdmin": true}
+	result := s.SafeParse(input)
+	if !result.Success {
+		t.Fatalf("expected success, got issues: %v", result.Issues)
+	}
+	data := result.Data.(map[string]any)
+	if _, ok := data["isAdmin"]; ok {
+		t.Fatal("expected key stripped by every branch to remain absent")
+	}
+	if data["name"] != "Alice" || data["age"] != int64(42) {
+		t.Fatalf("expected validated branch outputs to be merged, got %#v", data)
+	}
+	if _, ok := input["isAdmin"]; !ok {
+		t.Fatal("intersection validation must not mutate the caller's input")
+	}
+}
+
 func TestIntersectionSchemaCollectsAllIssues(t *testing.T) {
 	// Both schemas fail: 7 < 10 (too_small) and 7 > 5 (too_large)
 	s := Intersection(

@@ -47,6 +47,12 @@ func (s *IntersectionSchema) safeParseAtDepth(input any, ctx parseContext) Parse
 func (s *IntersectionSchema) validateAtDepth(value any, ctx parseContext) (any, []ValidationIssue) {
 	var issues []ValidationIssue
 	var lastData any = value
+	if _, ok := value.(map[string]any); ok {
+		// Object schemas may strip unknown keys. Merge their validated outputs
+		// into a fresh map rather than the attacker-controlled input map, or
+		// keys stripped by every branch would be reintroduced.
+		lastData = map[string]any{}
+	}
 
 	for _, schema := range s.schemas {
 		result := parseAtDepth(schema, value, ctx.child())
