@@ -162,7 +162,7 @@ func TestIntersectionSchemaDoesNotReintroduceStrippedObjectKeys(t *testing.T) {
 	if _, ok := data["isAdmin"]; ok {
 		t.Fatal("expected key stripped by every branch to remain absent")
 	}
-	if data["name"] != "Alice" || data["age"] != 42 {
+	if data["name"] != "Alice" || data["age"] != int64(42) {
 		t.Fatalf("expected validated branch outputs to be merged, got %#v", data)
 	}
 	if _, ok := input["isAdmin"]; !ok {
