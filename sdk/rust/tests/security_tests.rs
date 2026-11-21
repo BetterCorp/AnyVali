@@ -254,10 +254,12 @@ fn cwe_190_integer_overflow_int32_boundaries() {
 #[test]
 fn cwe_190_integer_overflow_int64_boundaries() {
     let s = int64();
-    // i64::MAX = 9223372036854775807 -- JSON numbers may lose precision at this range
-    // but the schema should still accept the value as parsed by serde_json
     assert!(s.parse(&json!(i64::MAX)).is_ok());
     assert!(s.parse(&json!(i64::MIN)).is_ok());
+
+    let above = s.safe_parse(&json!((i64::MAX as u64) + 1));
+    assert!(!above.success);
+    assert_eq!(above.issues[0].code, "too_large");
 }
 
 #[test]
