@@ -267,48 +267,53 @@ impl Schema for IntSchema {
             }
         };
 
-        let f = n.as_f64().unwrap();
-
-        // Must be a whole number
-        if f.fract() != 0.0 {
-            return Err(vec![ValidationIssue {
+        // Preserve exact JSON integer values for width checks. Converting an
+        // i64/u64 through f64 first rounds values near the 64-bit boundaries
+        // and previously let out-of-range unsigned values enter signed schemas.
+        let (f, int_val) = if let Some(value) = n.as_i64() {
+            (value as f64, value as i128)
+        } else if let Some(value) = n.as_u64() {
+            (value as f64, value as i128)
+        } else {
+            let value = n.as_f64().ok_or_else(|| vec![ValidationIssue {
                 code: INVALID_TYPE.to_string(),
                 path: path.to_vec(),
                 expected: kind.to_string(),
                 received: "number".to_string(),
                 meta: None,
-            }]);
-        }
-
-        let int_val = f as i128;
+            }])?;
+            if !value.is_finite() || value.fract() != 0.0 {
+                return Err(vec![ValidationIssue {
+                    code: INVALID_TYPE.to_string(),
+                    path: path.to_vec(),
+                    expected: kind.to_string(),
+                    received: "number".to_string(),
+                    meta: None,
+                }]);
+            }
+            (value, value as i128)
+        };
 
         // Width range check (for typed widths)
-        match self.width {
-            IntWidth::Default | IntWidth::Int64 => {
-                // int64 range - checked by i64 conversion
-            }
-            _ => {
-                let min_v = self.width.min_value();
-                let max_v = self.width.max_value();
-                if int_val < min_v {
-                    return Err(vec![ValidationIssue {
-                        code: TOO_SMALL.to_string(),
-                        path: path.to_vec(),
-                        expected: kind.to_string(),
-                        received: format!("{}", int_val),
-                        meta: None,
-                    }]);
-                }
-                if int_val > max_v {
-                    return Err(vec![ValidationIssue {
-                        code: TOO_LARGE.to_string(),
-                        path: path.to_vec(),
-                        expected: kind.to_string(),
-                        received: format!("{}", int_val),
-                        meta: None,
-                    }]);
-                }
-            }
+        let min_v = self.width.min_value();
+        let max_v = self.width.max_value();
+        if int_val < min_v {
+            return Err(vec![ValidationIssue {
+                code: TOO_SMALL.to_string(),
+                path: path.to_vec(),
+                expected: kind.to_string(),
+                received: format!("{}", int_val),
+                meta: None,
+            }]);
+        }
+        if int_val > max_v {
+            return Err(vec![ValidationIssue {
+                code: TOO_LARGE.to_string(),
+                path: path.to_vec(),
+                expected: kind.to_string(),
+                received: format!("{}", int_val),
+                meta: None,
+            }]);
         }
 
         // User constraints
