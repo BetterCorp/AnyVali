@@ -25,15 +25,16 @@ concurrency:
 
 jobs:
   authorize-release:
-    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout complete history
+        if: ${{ github.event_name == 'push' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
 
       - name: Verify tag provenance and tested master head
+        if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -42,6 +43,12 @@ jobs:
           set -euo pipefail
           git fetch --no-tags origin master
           test "$(git rev-parse "$RELEASE_SHA^{commit}")" = "$(git rev-parse origin/master)"
+
+          first_line=$(git log -1 --pretty=%s "$RELEASE_SHA")
+          if [[ "$first_line" == "chore: release"* || "$first_line" == "release: "* ]]; then
+            echo "Release commits skip CI test jobs and cannot be published directly" >&2
+            exit 1
+          fi
 
           node <<'NODE'
           const { GH_TOKEN, REPOSITORY, RELEASE_SHA } = process.env;
