@@ -5,6 +5,8 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import com.anyvali.interchange.Importer
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class SensitiveDataTest {
     @Test
@@ -17,6 +19,10 @@ class SensitiveDataTest {
         assertEquals("encrypted:secret", encrypted)
         assertIs<ParseResult.Failure>(safeParseEncrypted(schema, "secret"))
         assertEquals(true, schema.schemaMetadata?.get("sensitive"))
+        assertEquals(
+            "test",
+            schema.exportNode()["metadata"]?.jsonObject?.get("vendor")?.jsonObject?.get("scope")?.jsonPrimitive?.content,
+        )
     }
 
     @Test
