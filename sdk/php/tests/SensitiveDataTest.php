@@ -6,10 +6,23 @@ namespace AnyVali\Tests;
 
 use AnyVali\AnyVali;
 use AnyVali\ValidationError;
+use AnyVali\Interchange\Importer;
 use PHPUnit\Framework\TestCase;
 
 final class SensitiveDataTest extends TestCase
 {
+    public function testImportedSensitiveMetadataEncryptsInsteadOfReturningPlaintext(): void
+    {
+        $schema = Importer::importNode([
+            'kind' => 'string',
+            'metadata' => ['sensitive' => true, 'vendor' => ['scope' => 'test']],
+        ]);
+        $encrypted = AnyVali::encrypt($schema, 'secret', fn(array $path, mixed $value) => 'encrypted:' . $value);
+        $this->assertSame('encrypted:secret', $encrypted);
+        $this->assertFalse(AnyVali::safeParseEncrypted($schema, 'secret')->success);
+        $this->assertTrue($schema->getMetadata()['sensitive']);
+    }
+
     public function testEncryptedRoundTripAndValidation(): void
     {
         $schema = AnyVali::object([

@@ -4,6 +4,19 @@
 using namespace anyvali;
 using json = nlohmann::json;
 
+TEST("sensitive: imported metadata encrypts instead of returning plaintext") {
+    auto schema = interchange::import_node(json{
+        {"kind", "string"},
+        {"metadata", {{"sensitive", true}, {"vendor", {{"scope", "test"}}}}}
+    });
+    const auto encrypted = encrypt(*schema, json("secret"), [](const Path&, const json& value) {
+        return json("encrypted:" + value.get<std::string>());
+    });
+    ASSERT_JSON_EQ(encrypted, json("encrypted:secret"));
+    ASSERT(!safe_parse_encrypted(*schema, json("secret")).success);
+    ASSERT(schema->get_metadata().value().at("sensitive").get<bool>());
+}
+
 TEST("sensitive: encrypt validates storage and decrypt restores plaintext") {
     auto secret = string_();
     secret->minLength(3);

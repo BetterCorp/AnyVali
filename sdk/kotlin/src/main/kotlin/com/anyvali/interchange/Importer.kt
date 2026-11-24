@@ -35,7 +35,7 @@ object Importer {
         val kind = node["kind"]?.jsonPrimitive?.content
             ?: throw IllegalArgumentException("Schema node missing 'kind'")
 
-        return when (kind) {
+        val schema = when (kind) {
             "string" -> importStringSchema(node)
             "number", "float64" -> importNumberSchema(node, kind)
             "float32" -> importNumberSchema(node, kind)
@@ -66,6 +66,22 @@ object Importer {
                     )
                 )
             )
+        }
+        node["metadata"]?.jsonObject?.let { metadata ->
+            schema.applyImportedMetadata(metadata.mapValues { (_, value) -> jsonValue(value) })
+        }
+        return schema
+    }
+
+    private fun jsonValue(value: JsonElement): Any? = when (value) {
+        JsonNull -> null
+        is JsonObject -> value.mapValues { (_, child) -> jsonValue(child) }
+        is JsonArray -> value.map(::jsonValue)
+        is JsonPrimitive -> when {
+            value.isString -> value.content
+            value.booleanOrNull != null -> value.boolean
+            value.longOrNull != null -> value.long
+            else -> value.double
         }
     }
 

@@ -4,8 +4,21 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import com.anyvali.interchange.Importer
 
 class SensitiveDataTest {
+    @Test
+    fun `imported sensitive metadata encrypts instead of returning plaintext`() {
+        val (schema, _) = Importer.importFromJson("""{
+            "anyvaliVersion":"1.0","schemaVersion":"1.1","definitions":{},
+            "root":{"kind":"string","metadata":{"sensitive":true,"vendor":{"scope":"test"}}}
+        }""")
+        val encrypted = encrypt(schema, "secret") { _, value -> "encrypted:$value" }
+        assertEquals("encrypted:secret", encrypted)
+        assertIs<ParseResult.Failure>(safeParseEncrypted(schema, "secret"))
+        assertEquals(true, schema.schemaMetadata?.get("sensitive"))
+    }
+
     @Test
     fun `encrypted round trip and validation`() {
         val sensitive = DescribeOptions(sensitive = true)

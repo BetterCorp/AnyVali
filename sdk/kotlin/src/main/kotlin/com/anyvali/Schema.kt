@@ -109,6 +109,12 @@ abstract class Schema<out T> {
         }
     }
 
+    /** Internal interchange hook. Portable metadata has already been decoded
+     * from JSON, so preserve reserved security fields as well as extensions. */
+    internal fun applyImportedMetadata(meta: Map<String, Any?>) {
+        schemaMetadata = meta.mapValues { (_, value) -> deepCopyMetadataValue(value) }.toMutableMap()
+    }
+
     protected fun addMetadataToNode(builder: JsonObjectBuilder) {
         schemaMetadata?.takeIf { it.isNotEmpty() }?.let { meta ->
             builder.put("metadata", buildJsonObject {
@@ -137,6 +143,11 @@ abstract class Schema<out T> {
     }
 
     companion object {
+        private fun deepCopyMetadataValue(value: Any?): Any? = when (value) {
+            is Map<*, *> -> value.entries.associate { (k, v) -> k.toString() to deepCopyMetadataValue(v) }
+            is List<*> -> value.map(::deepCopyMetadataValue)
+            else -> value
+        }
         private val RESERVED_METADATA_KEYS = setOf(
             "title", "description", "deprecated", "deprecatedMessage",
             "notStable", "since", "sensitive", "readonly", "writeonly", "examples"
