@@ -5,13 +5,14 @@ require "json"
 
 class SensitiveTest < Minitest::Test
   def test_imported_sensitive_metadata_encrypts_instead_of_returning_plaintext
-    metadata = { "sensitive" => true, "vendor" => { "scope" => "test" } }
+    scope = +"test"
+    metadata = { "sensitive" => true, "vendor" => { "scope" => scope } }
     schema = AnyVali.import_schema(
       "anyvaliVersion" => "1.0", "schemaVersion" => "1",
       "root" => { "kind" => "string", "metadata" => metadata },
       "definitions" => {}, "extensions" => {}
     )
-    metadata["vendor"]["scope"].replace("changed")
+    scope.replace("changed")
     encrypted = AnyVali.encrypt(schema, "secret", ->(_path, value) { "encrypted:#{value}" })
     assert_equal "encrypted:secret", encrypted
     assert AnyVali.safe_parse_encrypted(schema, "secret").failure?
