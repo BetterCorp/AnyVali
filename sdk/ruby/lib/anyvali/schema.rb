@@ -189,6 +189,8 @@ module AnyVali
         value.each_with_object({}) { |(key, child), copy| copy[key.to_s] = deep_copy_metadata(child) }
       when Array
         value.map { |child| deep_copy_metadata(child) }
+      when String
+        value.dup
       else
         value
       end
