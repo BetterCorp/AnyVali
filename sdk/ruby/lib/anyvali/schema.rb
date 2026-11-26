@@ -143,6 +143,13 @@ module AnyVali
       end
     end
 
+    # Internal interchange hook. Import must retain reserved fields such as
+    # sensitive, which the public metadata API intentionally rejects.
+    def import_metadata(meta)
+      raise ArgumentError, "imported metadata must be an object" unless meta.is_a?(Hash)
+      dup_with(metadata: deep_copy_metadata(meta))
+    end
+
     def refine(&block)
       dup_with(custom_validators: @custom_validators + [block])
     end
@@ -175,6 +182,19 @@ module AnyVali
     end
 
     protected
+
+    def deep_copy_metadata(value)
+      case value
+      when Hash
+        value.each_with_object({}) { |(key, child), copy| copy[key.to_s] = deep_copy_metadata(child) }
+      when Array
+        value.map { |child| deep_copy_metadata(child) }
+      when String
+        value.dup
+      else
+        value
+      end
+    end
 
     def handle_sensitive(input, path, context)
       return [false, nil] unless @metadata["sensitive"] == true && !input.nil? && context.sensitive_mode

@@ -4,6 +4,22 @@ require_relative "test_helper"
 require "json"
 
 class SensitiveTest < Minitest::Test
+  def test_imported_sensitive_metadata_encrypts_instead_of_returning_plaintext
+    scope = +"test"
+    metadata = { "sensitive" => true, "vendor" => { "scope" => scope } }
+    schema = AnyVali.import_schema(
+      "anyvaliVersion" => "1.0", "schemaVersion" => "1",
+      "root" => { "kind" => "string", "metadata" => metadata },
+      "definitions" => {}, "extensions" => {}
+    )
+    scope.replace("changed")
+    encrypted = AnyVali.encrypt(schema, "secret", ->(_path, value) { "encrypted:#{value}" })
+    assert_equal "encrypted:secret", encrypted
+    assert AnyVali.safe_parse_encrypted(schema, "secret").failure?
+    assert_equal true, schema.metadata["sensitive"]
+    assert_equal "test", schema.metadata.dig("vendor", "scope")
+  end
+
   def test_encrypted_round_trip_and_validation
     schema = AnyVali.object(
       properties: {

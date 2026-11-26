@@ -31,7 +31,7 @@ module AnyVali
       def node_to_schema(node)
         kind = node["kind"]
 
-        case kind
+        schema = case kind
         when "string"
           build_string(node)
         when "number", "float32", "float64"
@@ -80,6 +80,9 @@ module AnyVali
             )
           ]
         end
+        metadata = node["metadata"]
+        schema = schema.import_metadata(metadata) if metadata.is_a?(Hash)
+        schema
       end
 
       def build_string(node)

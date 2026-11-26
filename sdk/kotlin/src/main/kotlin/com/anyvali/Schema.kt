@@ -109,34 +109,38 @@ abstract class Schema<out T> {
         }
     }
 
+    /** Internal interchange hook. Portable metadata has already been decoded
+     * from JSON, so preserve reserved security fields as well as extensions. */
+    internal fun applyImportedMetadata(meta: Map<String, Any?>) {
+        schemaMetadata = meta.mapValues { (_, value) -> deepCopyMetadataValue(value) }.toMutableMap()
+    }
+
     protected fun addMetadataToNode(builder: JsonObjectBuilder) {
         schemaMetadata?.takeIf { it.isNotEmpty() }?.let { meta ->
             builder.put("metadata", buildJsonObject {
-                for ((k, v) in meta) {
-                    when (v) {
-                        is String -> put(k, v)
-                        is Boolean -> put(k, v)
-                        is Number -> put(k, JsonPrimitive(v))
-                        is List<*> -> put(k, buildJsonArray {
-                            for (item in v) {
-                                when (item) {
-                                    is String -> add(JsonPrimitive(item))
-                                    is Boolean -> add(JsonPrimitive(item))
-                                    is Number -> add(JsonPrimitive(item))
-                                    null -> add(JsonNull)
-                                    else -> add(JsonPrimitive(item.toString()))
-                                }
-                            }
-                        })
-                        null -> put(k, JsonNull)
-                        else -> put(k, v.toString())
-                    }
-                }
+                for ((k, v) in meta) put(k, metadataJsonValue(v))
             })
         }
     }
 
     companion object {
+        private fun deepCopyMetadataValue(value: Any?): Any? = when (value) {
+            is Map<*, *> -> value.entries.associate { (k, v) -> k.toString() to deepCopyMetadataValue(v) }
+            is List<*> -> value.map(::deepCopyMetadataValue)
+            else -> value
+        }
+
+        private fun metadataJsonValue(value: Any?): JsonElement = when (value) {
+            null -> JsonNull
+            is String -> JsonPrimitive(value)
+            is Boolean -> JsonPrimitive(value)
+            is Number -> JsonPrimitive(value)
+            is Map<*, *> -> buildJsonObject {
+                for ((key, child) in value) put(key.toString(), metadataJsonValue(child))
+            }
+            is List<*> -> buildJsonArray { for (child in value) add(metadataJsonValue(child)) }
+            else -> JsonPrimitive(value.toString())
+        }
         private val RESERVED_METADATA_KEYS = setOf(
             "title", "description", "deprecated", "deprecatedMessage",
             "notStable", "since", "sensitive", "readonly", "writeonly", "examples"

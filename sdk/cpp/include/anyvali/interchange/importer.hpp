@@ -232,6 +232,10 @@ inline std::shared_ptr<Schema> import_node(const nlohmann::json& node) {
         schema->set_default(node["default"]);
     }
 
+    if (node.contains("metadata") && node["metadata"].is_object()) {
+        schema->set_metadata_value(node["metadata"]);
+    }
+
     return schema;
 }
 

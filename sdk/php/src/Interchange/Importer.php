@@ -130,6 +130,10 @@ final class Importer
                 $schema = $schema->default($node['default']);
             }
 
+            if (isset($node['metadata']) && is_array($node['metadata'])) {
+                $schema = $schema->importMetadata($node['metadata']);
+            }
+
             if ($schema instanceof RefSchema) {
                 $this->resolveRef($schema, $definitions);
             }

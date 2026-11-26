@@ -330,6 +330,22 @@ abstract class Schema
         return $this->metadata;
     }
 
+    /** @internal Preserve portable metadata, including reserved security fields. */
+    public function importMetadata(array $metadata): static
+    {
+        $clone = clone $this;
+        $clone->metadata = self::copyJsonValue($metadata);
+        return $clone;
+    }
+
+    private static function copyJsonValue(mixed $value): mixed
+    {
+        if (!is_array($value)) return $value;
+        $copy = [];
+        foreach ($value as $key => $item) $copy[$key] = self::copyJsonValue($item);
+        return $copy;
+    }
+
     /**
      * Add a custom validator (local-only, non-portable).
      */
